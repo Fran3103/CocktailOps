@@ -94,7 +94,7 @@ erDiagram
   SHOP ||--o{ USER : owns
   SHOP ||--o{ SHOP_PRODUCT : lists
   PRODUCT ||--o{ SHOP_PRODUCT : sold_as
-  
+```  
 
 ## Diagrama de Arquitectura
 ```mermaid
