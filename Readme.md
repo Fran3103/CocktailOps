@@ -109,19 +109,15 @@ subgraph SYS[App: Cocktail Supply Planner]
 FE[Web App (React)]:::box
 BE[Backend API (Spring Boot)]:::box
 DB[(PostgreSQL)]:::db
-PDF[PDF Generator<br>(Thymeleaf + OpenHTMLtoPDF)]:::box
+PDF[PDF Generator<br/>(Thymeleaf + OpenHTMLtoPDF)]:::box
 end
 
 %% Optional external integrations
 subgraph EXT[Integraciones (opcional)]
-<<<<<<< HEAD
-SHOPAPI[API Tienda<br>Shopify / WooCommerce / MercadoLibre]:::ext
-=======
-SHOPAPI[API Tienda-Shopify / WooCommerce / MercadoLibre]:::ext
->>>>>>> 197545547a53874a19918391d0aa8b1c6be91896
+SHOPAPI[API Tienda<br/>Shopify / WooCommerce / MercadoLibre]:::ext
 end
 
-U -->|Selecciona cóctel + invitados + -ntragos/persona + duración| FE
+U -->|Selecciona cóctel + invitados + <br/>tragos/persona + duración| FE
 A -->|Gestiona catálogo, cócteles,\nórdenes| FE
 S -->|Carga links/precios de productos\npor tienda| FE
 
@@ -143,49 +139,38 @@ classDef ext fill:#eefbf3,stroke:#1f7a3a,stroke-width:1px;
 
 ```mermaid
 flowchart TB
-subgraph API[API Layer]
-C1[AuthController]:::box
-<<<<<<< HEAD
-C2[CatalogController<br>(products)]:::box
-C3[CocktailController<br>(cocktails)]:::box
-C4[OrderController<br>(orders + pdf)]:::box
-C5[ShopController<br>(shops, shop_products)]:::box
+subgraph API["API Layer"]
+    C1["AuthController"]:::box
+    C2["CatalogController<br/>(products)"]:::box
+    C3["CocktailController<br/>(cocktails)"]:::box
+    C4["OrderController<br/>(orders + pdf)"]:::box
+    C5["ShopController<br/>(shops, shop_products)"]:::box
 end
 
-subgraph APP[Application/Service Layer]
-S1[AuthService<br>JWT + roles]:::box
-=======
-C2[CatalogController-(products)]:::box
-C3[CocktailController-(cocktails)]:::box
-C4[OrderController-(orders + pdf)]:::box
-C5[ShopController-(shops, shop_products)]:::box
+subgraph APP["Application/Service Layer"]
+    S1["AuthService<br/>JWT + roles"]:::box
+    S2["ProductService"]:::box
+    S3["CocktailService"]:::box
+    S4["OrderService<br/>calcula cantidades"]:::box
+    S5["PdfService<br/>genera PDF"]:::box
+    S6["ShopService"]:::box
 end
 
-subgraph APP[Application/Service Layer]
-S1[AuthService-JWT + roles]:::box
->>>>>>> 197545547a53874a19918391d0aa8b1c6be91896
-S2[ProductService]:::box
-S3[CocktailService]:::box
-S4[OrderService\ncalcula cantidades]:::box
-S5[PdfService\ngenera PDF]:::box
-S6[ShopService]:::box
+subgraph DOMAIN["Domain Model"]
+    D1["Product"]:::entity
+    D2["Cocktail"]:::entity
+    D3["CocktailIngredient"]:::entity
+    D4["Order"]:::entity
+    D5["OrderItem"]:::entity
+    D6["User"]:::entity
+    D7["Shop"]:::entity
+    D8["ShopProduct"]:::entity
 end
 
-subgraph DOMAIN[Domain Model]
-D1[Product]:::entity
-D2[Cocktail]:::entity
-D3[CocktailIngredient]:::entity
-D4[Order]:::entity
-D5[OrderItem]:::entity
-D6[User]:::entity
-D7[Shop]:::entity
-D8[ShopProduct]:::entity
-end
-
-subgraph INFRA[Infrastructure]
-R1[Repositories (JPA)]:::box
-FLY[Flyway Migrations]:::box
-DB[(PostgreSQL)]:::db
+subgraph INFRA["Infrastructure"]
+    R1["Repositories (JPA)"]:::box
+    FLY["Flyway Migrations"]:::box
+    DB[("PostgreSQL")]:::db
 end
 
 %% Wiring
