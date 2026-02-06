@@ -129,7 +129,7 @@ BE -->|Links/Sync opcional| SHOPAPI
 classDef actor fill:#fff,stroke:#444,stroke-width:1px;
 classDef box fill:#f7f7ff,stroke:#5a5a8a,stroke-width:1px;
 classDef db fill:#fff6e6,stroke:#a06a00,stroke-width:1px;
-classDef ext fill:#eefbf3,stroke:#1f7a3a,stroke-width:1px;
+classDef ext fill:#000000,stroke:#1f7a3a,stroke-width:1px;
 ```  
 
 
@@ -200,7 +200,7 @@ S6 --> D8
 
 classDef box fill:#f7f7ff,stroke:#5a5a8a,stroke-width:1px;
 classDef db fill:#fff6e6,stroke:#a06a00,stroke-width:1px;
-classDef entity fill:#f6fffb,stroke:#1f7a3a,stroke-width:1px;
+classDef entity fill:#000000,stroke:#1f7a3a,stroke-width:1px;
 ```  
 
 
