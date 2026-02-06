@@ -1,0 +1,12 @@
+ALTER TABLE products
+    ADD COLUMN IF NOT EXISTS image_url TEXT;
+
+ALTER TABLE cocktails
+    ADD COLUMN IF NOT EXISTS image_url TEXT;
+
+
+ALTER TABLE products
+    ADD COLUMN IF NOT EXISTS image_alt TEXT;
+
+ALTER TABLE cocktails
+    ADD COLUMN IF NOT EXISTS image_alt TEXT;

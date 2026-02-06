@@ -26,4 +26,12 @@ public class Cocktail {
 
     @OneToMany(mappedBy = "cocktail", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CocktailIngredient>  ingredients =  new ArrayList<>();
+
+
+    @Column(name = "image_url")
+    private String imageUrl;
+
+    @Column(name = "image_alt")
+    private String imageAlt;
+
 }

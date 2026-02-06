@@ -53,6 +53,8 @@ erDiagram
     string unit
     numeric unit_size
     boolean active
+    string image_url
+    string image_alt
   }
 
   SHOP_PRODUCT {
@@ -68,6 +70,8 @@ erDiagram
     bigint id PK
     string name
     string description
+    string image_url
+    string image_alt
   }
 
   COCKTAIL_INGREDIENT {

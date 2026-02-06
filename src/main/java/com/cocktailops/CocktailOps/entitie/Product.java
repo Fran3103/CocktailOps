@@ -32,4 +32,11 @@ public class Product {
 
     @Column(nullable = false)
     private Boolean active;
+
+    @Column(name = "image_url")
+    private String imageUrl;
+
+    @Column(name = "image_alt")
+    private String imageAlt;
+
 }
