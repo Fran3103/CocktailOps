@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "orders_items")
+@Table(name = "order_items")
 @Getter @Setter
 @AllArgsConstructor @NoArgsConstructor
 public class OrderItem {
@@ -24,6 +24,7 @@ public class OrderItem {
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
+    @Column(nullable = false)
     private Integer quantity;
 
     private String unit;
