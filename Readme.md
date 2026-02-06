@@ -100,21 +100,21 @@ erDiagram
 ```mermaid
 flowchart LR
 %% Actors
-U[Usuario final]:::actor
-A[Admin]:::actor
-S[Dueño de tienda]:::actor
+U["Usuario final"]:::actor
+A["Admin"]:::actor
+S["Dueño de tienda"]:::actor
 
 %% System
-subgraph SYS[App: Cocktail Supply Planner]
-FE[Web App (React)]:::box
-BE[Backend API (Spring Boot)]:::box
-DB[(PostgreSQL)]:::db
-PDF[PDF Generator<br/>(Thymeleaf + OpenHTMLtoPDF)]:::box
+subgraph SYS["App: Cocktail Supply Planner"]
+FE["Web App (React)"]:::box
+BE["Backend API (Spring Boot)"]:::box
+DB["(PostgreSQL)"]:::dbdb
+PDF["PDF Generator<br/>(Thymeleaf + OpenHTMLtoPDF)"]:::box
 end
 
 %% Optional external integrations
-subgraph EXT[Integraciones (opcional)]
-SHOPAPI[API Tienda<br/>Shopify / WooCommerce / MercadoLibre]:::ext
+subgraph EXT["Integraciones (opcional)"]
+SHOPAPI["API Tienda<br/>Shopify / WooCommerce / MercadoLibre"]:::ext
 end
 
 U -->|Selecciona cóctel + invitados + <br/>tragos/persona + duración| FE
