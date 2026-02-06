@@ -22,14 +22,46 @@ CocktailOps es una aplicación diseñada para facilitar la planificación y gest
 ## Diagrama de Entidad-Relación
 ```mermaid
 erDiagram
-  PRODUCT {
+  SHOP {
     bigint id PK
     string name
-    string category
+    string slug
+  }
+
+  USER {
+    bigint id PK
+    string email
+    string password_hash
+    string first_name
+    string last_name
+    string role
+    bigint shop_id FK
+  }
+
+  CATEGORY {
+    bigint id PK
+    bigint shop_id FK
+    string name
+    string slug
+    boolean active
+  }
+
+  PRODUCT {
+    bigint id PK
+    bigint category_id FK
+    string name
     string unit
     numeric unit_size
-    string purchase_url
     boolean active
+  }
+
+  SHOP_PRODUCT {
+    bigint id PK
+    bigint shop_id FK
+    bigint product_id FK
+    string purchase_url
+    numeric price
+    string sku
   }
 
   COCKTAIL {
@@ -63,37 +95,22 @@ erDiagram
     string unit
   }
 
-  USER {
-    bigint id PK
-    string email
-    string password_hash
-    string role
-  }
+  %% Relaciones multi-tienda
+  SHOP ||--o{ USER : has
+  SHOP ||--o{ CATEGORY : defines
+  CATEGORY ||--o{ PRODUCT : contains
 
-  SHOP {
-    bigint id PK
-    string name
-    string slug
-  }
+  SHOP ||--o{ SHOP_PRODUCT : lists
+  PRODUCT ||--o{ SHOP_PRODUCT : sold_as
 
-  SHOP_PRODUCT {
-    bigint shop_id FK
-    bigint product_id FK
-    string purchase_url
-    numeric price
-    string sku
-  }
-
+  %% Recetas
   COCKTAIL ||--o{ COCKTAIL_INGREDIENT : has
   PRODUCT  ||--o{ COCKTAIL_INGREDIENT : used_in
 
-  COCKTAIL ||--o{ "ORDER"     : selected_in
-  "ORDER"  ||--o{ ORDER_ITEM  : generates
-  PRODUCT  ||--o{ ORDER_ITEM  : included_in
-
-  SHOP ||--o{ USER : owns
-  SHOP ||--o{ SHOP_PRODUCT : lists
-  PRODUCT ||--o{ SHOP_PRODUCT : sold_as
+  %% Órdenes
+  COCKTAIL ||--o{ "ORDER" : selected_in
+  "ORDER"  ||--o{ ORDER_ITEM : generates
+  PRODUCT  ||--o{ ORDER_ITEM : included_in
 ```  
 
 ## Diagrama de Arquitectura
