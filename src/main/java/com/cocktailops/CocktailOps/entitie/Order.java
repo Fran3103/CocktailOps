@@ -24,18 +24,23 @@ public class Order {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(nullable = false)
     private  Integer guests;
 
+    @Column(nullable = false)
     private  Integer drinksPerPerson;
 
+    @Column(nullable = false)
     private  Integer durationHours;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "cocktail_id", nullable = false)
     private Cocktail cocktail;
 
+    @Column(nullable = false)
     private String status;
 
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> orderItems;
 
     @PrePersist
