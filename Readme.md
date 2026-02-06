@@ -114,10 +114,10 @@ end
 
 %% Optional external integrations
 subgraph EXT[Integraciones (opcional)]
-SHOPAPI[API Tienda\nShopify / WooCommerce / MercadoLibre]:::ext
+SHOPAPI[API Tienda-Shopify / WooCommerce / MercadoLibre]:::ext
 end
 
-U -->|Selecciona cóctel + invitados +\ntragos/persona + duración| FE
+U -->|Selecciona cóctel + invitados + -ntragos/persona + duración| FE
 A -->|Gestiona catálogo, cócteles,\nórdenes| FE
 S -->|Carga links/precios de productos\npor tienda| FE
 
@@ -141,14 +141,14 @@ classDef ext fill:#eefbf3,stroke:#1f7a3a,stroke-width:1px;
 flowchart TB
 subgraph API[API Layer]
 C1[AuthController]:::box
-C2[CatalogController\n(products)]:::box
-C3[CocktailController\n(cocktails)]:::box
-C4[OrderController\n(orders + pdf)]:::box
-C5[ShopController\n(shops, shop_products)]:::box
+C2[CatalogController-(products)]:::box
+C3[CocktailController-(cocktails)]:::box
+C4[OrderController-(orders + pdf)]:::box
+C5[ShopController-(shops, shop_products)]:::box
 end
 
 subgraph APP[Application/Service Layer]
-S1[AuthService\nJWT + roles]:::box
+S1[AuthService-JWT + roles]:::box
 S2[ProductService]:::box
 S3[CocktailService]:::box
 S4[OrderService\ncalcula cantidades]:::box
