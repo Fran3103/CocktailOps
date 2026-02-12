@@ -127,22 +127,20 @@ erDiagram
 ## Diagrama de Arquitectura
 ```mermaid
 flowchart LR
-%% Actors
-U[Usuario final]:::actor
-A[Admin]:::actor
-S[Dueño de tienda]:::actor
 
-%% System
+U[Usuario final]
+A[Admin]
+S[Dueño de tienda]
+
 subgraph SYS[App: Cocktail Supply Planner]
-FE[Web App (React)]:::box
-BE[Backend API (Spring Boot)]:::box
-DB[(PostgreSQL)]:::db
-PDF[PDF Generator\nThymeleaf + OpenHTMLtoPDF]:::box
+  FE[Web App (React)]
+  BE[Backend API (Spring Boot)]
+  DB[(PostgreSQL)]
+  PDF[PDF Generator\nThymeleaf + OpenHTMLtoPDF]
 end
 
-%% Optional external integrations
 subgraph EXT[Integraciones (opcional)]
-SHOPAPI[API Tienda\nShopify / WooCommerce / MercadoLibre]:::ext
+  SHOPAPI[API Tienda\nShopify / WooCommerce / MercadoLibre]
 end
 
 U -->|Crea orden (TIME o DRINKS)| FE
@@ -153,6 +151,11 @@ FE -->|REST/JSON| BE
 BE --> DB
 BE --> PDF
 BE -->|Sync opcional| SHOPAPI
+
+class U,A,S actor
+class FE,BE,PDF box
+class DB db
+class SHOPAPI ext
 
 classDef actor fill:#000000,stroke:#444,stroke-width:1px;
 classDef box fill:#000000,stroke:#5a5a8a,stroke-width:1px;
