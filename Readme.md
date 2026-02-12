@@ -50,7 +50,7 @@ erDiagram
     bigint id PK
     bigint category_id FK
     string name
-    string unit          %% "ml" | "gr" | "unid"
+    string unit
     numeric unit_size
     boolean active
     string image_url
@@ -79,34 +79,33 @@ erDiagram
     bigint cocktail_id FK
     bigint product_id FK
     numeric amount
-    string unit          %% enum MeasureUnit: "OZ" | "ML" | "GR" | "UNID"
+    string unit
   }
 
   ORDER {
     bigint id PK
     timestamp created_at
-    int guests           %% nullable si soportás modo DRINKS
-    int drinks_per_person%% nullable si soportás modo DRINKS
-    int duration_hours   %% nullable si soportás modo DRINKS
+    int guests
+    int drinks_per_person
+    int duration_hours
     string status
   }
 
   ORDER_COCKTAIL {
-    bigint order_id PK, FK
-    bigint cocktail_id PK, FK
-    int drinks           %% cantidad de tragos asignados a ese cocktail
-    int weight           %% opcional (si usás distribución ponderada)
+    bigint order_id PK
+    bigint cocktail_id PK
+    int drinks
+    int weight
   }
 
   ORDER_ITEM {
     bigint id PK
     bigint order_id FK
     bigint product_id FK
-    int packs_to_buy     %% (antes quantity)
-    string unit          %% "pack" (o dejar null)
+    int packs_to_buy
+    string unit
   }
 
-  %% Relaciones multi-tienda
   SHOP ||--o{ USER : has
   SHOP ||--o{ CATEGORY : defines
   CATEGORY ||--o{ PRODUCT : contains
@@ -114,15 +113,12 @@ erDiagram
   SHOP ||--o{ SHOP_PRODUCT : lists
   PRODUCT ||--o{ SHOP_PRODUCT : sold_as
 
-  %% Recetas
   COCKTAIL ||--o{ COCKTAIL_INGREDIENT : has
   PRODUCT  ||--o{ COCKTAIL_INGREDIENT : used_in
 
-  %% Órdenes (muchos cocktails por orden)
   ORDER   ||--o{ ORDER_COCKTAIL : includes
   COCKTAIL||--o{ ORDER_COCKTAIL : selected
 
-  %% Resultado de compra
   ORDER   ||--o{ ORDER_ITEM : generates
   PRODUCT ||--o{ ORDER_ITEM : included_in
 
@@ -132,31 +128,31 @@ erDiagram
 ```mermaid
 flowchart LR
 %% Actors
-U["Usuario final"]:::actor
-A["Admin"]:::actor
-S["Dueño de tienda"]:::actor
+U[Usuario final]:::actor
+A[Admin]:::actor
+S[Dueño de tienda]:::actor
 
 %% System
-subgraph SYS["App: Cocktail Supply Planner"]
-FE["Web App (React)"]:::box
-BE["Backend API (Spring Boot)"]:::box
-DB[("PostgreSQL")]:::db
-PDF["PDF Generator<br/>(Thymeleaf + OpenHTMLtoPDF)"]:::box
+subgraph SYS[App: Cocktail Supply Planner]
+FE[Web App (React)]:::box
+BE[Backend API (Spring Boot)]:::box
+DB[(PostgreSQL)]:::db
+PDF[PDF Generator\nThymeleaf + OpenHTMLtoPDF]:::box
 end
 
 %% Optional external integrations
-subgraph EXT["Integraciones (opcional)"]
-SHOPAPI["API Tienda<br/>Shopify / WooCommerce / MercadoLibre"]:::ext
+subgraph EXT[Integraciones (opcional)]
+SHOPAPI[API Tienda\nShopify / WooCommerce / MercadoLibre]:::ext
 end
 
-U -->|"Crea orden:"<br/>"Modo TIEMPO (invitados + horas)"<br/>"o Modo TRAGOS (total + pesos)"| FE
-A -->|"Gestiona catálogo, cócteles, órdenes"| FE
-S -->|"Carga links/precios por tienda"| FE
+U -->|Crea orden (TIME o DRINKS)| FE
+A -->|Gestiona catálogo, cócteles, órdenes| FE
+S -->|Carga links/precios por tienda| FE
 
-FE -->|"REST/JSON"| BE
-BE --> "DB"
-BE --> "PDF"
-BE -->|Links/Sync opcional| SHOPAPI
+FE -->|REST/JSON| BE
+BE --> DB
+BE --> PDF
+BE -->|Sync opcional| SHOPAPI
 
 classDef actor fill:#000000,stroke:#444,stroke-width:1px;
 classDef box fill:#000000,stroke:#5a5a8a,stroke-width:1px;
