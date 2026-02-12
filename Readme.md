@@ -133,17 +133,17 @@ A[Admin]
 S[Dueño de tienda]
 
 subgraph SYS[App: Cocktail Supply Planner]
-  FE[Web App (React)]
-  BE[Backend API (Spring Boot)]
+  FE[Web App React]
+  BE[Backend API Spring Boot]
   DB[(PostgreSQL)]
-  PDF[PDF Generator\nThymeleaf + OpenHTMLtoPDF]
+  PDF[PDF Generator Thymeleaf + OpenHTMLtoPDF]
 end
 
-subgraph EXT[Integraciones (opcional)]
-  SHOPAPI[API Tienda\nShopify / WooCommerce / MercadoLibre]
+subgraph EXT[Integraciones opcional]
+  SHOPAPI[API Tienda Shopify / WooCommerce / MercadoLibre]
 end
 
-U -->|Crea orden (TIME o DRINKS)| FE
+U -->|Crea orden TIME o DRINKS| FE
 A -->|Gestiona catálogo, cócteles, órdenes| FE
 S -->|Carga links/precios por tienda| FE
 
@@ -157,10 +157,10 @@ class FE,BE,PDF box
 class DB db
 class SHOPAPI ext
 
-classDef actor fill:#000000,stroke:#444,stroke-width:1px;
-classDef box fill:#000000,stroke:#5a5a8a,stroke-width:1px;
-classDef db fill:#000000,stroke:#a06a00,stroke-width:1px;
-classDef ext fill:#000000,stroke:#1f7a3a,stroke-width:1px;
+classDef actor fill:#ffffff,stroke:#444,stroke-width:1px
+classDef box fill:#ffffff,stroke:#5a5a8a,stroke-width:1px
+classDef db fill:#ffffff,stroke:#a06a00,stroke-width:1px
+classDef ext fill:#ffffff,stroke:#1f7a3a,stroke-width:1px
 
 ```  
 
