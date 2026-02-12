@@ -79,7 +79,7 @@ erDiagram
     bigint cocktail_id FK
     bigint product_id FK
     numeric amount
-    string unit          %% enum MeasureUnit: OZ | ML | GR | UNID
+    string unit          %% enum MeasureUnit: "OZ" | "ML" | "GR" | "UNID"
   }
 
   ORDER {
@@ -149,13 +149,13 @@ subgraph EXT["Integraciones (opcional)"]
 SHOPAPI["API Tienda<br/>Shopify / WooCommerce / MercadoLibre"]:::ext
 end
 
-U -->|Crea orden:<br/>Modo TIEMPO (invitados + horas)<br/>o Modo TRAGOS (total + pesos)| FE
-A -->|Gestiona catálogo, cócteles, órdenes| FE
-S -->|Carga links/precios por tienda| FE
+U -->|"Crea orden:"<br/>"Modo TIEMPO (invitados + horas)"<br/>"o Modo TRAGOS (total + pesos)"| FE
+A -->|"Gestiona catálogo, cócteles, órdenes"| FE
+S -->|"Carga links/precios por tienda"| FE
 
-FE -->|REST/JSON| BE
-BE --> DB
-BE --> PDF
+FE -->|"REST/JSON"| BE
+BE --> "DB"
+BE --> "PDF"
 BE -->|Links/Sync opcional| SHOPAPI
 
 classDef actor fill:#000000,stroke:#444,stroke-width:1px;
