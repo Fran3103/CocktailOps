@@ -262,7 +262,7 @@ CREATE DATABASE cocktailops;
    spring.profiles.active=local
    server.port=8080
 
-spring.datasource.url=jdbc:postgresql://localhost:5432/cocktailops
+spring.datasource.url=jdbc:postgresql://localhost:5433/cocktailops
 spring.datasource.username=postgres
 spring.datasource.password=postgres
 spring.datasource.driver-class-name=org.postgresql.Driver
@@ -280,4 +280,59 @@ spring.jpa.hibernate.ddl-auto=validate
 
 ```bash
 mvn clean spring-boot:run -Dspring-boot.run.profiles=local
+```
 
+Probar api 
+```
+http://localhost:8080/swagger-ui/index.html
+```
+
+Pruebas de Postman 
+
+
+### 1) Crear Order (modo TIME / por invitados + duración)
+
+
+**Body (JSON)**
+```json
+{
+  "guests": 100,
+  "durationHours": 5,
+  "cocktails": [
+    { "cocktailId": 1, "weight": 5 },
+    { "cocktailId": 2, "weight": 4 }
+  ]
+}
+```
+![Create Order TIME](docs/postman/orders-create-time.png)
+
+**Body (JSON)**
+```json
+  {
+  "totalDrinks":100,
+  "cocktails": [
+    {
+      "cocktailId": 1,
+      "quantity": 25
+    },
+    {"cocktailId": 12,
+      "quantity": 25},
+    {
+      "cocktailId": 13,
+      "quantity": 25
+    },
+    {"cocktailId": 5,
+      "quantity": 25}
+
+  ]
+
+}
+```
+
+
+![Create Order TIME](docs/postman/orders-create-drink.png)
+
+PDF Renderizado
+
+
+![Create Order TIME](docs/postman/pdf-render.png)
