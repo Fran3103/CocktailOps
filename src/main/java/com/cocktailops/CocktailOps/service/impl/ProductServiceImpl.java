@@ -1,0 +1,168 @@
+package com.cocktailops.CocktailOps.service.impl;
+
+import com.cocktailops.CocktailOps.dto.ProductRequestDto;
+import com.cocktailops.CocktailOps.dto.ProductResponseDto;
+import com.cocktailops.CocktailOps.entitie.Category;
+import com.cocktailops.CocktailOps.entitie.Product;
+import com.cocktailops.CocktailOps.exception.ResourceNotFoundException;
+import com.cocktailops.CocktailOps.repository.ICategoryRepository;
+import com.cocktailops.CocktailOps.repository.ICocktailRepository;
+import com.cocktailops.CocktailOps.repository.IProductRepository;
+import com.cocktailops.CocktailOps.service.IProductService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+@RequiredArgsConstructor
+public class ProductServiceImpl implements IProductService {
+
+    private final IProductRepository productRepository;
+    private final ICategoryRepository categoryRepository;
+
+    @Override
+    public ProductResponseDto findById(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+
+
+
+
+        return new ProductResponseDto(
+                product.getId(),
+                 product.getName(),
+                product.getCategory().getId(),
+                product.getUnit(),
+                product.getImageUrl(),
+                product.getImageAlt(),
+                product.getActive(),
+                product.getUnitSize()
+        );
+    }
+
+    @Override
+    public ProductResponseDto findByName(String name) {
+        ProductResponseDto product = productRepository.findByName(name);
+        if (product == null) {
+            throw new ResourceNotFoundException("Shop with name " + name + " not found");
+        }
+
+        return product;
+    }
+
+    @Override
+    public ProductResponseDto create(ProductRequestDto productDto) {
+
+        if (productRepository.existsByName(productDto.name()) ){
+            throw new ResourceNotFoundException("Product with name " + productDto.name() + " already exists");
+        };
+        Optional<Category> category = categoryRepository.findById(productDto.category());
+        if (category.isEmpty()) {
+            throw new ResourceNotFoundException("Category with id " + productDto.category() + " not found");
+        }
+
+
+        Product product = new Product();
+        product.setName(productDto.name());
+        product.setCategory(category.get());
+        product.setUnit(productDto.unit());
+        product.setImageUrl(productDto.imageUrl());
+        product.setImageAlt(productDto.imageAlt());
+        product.setActive(productDto.active());
+        product.setUnitSize(productDto.unitSize());
+        Product savedProduct = productRepository.save(product);
+
+        return new ProductResponseDto(
+                savedProduct.getId(),
+                savedProduct.getName(),
+                savedProduct.getCategory().getId(),
+                savedProduct.getUnit(),
+                savedProduct.getImageUrl(),
+                savedProduct.getImageAlt(),
+                savedProduct.getActive(),
+                savedProduct.getUnitSize()
+        );
+
+
+
+
+    }
+
+    @Override
+    public ProductResponseDto update(Long id, ProductRequestDto productDto) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+
+
+        Optional<Category> category = categoryRepository.findById(productDto.category());
+        if (category.isEmpty()) {
+            throw new ResourceNotFoundException("Category with id " + productDto.category() + " not found");
+        }
+
+
+        if (productDto.name() != null) product.setName(productDto.name());
+        product.setCategory(category.get());
+        if (productDto.unit() != null) product.setUnit(productDto.unit());
+        if (productDto.imageUrl() != null) product.setImageUrl(productDto.imageUrl());
+        if (productDto.imageAlt() != null) product.setImageAlt(productDto.imageAlt());
+        if (productDto.active() != null) product.setActive(productDto.active());
+        if (productDto.unitSize() != null) product.setUnitSize(productDto.unitSize());
+        Product updatedProduct = productRepository.save(product);
+        return new ProductResponseDto(
+                updatedProduct.getId(),
+                updatedProduct.getName(),
+                updatedProduct.getCategory().getId(),
+                updatedProduct.getUnit(),
+                updatedProduct.getImageUrl(),
+                updatedProduct.getImageAlt(),
+                updatedProduct.getActive(),
+                updatedProduct.getUnitSize()
+        );
+
+    }
+
+    @Override
+    public void delete(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+
+        productRepository.delete(product);
+    }
+
+    @Override
+    public List<ProductResponseDto> findAll() {
+        List<Product> products = productRepository.findAll();
+        return products.stream()
+                .map(product -> new ProductResponseDto(
+                        product.getId(),
+                        product.getName(),
+                        product.getCategory().getId(),
+                        product.getUnit(),
+                        product.getImageUrl(),
+                        product.getImageAlt(),
+                        product.getActive(),
+                        product.getUnitSize()
+                ))
+                .toList();
+    }
+
+    @Override
+    public List<ProductResponseDto> findByCategoryName(String categoryName) {
+        List<Product> products = productRepository.findAll();
+        return products.stream()
+                .filter(product -> product.getCategory().getName().equalsIgnoreCase(categoryName))
+                .map(product -> new ProductResponseDto(
+                        product.getId(),
+                        product.getName(),
+                        product.getCategory().getId(),
+                        product.getUnit(),
+                        product.getImageUrl(),
+                        product.getImageAlt(),
+                        product.getActive(),
+                        product.getUnitSize()
+                ))
+                .toList();
+    }
+}

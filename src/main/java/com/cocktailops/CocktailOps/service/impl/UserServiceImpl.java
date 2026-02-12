@@ -6,6 +6,7 @@ import com.cocktailops.CocktailOps.entitie.Shop;
 import com.cocktailops.CocktailOps.entitie.User;
 import com.cocktailops.CocktailOps.exception.DuplicateResourceException;
 import com.cocktailops.CocktailOps.exception.ResourceNotFoundException;
+import com.cocktailops.CocktailOps.repository.IShopRepository;
 import com.cocktailops.CocktailOps.repository.IUserRepository;
 import com.cocktailops.CocktailOps.service.IUserService;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,7 @@ import java.util.Optional;
 public class UserServiceImpl implements IUserService {
 
     private final IUserRepository userRepository;
-
+    private final IShopRepository shopRepository;
 
 
     @Override
@@ -38,7 +39,7 @@ public class UserServiceImpl implements IUserService {
 
     // falta implementar la busca del shop, si no hay shop avisar que ese shop no existe.
     @Override
-    public UserResponseDto findByShop(Shop shop) {
+    public UserResponseDto findByShop(Long shop) {
         UserResponseDto user = userRepository.findByShop(shop);
 
         if (user == null) {
@@ -55,7 +56,7 @@ public class UserServiceImpl implements IUserService {
 
 
 
-        return new UserResponseDto( user.getFirstName(),user.getLastName(), user.getShop(), user.getId(), user.getRole(), user.getEmail());
+        return new UserResponseDto( user.getFirstName(),user.getLastName(), user.getShop().getId(), user.getId(), user.getRole(), user.getEmail());
     }
 
     @Override
@@ -66,17 +67,20 @@ public class UserServiceImpl implements IUserService {
 
         User user = new User();
 
+        Shop shop = shopRepository.findById(userRequestDto.shop())
+                .orElseThrow(() -> new ResourceNotFoundException("Shop with id " + userRequestDto.shop() + " not found"));
+
         user.setEmail(userRequestDto.email());
         user.setFirstName(userRequestDto.firstName());
         user.setLastName(userRequestDto.lastName());
-        user.setShop(userRequestDto.shop());
+        user.setShop(shop);
         user.setPassword(userRequestDto.password());
         user.setRole(userRequestDto.role());
 
 
         User savedUser = userRepository.save(user);
 
-        return new UserResponseDto(savedUser.getFirstName(), savedUser.getLastName(), savedUser.getShop(),  savedUser.getId(), savedUser.getRole(),  savedUser.getEmail());
+        return new UserResponseDto(savedUser.getFirstName(), savedUser.getLastName(), savedUser.getShop().getId(),  savedUser.getId(), savedUser.getRole(),  savedUser.getEmail());
     }
 
     public UserResponseDto update(long id, UserRequestDto dto) {
@@ -88,7 +92,11 @@ public class UserServiceImpl implements IUserService {
         if (dto.lastName()  != null) user.setLastName(dto.lastName());
 
 
-        if (dto.shop() != null) user.setShop(dto.shop());
+        if (dto.shop() != null) {;
+            Shop shop = shopRepository.findById(dto.shop())
+                    .orElseThrow(() -> new ResourceNotFoundException("Shop with id " + dto.shop() + " not found"));
+            user.setShop(shop);
+        }
 
         if (dto.password() != null) user.setPassword(dto.password());
         if (dto.role() != null) user.setRole(dto.role());
@@ -98,7 +106,7 @@ public class UserServiceImpl implements IUserService {
         return new UserResponseDto(
                 saved.getFirstName(),
                 saved.getLastName(),
-                saved.getShop(),
+                saved.getShop().getId(),
                 saved.getId(),
                 saved.getRole(),
                 saved.getEmail()
@@ -119,7 +127,7 @@ public class UserServiceImpl implements IUserService {
         List<User> users = userRepository.findAll();
 
         return users.stream()
-                .map(u -> new UserResponseDto(u.getFirstName(), u.getLastName(), u.getShop(), u.getId(), u.getRole(), u.getEmail() ))
+                .map(u -> new UserResponseDto(u.getFirstName(), u.getLastName(), u.getShop().getId(), u.getId(), u.getRole(), u.getEmail() ))
                 .toList();
 
     }

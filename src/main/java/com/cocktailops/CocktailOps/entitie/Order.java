@@ -8,6 +8,7 @@ import lombok.Setter;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -33,9 +34,15 @@ public class Order {
     @Column(nullable = false)
     private  Integer durationHours;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "cocktail_id", nullable = false)
-    private Cocktail cocktail;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private OrderMode mode = OrderMode.TIME;
+
+    @Column(name = "total_drinks", nullable = false)
+    private Integer totalDrinks;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderCocktail> Cocktails = new ArrayList<>();
 
     @Column(nullable = false)
     private String status;

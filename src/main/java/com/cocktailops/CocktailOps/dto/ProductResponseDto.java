@@ -2,11 +2,16 @@ package com.cocktailops.CocktailOps.dto;
 
 import com.cocktailops.CocktailOps.entitie.Category;
 
+import java.math.BigDecimal;
+
 public record ProductResponseDto(
+        Long productId,
         String name,
-        Category category,
+        Long category,
         String unit,
-        String image_url,
-        String image_alt
+        String imageUrl,
+        String imageAlt,
+        Boolean active,
+        BigDecimal unitSize
 ) {
 }
