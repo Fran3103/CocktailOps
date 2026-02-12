@@ -13,7 +13,7 @@ public interface IUserService {
 
     UserResponseDto findByEmail(String email);
 
-    UserResponseDto findByShop(Shop shop);
+    UserResponseDto findByShop(Long shop);
 
     UserResponseDto findById(long id);
 

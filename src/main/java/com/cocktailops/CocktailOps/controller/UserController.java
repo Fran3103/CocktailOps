@@ -38,11 +38,13 @@ public class UserController {
     @GetMapping()
     public ResponseEntity<List<UserResponseDto>> getAllUsers(
             @RequestParam(required = false) String email,
-            @RequestParam(required = false) Shop shop
+            @RequestParam(required = false) Long shop,
+            @RequestParam(required = false) Long userId
     ) {
 
         if (email != null) return ResponseEntity.ok(List.of(userService.findByEmail(email)));
         if (shop != null) return ResponseEntity.ok(List.of(userService.findByShop(shop)));
+        if (userId != null) return ResponseEntity.ok(List.of(userService.findById(userId)));
 
         List<UserResponseDto> res = userService.findAll();
 

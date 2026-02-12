@@ -7,11 +7,11 @@ import java.math.BigDecimal;
 public record ProductRequestDto(
         Long id,
         String name,
-        Category category,
+        Long category,
         String unit,
         BigDecimal unitSize,
         Boolean active,
-        String image_url,
-        String image_alt
+        String imageUrl,
+        String imageAlt
 ) {
 }

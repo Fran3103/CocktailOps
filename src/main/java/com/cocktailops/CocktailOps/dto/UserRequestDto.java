@@ -10,6 +10,6 @@ public record UserRequestDto (
         @NotBlank String firstName,
         @NotBlank String lastName,
         Role role,
-        Shop shop
+        Long shop
 ){
 }

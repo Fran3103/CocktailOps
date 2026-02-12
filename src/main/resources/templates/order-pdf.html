@@ -1,0 +1,91 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <style>
+        @page { size: A4; margin: 0; box-sizes: border-box;  }
+
+        body { font-family: Arial, sans-serif; font-size: 12px; }
+        h1 { font-size: 18px; margin: 0 0 6px 0; }
+        .muted { color: #555; }
+        .grid { display: block; margin: 10px 0 16px; }
+        .box { border: 1px solid #ddd; padding: 10px; border-radius: 6px; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        th, td { border: 1px solid #ddd; padding: 6px; }
+        th { background: #f5f5f5; text-align: left; }
+
+        .right { text-align: right; }
+    </style>
+</head>
+<body>
+
+<h1>Orden #<span th:text="${order.orderId}"></span></h1>
+<div class="muted">Creada: <span th:text="${order.createdAt}"></span></div>
+
+<div class="grid box" >
+    <!-- BLOQUE: Orden por tiempo (personas + horas) -->
+    <div th:if="${order.mode == 'TIME'}" class="grid box">
+        <div><b>Modo:</b> Por tiempo</div>
+        <div><b>Invitados:</b> <span th:text="${order.guests}">0</span></div>
+        <div><b>Tragos por hora/persona:</b> <span th:text="${order.drinksPerPerson}">0</span></div>
+        <div><b>Duración (hs):</b> <span th:text="${order.durationHours}">0</span></div>
+        <div><b>Total tragos:</b> <span th:text="${order.totalDrinks}">0</span></div>
+    </div>
+
+    <!-- BLOQUE: Orden por cantidad exacta de tragos -->
+    <div th:if="${order.mode == 'DRINKS'}" class="grid box">
+        <div><b>Modo:</b> Por cantidad de tragos</div>
+        <div><b>Total tragos:</b> <span th:text="${order.totalDrinks}">0</span></div>
+
+        <!-- Si querés mostrar un texto aclaratorio -->
+        <div class="muted" style="margin-top: 6px;">
+            Orden calculada por cantidad exacta de tragos (sin duración/invitados).
+        </div>
+    </div>
+
+</div>
+
+<h2>Cócteles</h2>
+<table>
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th class="right">Cantidad de Tragos</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="c : ${order.cocktails}">
+        <td th:text="${c.cocktailId}"></td>
+        <td th:text="${c.cocktailName}"></td>
+        <td class="right" th:text="${c.drinks}"></td>
+    </tr>
+    </tbody>
+</table>
+
+<h2 style="margin-top: 16px;">Lista de compra</h2>
+<table>
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Producto</th>
+        <th class="right">Unidades</th>
+        <th class="right">Tamaño de unidad</th>
+        <th>Medida</th>
+        <th class="right">Total</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="i : ${order.items}">
+        <td th:text="${i.productId}"></td>
+        <td th:text="${i.productName}"></td>
+        <td class="right" th:text="${i.packsToBuy}"></td>
+        <td class="right" th:text="${i.packSize}"></td>
+        <td th:text="${i.measureUnit}"></td>
+        <td class="right" th:text="${i.totalToBuy}"></td>
+    </tr>
+    </tbody>
+</table>
+
+</body>
+</html>
