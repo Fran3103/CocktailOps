@@ -50,7 +50,7 @@ erDiagram
     bigint id PK
     bigint category_id FK
     string name
-    string unit
+    string unit          %% "ml" | "gr" | "unid"
     numeric unit_size
     boolean active
     string image_url
@@ -78,25 +78,32 @@ erDiagram
     bigint id PK
     bigint cocktail_id FK
     bigint product_id FK
-    numeric ounces_per_serving
+    numeric amount
+    string unit          %% enum MeasureUnit: OZ | ML | GR | UNID
   }
 
-  "ORDER" {
+  ORDER {
     bigint id PK
     timestamp created_at
-    int guests
-    numeric drinks_per_person
-    numeric duration_hours
-    bigint cocktail_id FK
+    int guests           %% nullable si soportás modo DRINKS
+    int drinks_per_person%% nullable si soportás modo DRINKS
+    int duration_hours   %% nullable si soportás modo DRINKS
     string status
+  }
+
+  ORDER_COCKTAIL {
+    bigint order_id PK, FK
+    bigint cocktail_id PK, FK
+    int drinks           %% cantidad de tragos asignados a ese cocktail
+    int weight           %% opcional (si usás distribución ponderada)
   }
 
   ORDER_ITEM {
     bigint id PK
     bigint order_id FK
     bigint product_id FK
-    numeric quantity
-    string unit
+    int packs_to_buy     %% (antes quantity)
+    string unit          %% "pack" (o dejar null)
   }
 
   %% Relaciones multi-tienda
@@ -111,10 +118,14 @@ erDiagram
   COCKTAIL ||--o{ COCKTAIL_INGREDIENT : has
   PRODUCT  ||--o{ COCKTAIL_INGREDIENT : used_in
 
-  %% Órdenes
-  COCKTAIL ||--o{ "ORDER" : selected_in
-  "ORDER"  ||--o{ ORDER_ITEM : generates
-  PRODUCT  ||--o{ ORDER_ITEM : included_in
+  %% Órdenes (muchos cocktails por orden)
+  ORDER   ||--o{ ORDER_COCKTAIL : includes
+  COCKTAIL||--o{ ORDER_COCKTAIL : selected
+
+  %% Resultado de compra
+  ORDER   ||--o{ ORDER_ITEM : generates
+  PRODUCT ||--o{ ORDER_ITEM : included_in
+
 ```  
 
 ## Diagrama de Arquitectura
@@ -129,7 +140,7 @@ S["Dueño de tienda"]:::actor
 subgraph SYS["App: Cocktail Supply Planner"]
 FE["Web App (React)"]:::box
 BE["Backend API (Spring Boot)"]:::box
-DB["(PostgreSQL)"]:::dbdb
+DB[("PostgreSQL")]:::db
 PDF["PDF Generator<br/>(Thymeleaf + OpenHTMLtoPDF)"]:::box
 end
 
@@ -138,9 +149,9 @@ subgraph EXT["Integraciones (opcional)"]
 SHOPAPI["API Tienda<br/>Shopify / WooCommerce / MercadoLibre"]:::ext
 end
 
-U -->|Selecciona cóctel + invitados + <br/>tragos/persona + duración| FE
-A -->|Gestiona catálogo, cócteles,\nórdenes| FE
-S -->|Carga links/precios de productos\npor tienda| FE
+U -->|Crea orden:<br/>Modo TIEMPO (invitados + horas)<br/>o Modo TRAGOS (total + pesos)| FE
+A -->|Gestiona catálogo, cócteles, órdenes| FE
+S -->|Carga links/precios por tienda| FE
 
 FE -->|REST/JSON| BE
 BE --> DB
@@ -151,6 +162,7 @@ classDef actor fill:#000000,stroke:#444,stroke-width:1px;
 classDef box fill:#000000,stroke:#5a5a8a,stroke-width:1px;
 classDef db fill:#000000,stroke:#a06a00,stroke-width:1px;
 classDef ext fill:#000000,stroke:#1f7a3a,stroke-width:1px;
+
 ```  
 
 
@@ -162,8 +174,8 @@ classDef ext fill:#000000,stroke:#1f7a3a,stroke-width:1px;
 flowchart TB
 subgraph API["API Layer"]
     C1["AuthController"]:::box
-    C2["CatalogController<br/>(products)"]:::box
-    C3["CocktailController<br/>(cocktails)"]:::box
+    C2["CatalogController<br/>(products + categories)"]:::box
+    C3["CocktailController<br/>(cocktails + ingredients)"]:::box
     C4["OrderController<br/>(orders + pdf)"]:::box
     C5["ShopController<br/>(shops, shop_products)"]:::box
 end
@@ -171,21 +183,26 @@ end
 subgraph APP["Application/Service Layer"]
     S1["AuthService<br/>JWT + roles"]:::box
     S2["ProductService"]:::box
+    S7["CategoryService"]:::box
     S3["CocktailService"]:::box
-    S4["OrderService<br/>calcula cantidades"]:::box
+    S4["OrderService<br/>calcula packs + distribuye tragos"]:::box
     S5["PdfService<br/>genera PDF"]:::box
     S6["ShopService"]:::box
 end
 
 subgraph DOMAIN["Domain Model"]
-    D1["Product"]:::entity
-    D2["Cocktail"]:::entity
-    D3["CocktailIngredient"]:::entity
-    D4["Order"]:::entity
-    D5["OrderItem"]:::entity
-    D6["User"]:::entity
     D7["Shop"]:::entity
+    D6["User"]:::entity
+    D9["Category"]:::entity
+    D1["Product"]:::entity
     D8["ShopProduct"]:::entity
+
+    D2["Cocktail"]:::entity
+    D3["CocktailIngredient<br/>(amount + unit)"]:::entity
+
+    D4["Order"]:::entity
+    D10["OrderCocktail"]:::entity
+    D5["OrderItem"]:::entity
 end
 
 subgraph INFRA["Infrastructure"]
@@ -197,27 +214,21 @@ end
 %% Wiring
 C1 --> S1
 C2 --> S2
+C2 --> S7
 C3 --> S3
 C4 --> S4
 C4 --> S5
 C5 --> S6
 
+S1 --> R1
 S2 --> R1
+S7 --> R1
 S3 --> R1
 S4 --> R1
 S6 --> R1
 
 R1 --> DB
 FLY --> DB
-
-S2 --> D1
-S3 --> D2
-S3 --> D3
-S4 --> D4
-S4 --> D5
-S1 --> D6
-S6 --> D7
-S6 --> D8
 
 classDef box fill:#000000,stroke:#5a5a8a,stroke-width:1px;
 classDef db fill:#000000,stroke:#a06a00,stroke-width:1px;
