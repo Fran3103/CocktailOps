@@ -82,6 +82,8 @@ public class OrderServiceImpl implements IOrderService {
         order.setDrinksPerPerson(drinksPerPerson);
         order.setDurationHours(dto.durationHours());
         order.setStatus("Draft");
+        order.setTotalDrinks(totalDrinks);
+        order.setMode(OrderMode.TIME);
         order.setCocktails(new ArrayList<>());
         order.setOrderItems(new ArrayList<>());
 
@@ -99,6 +101,8 @@ public class OrderServiceImpl implements IOrderService {
                 ));
 
         Map<Long,Integer> drinksById = distributeByWeights(totalDrinks, weightsById);
+        int assignedTotal = drinksById.values().stream().mapToInt(Integer::intValue).sum();
+        order.setTotalDrinks(assignedTotal);
 
 
         for (Map.Entry<Long, Integer> e : drinksById.entrySet()) {
