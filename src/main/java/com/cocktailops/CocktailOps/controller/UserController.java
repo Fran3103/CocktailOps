@@ -1,20 +1,18 @@
 package com.cocktailops.CocktailOps.controller;
 
-import com.cocktailops.CocktailOps.dto.UserRequestDto;
-import com.cocktailops.CocktailOps.dto.UserResponseDto;
-import com.cocktailops.CocktailOps.entitie.Shop;
-import com.cocktailops.CocktailOps.entitie.User;
+import com.cocktailops.CocktailOps.dto.userDto.UserRequestDto;
+import com.cocktailops.CocktailOps.dto.userDto.UserResponseDto;
 import com.cocktailops.CocktailOps.service.IUserService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 import java.util.List;
 
+@Tag(name =  "Users", description = "Crea y gestiona usuarios ")
 @RestController
 @RequestMapping("/user")
 @RequiredArgsConstructor

@@ -1,7 +1,7 @@
 package com.cocktailops.CocktailOps.service.impl;
 
-import com.cocktailops.CocktailOps.dto.ShopRequestDto;
-import com.cocktailops.CocktailOps.dto.ShopResponseDto;
+import com.cocktailops.CocktailOps.dto.shopDto.ShopRequestDto;
+import com.cocktailops.CocktailOps.dto.shopDto.ShopResponseDto;
 import com.cocktailops.CocktailOps.entitie.Shop;
 import com.cocktailops.CocktailOps.exception.DuplicateResourceException;
 import com.cocktailops.CocktailOps.exception.ResourceNotFoundException;

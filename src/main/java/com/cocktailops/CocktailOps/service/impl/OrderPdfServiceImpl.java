@@ -1,9 +1,9 @@
 package com.cocktailops.CocktailOps.service.impl;
 
-import com.cocktailops.CocktailOps.dto.OrderCocktailPdfDto;
-import com.cocktailops.CocktailOps.dto.OrderItemsPdfDto;
-import com.cocktailops.CocktailOps.dto.OrderPdfDto;
-import com.cocktailops.CocktailOps.dto.OrderResponseDto;
+import com.cocktailops.CocktailOps.dto.orderDto.OrderCocktailPdfDto;
+import com.cocktailops.CocktailOps.dto.orderDto.OrderItemsPdfDto;
+import com.cocktailops.CocktailOps.dto.orderDto.OrderPdfDto;
+import com.cocktailops.CocktailOps.dto.orderDto.OrderResponseDto;
 import com.cocktailops.CocktailOps.service.IOrderService;
 import com.cocktailops.CocktailOps.service.IOrderPdfService;
 import com.cocktailops.CocktailOps.service.IProductService;
@@ -15,7 +15,6 @@ import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;

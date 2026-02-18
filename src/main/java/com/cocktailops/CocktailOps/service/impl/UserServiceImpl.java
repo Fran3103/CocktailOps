@@ -1,7 +1,7 @@
 package com.cocktailops.CocktailOps.service.impl;
 
-import com.cocktailops.CocktailOps.dto.UserRequestDto;
-import com.cocktailops.CocktailOps.dto.UserResponseDto;
+import com.cocktailops.CocktailOps.dto.userDto.UserRequestDto;
+import com.cocktailops.CocktailOps.dto.userDto.UserResponseDto;
 import com.cocktailops.CocktailOps.entitie.Shop;
 import com.cocktailops.CocktailOps.entitie.User;
 import com.cocktailops.CocktailOps.exception.DuplicateResourceException;
@@ -12,9 +12,7 @@ import com.cocktailops.CocktailOps.service.IUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor

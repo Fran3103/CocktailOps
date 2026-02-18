@@ -1,15 +1,16 @@
 package com.cocktailops.CocktailOps.controller;
 
-import com.cocktailops.CocktailOps.dto.ShopRequestDto;
-import com.cocktailops.CocktailOps.dto.ShopResponseDto;
+import com.cocktailops.CocktailOps.dto.shopDto.ShopRequestDto;
+import com.cocktailops.CocktailOps.dto.shopDto.ShopResponseDto;
 import com.cocktailops.CocktailOps.service.IShopService;
-import lombok.Getter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name =  "Shops", description = "Crea y gestiona tiendas ")
 @RestController
 @RequestMapping("/shop")
 @RequiredArgsConstructor

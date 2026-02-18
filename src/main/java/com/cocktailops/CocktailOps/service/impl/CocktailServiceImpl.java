@@ -1,10 +1,10 @@
 package com.cocktailops.CocktailOps.service.impl;
 
 
-import com.cocktailops.CocktailOps.dto.CocktailIngredientRequestDto;
-import com.cocktailops.CocktailOps.dto.CocktailIngredientResponseDto;
-import com.cocktailops.CocktailOps.dto.CocktailRequestDto;
-import com.cocktailops.CocktailOps.dto.CocktailResponseDto;
+import com.cocktailops.CocktailOps.dto.cocktailDto.CocktailIngredientRequestDto;
+import com.cocktailops.CocktailOps.dto.cocktailDto.CocktailIngredientResponseDto;
+import com.cocktailops.CocktailOps.dto.cocktailDto.CocktailRequestDto;
+import com.cocktailops.CocktailOps.dto.cocktailDto.CocktailResponseDto;
 import com.cocktailops.CocktailOps.entitie.Cocktail;
 import com.cocktailops.CocktailOps.entitie.CocktailIngredient;
 import com.cocktailops.CocktailOps.entitie.Product;
