@@ -1,9 +1,7 @@
 package com.cocktailops.CocktailOps.repository;
 
-import com.cocktailops.CocktailOps.dto.CocktailResponseDto;
+import com.cocktailops.CocktailOps.dto.cocktailDto.CocktailResponseDto;
 import com.cocktailops.CocktailOps.entitie.Cocktail;
-import jakarta.persistence.Entity;
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

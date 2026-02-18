@@ -1,11 +1,9 @@
 package com.cocktailops.CocktailOps.service;
 
-import com.cocktailops.CocktailOps.dto.UserRequestDto;
-import com.cocktailops.CocktailOps.dto.UserResponseDto;
-import com.cocktailops.CocktailOps.entitie.Shop;
+import com.cocktailops.CocktailOps.dto.userDto.UserRequestDto;
+import com.cocktailops.CocktailOps.dto.userDto.UserResponseDto;
 
 import java.util.List;
-import java.util.Optional;
 
 
 public interface IUserService {

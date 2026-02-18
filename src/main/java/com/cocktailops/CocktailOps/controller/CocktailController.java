@@ -1,15 +1,17 @@
 package com.cocktailops.CocktailOps.controller;
 
-import com.cocktailops.CocktailOps.dto.CocktailIngredientRequestDto;
-import com.cocktailops.CocktailOps.dto.CocktailRequestDto;
-import com.cocktailops.CocktailOps.dto.CocktailResponseDto;
+import com.cocktailops.CocktailOps.dto.cocktailDto.CocktailIngredientRequestDto;
+import com.cocktailops.CocktailOps.dto.cocktailDto.CocktailRequestDto;
+import com.cocktailops.CocktailOps.dto.cocktailDto.CocktailResponseDto;
 import com.cocktailops.CocktailOps.service.ICocktailService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name =  "Cocktails", description = "Crea y gestiona cocktails ")
 @RestController
 @RequestMapping("/cocktails")
 @RequiredArgsConstructor

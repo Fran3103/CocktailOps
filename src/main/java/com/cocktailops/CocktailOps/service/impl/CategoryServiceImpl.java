@@ -1,17 +1,14 @@
 package com.cocktailops.CocktailOps.service.impl;
 
-import com.cocktailops.CocktailOps.dto.CategoryRequestDto;
-import com.cocktailops.CocktailOps.dto.CategoryResponseDto;
-import com.cocktailops.CocktailOps.dto.UserResponseDto;
+import com.cocktailops.CocktailOps.dto.categoryDto.CategoryRequestDto;
+import com.cocktailops.CocktailOps.dto.categoryDto.CategoryResponseDto;
 import com.cocktailops.CocktailOps.entitie.Category;
 import com.cocktailops.CocktailOps.entitie.Shop;
-import com.cocktailops.CocktailOps.entitie.User;
 import com.cocktailops.CocktailOps.exception.DuplicateResourceException;
 import com.cocktailops.CocktailOps.exception.ResourceNotFoundException;
 import com.cocktailops.CocktailOps.repository.ICategoryRepository;
 import com.cocktailops.CocktailOps.repository.IShopRepository;
 import com.cocktailops.CocktailOps.service.ICategoryService;
-import com.cocktailops.CocktailOps.service.IShopService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

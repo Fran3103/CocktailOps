@@ -1,12 +1,11 @@
 package com.cocktailops.CocktailOps.service.impl;
 
-import com.cocktailops.CocktailOps.dto.ProductRequestDto;
-import com.cocktailops.CocktailOps.dto.ProductResponseDto;
+import com.cocktailops.CocktailOps.dto.productDto.ProductRequestDto;
+import com.cocktailops.CocktailOps.dto.productDto.ProductResponseDto;
 import com.cocktailops.CocktailOps.entitie.Category;
 import com.cocktailops.CocktailOps.entitie.Product;
 import com.cocktailops.CocktailOps.exception.ResourceNotFoundException;
 import com.cocktailops.CocktailOps.repository.ICategoryRepository;
-import com.cocktailops.CocktailOps.repository.ICocktailRepository;
 import com.cocktailops.CocktailOps.repository.IProductRepository;
 import com.cocktailops.CocktailOps.service.IProductService;
 import lombok.RequiredArgsConstructor;

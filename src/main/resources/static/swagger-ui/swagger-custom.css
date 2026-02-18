@@ -1,0 +1,26 @@
+/* Texto general */
+body, .swagger-ui {
+  font-size: 16px;
+}
+
+/* Descripciones de endpoints */
+.swagger-ui .opblock .opblock-summary-description,
+.swagger-ui .opblock-description-wrapper p,
+.swagger-ui .markdown p,
+.swagger-ui .markdown li {
+  font-size: 26px;
+  line-height: 1.5;
+}
+
+/* Títulos */
+.swagger-ui .info .title .description {
+  font-size: 28px;
+}
+.swagger-ui .opblock-tag {
+  font-size: 20px;
+}
+
+/* Código / schemas */
+.swagger-ui pre, .swagger-ui code, .swagger-ui .model {
+  font-size: 14px;
+}

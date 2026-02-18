@@ -1,7 +1,7 @@
 package com.cocktailops.CocktailOps.service;
 
-import com.cocktailops.CocktailOps.dto.ShopRequestDto;
-import com.cocktailops.CocktailOps.dto.ShopResponseDto;
+import com.cocktailops.CocktailOps.dto.shopDto.ShopRequestDto;
+import com.cocktailops.CocktailOps.dto.shopDto.ShopResponseDto;
 
 import java.util.List;
 

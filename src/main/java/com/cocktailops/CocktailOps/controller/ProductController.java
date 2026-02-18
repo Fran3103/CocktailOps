@@ -1,9 +1,9 @@
 package com.cocktailops.CocktailOps.controller;
 
-import com.cocktailops.CocktailOps.dto.ProductRequestDto;
-import com.cocktailops.CocktailOps.dto.ProductResponseDto;
-import com.cocktailops.CocktailOps.entitie.Product;
+import com.cocktailops.CocktailOps.dto.productDto.ProductRequestDto;
+import com.cocktailops.CocktailOps.dto.productDto.ProductResponseDto;
 import com.cocktailops.CocktailOps.service.IProductService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name =  "Products", description = "Crea y gestiona productos ")
 @RestController
 @RequestMapping("/products")
 @RequiredArgsConstructor

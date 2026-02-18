@@ -1,7 +1,7 @@
 package com.cocktailops.CocktailOps.service;
 
-import com.cocktailops.CocktailOps.dto.CategoryRequestDto;
-import com.cocktailops.CocktailOps.dto.CategoryResponseDto;
+import com.cocktailops.CocktailOps.dto.categoryDto.CategoryRequestDto;
+import com.cocktailops.CocktailOps.dto.categoryDto.CategoryResponseDto;
 
 import java.util.List;
 

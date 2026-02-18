@@ -1,10 +1,16 @@
 package com.cocktailops.CocktailOps.controller;
 
-import com.cocktailops.CocktailOps.dto.OrderByDrinksRequestDto;
-import com.cocktailops.CocktailOps.dto.OrderRequestDto;
-import com.cocktailops.CocktailOps.dto.OrderResponseDto;
+import com.cocktailops.CocktailOps.dto.orderDto.OrderByDrinksRequestDto;
+import com.cocktailops.CocktailOps.dto.orderDto.OrderRequestDto;
+import com.cocktailops.CocktailOps.dto.orderDto.OrderResponseDto;
 import com.cocktailops.CocktailOps.service.IOrderService;
 import com.cocktailops.CocktailOps.service.IOrderPdfService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.apache.coyote.BadRequestException;
@@ -14,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.util.List;
 
+@Tag(name = "Orders", description = "Creación de órdenes y cálculo de insumos")
 @RestController
 @RequestMapping("/orders")
 @RequiredArgsConstructor
@@ -24,6 +31,17 @@ public class OrderController {
 
     private final IOrderPdfService orderPdfService;
 
+    @Operation(
+            summary = "Crear una orden",
+            description = "Calcula packs a comprar en base a invitados/duración y pesos por cocktail." +
+                    "El peso indica cuanta  importancia se le da a ese cocktail,  mas peso, mas cocktails.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Orden creada",
+                    content = @Content(schema = @Schema(implementation = OrderResponseDto.class))),
+            @ApiResponse(responseCode = "400", description = "Validación inválida"),
+            @ApiResponse(responseCode = "404", description = "Cocktail/Product no encontrado"),
+            @ApiResponse(responseCode = "409", description = "Conflicto de datos")
+    })
     @PostMapping
     public ResponseEntity<OrderResponseDto> create(@Valid @RequestBody OrderRequestDto dto) {
         OrderResponseDto created = orderService.createOrder(dto);
@@ -31,16 +49,41 @@ public class OrderController {
         return ResponseEntity.created(location).body(created);
     }
 
+
+    @Operation(
+            summary = "Traer orden por Id",
+            description = "Calcula packs a comprar en base a invitados/duración y pesos por cocktail." +
+                    "El peso indica cuanta  importancia se le da a ese cocktail,  mas peso, mas cocktails.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Orden obtenida"),
+            @ApiResponse(responseCode = "400", description = "Validación inválida"),
+            @ApiResponse(responseCode = "404", description = "Orden no encontrada"),
+            @ApiResponse(responseCode = "409", description = "Conflicto de datos")
+    })
     @GetMapping("/{id}")
     public ResponseEntity<OrderResponseDto> getById(@PathVariable Long id) {
         return ResponseEntity.ok(orderService.getOrderById(id));
     }
-
+    @Operation(
+            summary = "Traer todas las ordenes")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Ordenes obtenidas"),
+            @ApiResponse(responseCode = "400", description = "Validación inválida"),
+            @ApiResponse(responseCode = "409", description = "Conflicto de datos")
+    })
     @GetMapping
     public ResponseEntity<List<OrderResponseDto>> getAll() {
         return ResponseEntity.ok(orderService.getAllOrders());
     }
 
+
+    @Operation(summary = "Descargar PDF de una orden")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Pdf creado"),
+            @ApiResponse(responseCode = "400", description = "Validación inválida"),
+            @ApiResponse(responseCode = "404", description = "Cocktail/Product no encontrado"),
+            @ApiResponse(responseCode = "409", description = "Conflicto de datos")
+    })
     @GetMapping("/{id}/pdf")
     public ResponseEntity<byte[]> getPdf(@PathVariable Long id) throws BadRequestException {
 
@@ -57,6 +100,18 @@ public class OrderController {
         return ResponseEntity.ok().headers(headers).body(pdf);
     }
 
+
+    @Operation(
+            summary = "Crear una orden por cantidad de cocktails",
+            description = "Calcula packs a comprar en base a cantidad total de cocktials indicados por el usuario y cantidad  por cocktail." +
+                    "El usuario indica el total de cocktails  que quiere y la cantidad de cada cocktail.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Orden creada",
+                    content = @Content(schema = @Schema(implementation = OrderResponseDto.class))),
+            @ApiResponse(responseCode = "400", description = "Validación inválida"),
+            @ApiResponse(responseCode = "404", description = "Cocktail/Product no encontrado"),
+            @ApiResponse(responseCode = "409", description = "Conflicto de datos")
+    })
     @PostMapping("/by-drinks")
     public ResponseEntity<OrderResponseDto> createByDrinks(@RequestBody OrderByDrinksRequestDto dto) {
 

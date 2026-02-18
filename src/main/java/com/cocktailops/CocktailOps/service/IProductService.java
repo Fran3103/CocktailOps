@@ -1,8 +1,7 @@
 package com.cocktailops.CocktailOps.service;
 
-import com.cocktailops.CocktailOps.dto.ProductRequestDto;
-import com.cocktailops.CocktailOps.dto.ProductResponseDto;
-import com.cocktailops.CocktailOps.entitie.Category;
+import com.cocktailops.CocktailOps.dto.productDto.ProductRequestDto;
+import com.cocktailops.CocktailOps.dto.productDto.ProductResponseDto;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
