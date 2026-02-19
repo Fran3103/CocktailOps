@@ -1,17 +1,35 @@
-# CocktailOps  
-CocktailOps es una aplicación diseñada para facilitar la planificación y gestión de pedidos de cócteles para eventos. Permite a los usuarios seleccionar cócteles, calcular las cantidades necesarias de ingredientes y generar listas de compras detalladas.
+# CocktailOps
+CocktailOps es una aplicación diseñada para facilitar la planificación y gestión de pedidos de cócteles para eventos. Permite a los usuarios seleccionar cócteles, calcular las cantidades necesarias de ingredientes y generar listas de compras detalladas y PDFs listos para imprimir.
+
+## Índice
+- [Características Principales](#características-principales)
+- [Tecnologías Utilizadas](#tecnologías-utilizadas)
+- [Diagramas](#diagramas)
+  - [Diagrama de Entidad-Relación](#diagrama-de-entidad-relación)
+  - [Diagrama de Arquitectura](#diagrama-de-arquitectura)
+  - [Diagrama de Componentes](#diagrama-de-componentes)
+- [Instalación y Uso](#instalación-y-uso)
+  - [Requisitos Previos](#requisitos-previos)
+  - [Pasos para Ejecutar la Aplicación](#pasos-para-ejecutar-la-aplicación)
+  - [Creación de la Base de Datos](#creación-de-la-base-de-datos)
+  - [Configuración de la Aplicación](#configuración-de-la-aplicación)
+  - [Ejecutar la Aplicación](#ejecutar-la-aplicación)
+- [API - Ejemplos y Postman](#api---ejemplos-y-postman)
+- [Testing y CI](#testing-y-ci)
+- [Notas y Recomendaciones](#notas-y-recomendaciones)
+
 
 ## Características Principales
-- **Gestión de Productos**: Almacena información sobre productos, incluyendo nombre, categoría.
+- **Gestión de Productos**: Almacena información sobre productos, incluyendo nombre, categoría y unidades.
 - **Gestión de Cócteles**: Permite la creación y almacenamiento de recetas de cócteles con sus ingredientes y cantidades.
-- **Planificación de Pedidos**: Los usuarios pueden crear pedidos especificando el número de invitados, bebidas por persona y duración del evento.
-- **Generación de Listas de Compras**: Calcula automáticamente las cantidades necesarias de cada ingrediente y genera una lista de compras.
+- **Planificación de Pedidos**: Los usuarios pueden crear pedidos especificando el número de invitados, bebidas por persona, o el total de bebidas, y la duración del evento.
+- **Generación de Listas de Compras**: Calcula automáticamente las cantidades necesarias de cada ingrediente, sugiere packs a comprar y genera PDFs con la lista de compra.
 
 ## Tecnologías Utilizadas
-- Backend: Java con Spring Boot
+- Backend: Java 17+ con Spring Boot
 - Base de Datos: PostgreSQL
-- ORM: Hibernate
-- Control de Versiones: Git
+- ORM: Hibernate / JPA
+- Build: Maven
 - Documentación: Markdown
 - Diagramas: Mermaid
 - Frontend: React (en desarrollo)
@@ -19,7 +37,10 @@ CocktailOps es una aplicación diseñada para facilitar la planificación y gest
 - Pruebas: JUnit y Mockito (en desarrollo)
 
 
-## Diagrama de Entidad-Relación
+## Diagramas
+Los diagramas Mermaid se mantienen íntegros en este README para facilitar la lectura técnica rápida.
+
+### Diagrama de Entidad-Relación
 ```mermaid
 erDiagram
   SHOP {
@@ -121,10 +142,9 @@ erDiagram
 
   ORDER   ||--o{ ORDER_ITEM : generates
   PRODUCT ||--o{ ORDER_ITEM : included_in
+```
 
-```  
-
-## Diagrama de Arquitectura
+### Diagrama de Arquitectura
 ```mermaid
 flowchart LR
 
@@ -161,14 +181,9 @@ classDef actor fill:#ffffff,stroke:#444,stroke-width:1px
 classDef box fill:#ffffff,stroke:#5a5a8a,stroke-width:1px
 classDef db fill:#ffffff,stroke:#a06a00,stroke-width:1px
 classDef ext fill:#ffffff,stroke:#1f7a3a,stroke-width:1px
+```
 
-```  
-
-
-
-
-## Diagrama de Componentes
-
+### Diagrama de Componentes
 ```mermaid
 flowchart TB
 subgraph API["API Layer"]
@@ -232,8 +247,7 @@ FLY --> DB
 classDef box fill:#000000,stroke:#5a5a8a,stroke-width:1px;
 classDef db fill:#000000,stroke:#a06a00,stroke-width:1px;
 classDef entity fill:#000000,stroke:#1f7a3a,stroke-width:1px;
-```  
-
+```
 
 
 ## Instalación y Uso
@@ -242,27 +256,33 @@ classDef entity fill:#000000,stroke:#1f7a3a,stroke-width:1px;
 - Java 17 o superior
 - Maven 3.6.3 o superior
 - PostgreSQL 13 o superior
-- Spring Boot 4.0.2 o superior
+- (Opcional) Docker y Docker Compose
 
 ### Pasos para Ejecutar la Aplicación
-1. Clona el repositorio: `git clone https://github.com/fran3103/CocktailOps.git`
-2. Navega al directorio del proyecto: `cd CocktailOps`
+1. Clona el repositorio:
 
-#### Creación de la Base de Datos
-Antes de ejecutar la aplicación, crea una base de datos PostgreSQL para almacenar los datos de la aplicación. Puedes hacerlo ejecutando el siguiente comando SQL en tu servidor PostgreSQL:
+```bash
+git clone https://github.com/fran3103/CocktailOps.git
+cd CocktailOps
+```
+
+2. Asegúrate de crear la base de datos (ver sección siguiente) y de tener las credenciales configuradas.
+
+### Creación de la Base de Datos
+Ejecuta en tu servidor PostgreSQL:
+
 ```sql
 CREATE DATABASE cocktailops;
 ```
 
 ### Configuración de la Aplicación
-1. Abre el archivo `src/main/resources/application-local.properties`.
+Edita `src/main/resources/application-local.properties` (o usa variables de entorno). Ejemplo mínimo:
 
-2. Actualiza las siguientes propiedades según tu configuración de base de datos:
 ```properties
-   spring.profiles.active=local
-   server.port=8080
+spring.profiles.active=local
+server.port=8081
 
-spring.datasource.url=jdbc:postgresql://localhost:5433/cocktailops
+spring.datasource.url=jdbc:postgresql://localhost:5432/cocktailops
 spring.datasource.username=postgres
 spring.datasource.password=postgres
 spring.datasource.driver-class-name=org.postgresql.Driver
@@ -273,25 +293,33 @@ spring.flyway.locations=classpath:db/migration
 spring.jpa.hibernate.ddl-auto=validate
 ```
 
+Recomendación: no versionar credenciales; usar un archivo `application-local.properties` en `.gitignore` o variables de entorno.
 
 ### Ejecutar la Aplicación
-1. Asegúrate de tener PostgreSQL en ejecución.
-2. Ejecuta:
+Con PostgreSQL en ejecución:
 
 ```bash
 mvn clean spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-Probar api 
+O empaqueta y ejecuta el jar:
+
+```bash
+mvn -DskipTests package
+java -jar target/cocktailops-*.jar --spring.profiles.active=local
+```
+
+Swagger UI (si está habilitado):
+
 ```
 http://localhost:8080/swagger-ui/index.html
 ```
 
-Pruebas de Postman 
 
+## API - Ejemplos y Postman
+A continuación se muestran los ejemplos principales usados en Postman (las capturas se encuentran en `docs/postman/`).
 
-### 1) Crear Order (modo TIME / por invitados + duración)
-
+### 1) Crear Order (modo TIME — por invitados + duración)
 
 **Body (JSON)**
 ```json
@@ -304,35 +332,29 @@ Pruebas de Postman
   ]
 }
 ```
+
 ![Create Order TIME](docs/postman/orders-create-time.png)
+
+### 2) Crear Order (modo DRINKS — por total de bebidas)
 
 **Body (JSON)**
 ```json
-  {
-  "totalDrinks":100,
+{
+  "totalDrinks": 100,
   "cocktails": [
-    {
-      "cocktailId": 1,
-      "quantity": 25
-    },
-    {"cocktailId": 12,
-      "quantity": 25},
-    {
-      "cocktailId": 13,
-      "quantity": 25
-    },
-    {"cocktailId": 5,
-      "quantity": 25}
-
+    { "cocktailId": 1, "quantity": 25 },
+    { "cocktailId": 12, "quantity": 25 },
+    { "cocktailId": 13, "quantity": 25 },
+    { "cocktailId": 5, "quantity": 25 }
   ]
-
 }
 ```
 
+![Create Order DRINKS](docs/postman/orders-create-drink.png)
 
-![Create Order TIME](docs/postman/orders-create-drink.png)
+### PDF
+El servicio puede generar un PDF con la lista de compra y el detalle del pedido.
 
-PDF Renderizado
+![PDF Renderizado](docs/postman/pdf-render.png)
 
 
-![Create Order TIME](docs/postman/pdf-render.png)
