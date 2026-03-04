@@ -2,6 +2,8 @@
 CocktailOps es una aplicación diseñada para facilitar la planificación y gestión de pedidos de cócteles para eventos. Permite a los usuarios seleccionar cócteles, calcular las cantidades necesarias de ingredientes y generar listas de compras detalladas y PDFs listos para imprimir.
 
 ## Índice
+- [Decisiones Técnicas](#decisiones-técnicas)
+- [Tiempos y Alcance](#tiempos-y-alcance)
 - [Características Principales](#características-principales)
 - [Tecnologías Utilizadas](#tecnologías-utilizadas)
 - [Diagramas](#diagramas)
@@ -15,8 +17,62 @@ CocktailOps es una aplicación diseñada para facilitar la planificación y gest
   - [Configuración de la Aplicación](#configuración-de-la-aplicación)
   - [Ejecutar la Aplicación](#ejecutar-la-aplicación)
 - [API - Ejemplos y Postman](#api---ejemplos-y-postman)
-- [Testing y CI](#testing-y-ci)
-- [Notas y Recomendaciones](#notas-y-recomendaciones)
+- [Qué haría distinto / Próximos pasos](#qué-haría-distinto--próximos-pasos)
+
+## 🧠 Decisiones técnicas
+
+### Arquitectura por capas (Controller → Service → Repository)
+Organicé el proyecto en capas para separar responsabilidades:
+- **Controller**: capa HTTP (request/response, códigos de estado, Swagger)
+- **Service**: reglas de negocio (cálculo de pedidos, validaciones, orquestación)
+- **Repository**: persistencia (acceso a DB con JPA)
+
+Esto mejora mantenibilidad, testeo y escalabilidad del código.
+
+### DTOs en lugar de exponer Entities
+Uso **DTOs** para requests/responses para:
+- evitar exponer el modelo de base de datos
+- validar inputs con Bean Validation
+- mantener estable el contrato de la API aunque cambie el modelo interno
+- mejorar la documentación Swagger (schemas claros y ejemplos)
+
+### Flyway para migraciones
+Uso **Flyway** para versionar cambios de base de datos con scripts SQL:
+- base reproducible entre ambientes
+- cambios controlados por versión
+- onboarding rápido: al levantar la app se aplican migraciones
+
+### JPA/Hibernate como ORM
+Uso **JPA + Hibernate** para mapear datos relacionales (PostgreSQL) y simplificar:
+- relaciones entre entidades
+- transacciones
+- consultas con repositorios Spring Data
+
+### Manejo global de errores
+Centralicé errores con `@RestControllerAdvice` para:
+- respuestas consistentes (400/404/409/500)
+- formato uniforme (timestamp, status, message, path, etc.)
+- evitar try/catch repetido en controllers
+
+### Observabilidad básica: logging
+Agregué **logs estructurados** en la capa service para:
+- registrar flujos críticos (crear orden, calcular ítems, generar PDF)
+- facilitar debugging con contexto (orderId, guests, duration, etc.)
+- `WARN` en casos esperables (not found) y `ERROR` en fallos inesperados
+
+
+
+
+## ⏱ Tiempos y alcance 
+Este proyecto se desarrolló por iteraciones. Algunas tareas se encuentran **en desarrollo** (ej: JWT / Frontend / Tests completos).
+
+- **Base API + modelo + migraciones (Flyway)**: listo
+- **Cálculo de pedidos (TIME / DRINKS) + generación PDF**: listo
+- **Documentación (Swagger + README + Mermaid)**: en mejora continua
+- **Testing + CI**: pendiente / en desarrollo
+- **JWT + Frontend**: planificado / en desarrollo
+
+> Objetivo: priorizar un backend sólido, mantenible y fácil de evaluar en entrevista.
 
 
 ## Características Principales
@@ -39,6 +95,8 @@ CocktailOps es una aplicación diseñada para facilitar la planificación y gest
 
 ## Diagramas
 Los diagramas Mermaid se mantienen íntegros en este README para facilitar la lectura técnica rápida.
+Mantengo los diagramas en Mermaid dentro del README para que cualquier persona 
+pueda entender rápido el modelo y la arquitectura.
 
 ### Diagrama de Entidad-Relación
 ```mermaid
@@ -262,7 +320,7 @@ classDef entity fill:#000000,stroke:#1f7a3a,stroke-width:1px;
 1. Clona el repositorio:
 
 ```bash
-git clone https://github.com/fran3103/CocktailOps.git
+git clone https://github.com/Fran3103/CocktailOps.git
 cd CocktailOps
 ```
 
@@ -312,7 +370,7 @@ java -jar target/cocktailops-*.jar --spring.profiles.active=local
 Swagger UI (si está habilitado):
 
 ```
-http://localhost:8080/swagger-ui/index.html
+http://localhost:8081/swagger-ui/index.html
 ```
 
 
@@ -358,3 +416,10 @@ El servicio puede generar un PDF con la lista de compra y el detalle del pedido.
 ![PDF Renderizado](docs/postman/pdf-render.png)
 
 
+## 🔄 Qué haría distinto / Próximos pasos
+- Agregar **Docker + docker-compose** (app + PostgreSQL) para levantar todo con 1 comando
+- Agregar **GitHub Actions CI** para correr `mvn test` en cada push
+- Aumentar **cobertura de tests** (Service + Controller + integración con Testcontainers)
+- Agregar **Spring Boot Actuator** para health checks y métricas básicas
+- Optimizar consultas y rendimiento (índices, queries específicas si aplica)
+- Evaluar ejecución asíncrona para procesos pesados (ej: generación de PDFs) si escala

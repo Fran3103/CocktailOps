@@ -9,6 +9,7 @@ import com.cocktailops.CocktailOps.service.IOrderPdfService;
 import com.cocktailops.CocktailOps.service.IProductService;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.coyote.BadRequestException;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
@@ -20,6 +21,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderPdfServiceImpl implements IOrderPdfService {
@@ -28,27 +30,25 @@ public class OrderPdfServiceImpl implements IOrderPdfService {
 
     private final IOrderService orderService;
 
-    private final IProductService productService;
-
-    private static final DateTimeFormatter PDF_DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
-            .withZone(ZoneId.of("America/Argentina/Buenos_Aires"));
 
     @Override
     public byte[] generateOrderPdf(Long orderId) throws BadRequestException {
 
+        log.info("Generating PDF for order with id: {}", orderId);
 
+        // Obtener los datos del pedido
         OrderResponseDto responseDto = orderService.getOrderById(orderId);
-
+        // Transformar los datos a un formato adecuado para el PDF
         OrderPdfDto orderPdfDto = toPdfDto(responseDto);
-
+        // Renderizar el PDF usando Thymeleaf y OpenHTMLToPDF
         Context context = new Context();
-
+        // Agregar los datos del pedido al contexto de Thymeleaf
         context.setVariable("order", orderPdfDto);
 
-
+        // Renderizar la plantilla Thymeleaf con los datos del pedido
         String html = templateEngine.process("order-pdf", context);
 
-
+        // Generar el PDF a partir del HTML renderizado
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             PdfRendererBuilder builder = new PdfRendererBuilder();
 
@@ -56,16 +56,20 @@ public class OrderPdfServiceImpl implements IOrderPdfService {
             builder.toStream(outputStream);
             builder.useFastMode();
             builder.run();
+            log.info("PDF generated successfully for order with id: {}", orderId);
             return outputStream.toByteArray();
         } catch (Exception e) {
+                log.error("Error generating PDF for order with id: {}", orderId, e);
             throw new BadRequestException("Error generating PDF", e);
         }
     }
 
     private OrderPdfDto toPdfDto(OrderResponseDto o) {
 
+        // Determinar el modo de cálculo del pedido (por tiempo o por bebidas)
         String mode = (o.guests() != null && o.durationHours() != null) ? "TIME" : "DRINKS";
 
+        // Calcular el total de bebidas necesarias según el modo del pedido
         Integer totalDrinks;
         if ("TIME".equals(mode)) {
             if (o.guests() == null || o.drinksPerPerson() == null || o.durationHours() == null) {
@@ -78,6 +82,7 @@ public class OrderPdfServiceImpl implements IOrderPdfService {
                     .sum());
         }
 
+        // Transformar la lista de cócteles del pedido a un formato adecuado para el PDF
         List<OrderCocktailPdfDto> cocktails = (o.cocktail() == null ? List.of() : o.cocktail().stream()
                 .map(c -> new OrderCocktailPdfDto(
                         c.cocktailId(),
@@ -85,7 +90,7 @@ public class OrderPdfServiceImpl implements IOrderPdfService {
                         c.quantity()
                 ))
                 .toList());
-
+        // Transformar la lista de ítems del pedido a un formato adecuado para el PDF, calculando el total a comprar
         List<OrderItemsPdfDto> items = (o.items() == null ? List.of() : o.items().stream()
                 .map(i -> {
                     Integer packs = i.packsToBuy();

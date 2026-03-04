@@ -9,11 +9,13 @@ import com.cocktailops.CocktailOps.repository.ICategoryRepository;
 import com.cocktailops.CocktailOps.repository.IProductRepository;
 import com.cocktailops.CocktailOps.service.IProductService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductServiceImpl implements IProductService {
@@ -53,12 +55,13 @@ public class ProductServiceImpl implements IProductService {
 
     @Override
     public ProductResponseDto create(ProductRequestDto productDto) {
-
         if (productRepository.existsByName(productDto.name()) ){
+            log.warn("Product with name {} already exists", productDto.name());
             throw new ResourceNotFoundException("Product with name " + productDto.name() + " already exists");
         };
         Optional<Category> category = categoryRepository.findById(productDto.category());
         if (category.isEmpty()) {
+            log.warn("Category with id {} not found", productDto.category());
             throw new ResourceNotFoundException("Category with id " + productDto.category() + " not found");
         }
 
@@ -73,6 +76,7 @@ public class ProductServiceImpl implements IProductService {
         product.setUnitSize(productDto.unitSize());
         Product savedProduct = productRepository.save(product);
 
+        log.info("Product created with id: {}", savedProduct.getId());
         return new ProductResponseDto(
                 savedProduct.getId(),
                 savedProduct.getName(),
@@ -92,11 +96,13 @@ public class ProductServiceImpl implements IProductService {
     @Override
     public ProductResponseDto update(Long id, ProductRequestDto productDto) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
-
-
+                 .orElseThrow(() -> {
+                    log.warn("Product with id {} not found", id);
+                    return new ResourceNotFoundException("Product not found with id: " + id);
+                });
         Optional<Category> category = categoryRepository.findById(productDto.category());
         if (category.isEmpty()) {
+            log.warn("Category with id {} not found for update", productDto.category());
             throw new ResourceNotFoundException("Category with id " + productDto.category() + " not found");
         }
 
@@ -109,6 +115,8 @@ public class ProductServiceImpl implements IProductService {
         if (productDto.active() != null) product.setActive(productDto.active());
         if (productDto.unitSize() != null) product.setUnitSize(productDto.unitSize());
         Product updatedProduct = productRepository.save(product);
+
+        log.info("Product with id {} updated successfully", id);
         return new ProductResponseDto(
                 updatedProduct.getId(),
                 updatedProduct.getName(),
@@ -125,7 +133,10 @@ public class ProductServiceImpl implements IProductService {
     @Override
     public void delete(Long id) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+                .orElseThrow(() -> {
+                    log.warn("Product with id {} not found for deletion", id);
+                    return new ResourceNotFoundException("Product not found with id: " + id);
+                });
 
         productRepository.delete(product);
     }

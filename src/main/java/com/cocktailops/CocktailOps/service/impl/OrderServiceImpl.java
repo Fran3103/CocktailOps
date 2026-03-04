@@ -10,6 +10,7 @@ import com.cocktailops.CocktailOps.repository.IOrderRepository;
 import com.cocktailops.CocktailOps.repository.IProductRepository;
 import com.cocktailops.CocktailOps.service.IOrderService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,7 @@ import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl implements IOrderService {
@@ -38,9 +40,22 @@ public class OrderServiceImpl implements IOrderService {
 
     @Override
     public OrderResponseDto getOrderById(Long id) {
-        Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + id));
-        return toResponse(order);
+        Optional<Order> order = orderRepository.findById(id);
+        if (order.isEmpty()) {
+                log.warn("Order with id {} not found", id);
+                throw new ResourceNotFoundException("Order not found: " + id);
+        }
+
+        Order o = order.get();
+        log.debug("Order with id {} found: guests={}, durationHours={}, cocktails={}, items={}",
+                id,
+                o.getGuests(),
+                o.getDurationHours(),
+                o.getCocktails() != null ? o.getCocktails().size() : 0,
+                o.getOrderItems() != null ? o.getOrderItems().size() : 0
+            );
+
+        return toResponse(o);
     }
 
     @Override
@@ -55,6 +70,7 @@ public class OrderServiceImpl implements IOrderService {
     @Transactional
     public OrderResponseDto createOrder(OrderRequestDto dto) {
 
+        log.info("createOrder started: guests={}, durationHours={}, cocktails={}, ", dto.guests(), dto.durationHours(), dto.cocktails().size());
         // ----- Validaciones -----
         if (dto.guests() == null || dto.guests() <= 0) {
             throw new BadRequestException("Guests must be greater than 0");
@@ -75,120 +91,131 @@ public class OrderServiceImpl implements IOrderService {
         }
         int drinksPerPerson = defaultDrinksPerPersonPerHour;
         int totalDrinks = dto.guests() * drinksPerPerson * dto.durationHours();
+try {
+    // ----- Crear Order -----
+    Order order = new Order();
+    order.setGuests(dto.guests());
+    order.setDrinksPerPerson(drinksPerPerson);
+    order.setDurationHours(dto.durationHours());
+    order.setStatus("Draft");
+    order.setTotalDrinks(totalDrinks);
+    order.setMode(OrderMode.TIME);
+    order.setCocktails(new ArrayList<>());
+    order.setOrderItems(new ArrayList<>());
 
-        // ----- Crear Order -----
-        Order order = new Order();
-        order.setGuests(dto.guests());
-        order.setDrinksPerPerson(drinksPerPerson);
-        order.setDurationHours(dto.durationHours());
-        order.setStatus("Draft");
-        order.setTotalDrinks(totalDrinks);
-        order.setMode(OrderMode.TIME);
-        order.setCocktails(new ArrayList<>());
-        order.setOrderItems(new ArrayList<>());
+    // Acumulamos cantidad requerida POR PRODUCTO en la unidad del producto (ml/gr/unid)
+    Map<Long, BigDecimal> requiredByProductId = new HashMap<>();
+    Map<Long, Product> productCache = new HashMap<>();
+    //cocktailId -> weight
+    Map<Long, Integer> weightsById = dto.cocktails().stream()
+            .collect(Collectors.toMap(
+                    OrderCocktailsWeightDto::cocktailId,
+                    c -> c.weight() == null ? 1 : c.weight(),
+                    Integer::sum,
+                    LinkedHashMap::new
 
-        // Acumulamos cantidad requerida POR PRODUCTO en la unidad del producto (ml/gr/unid)
-        Map<Long, BigDecimal> requiredByProductId = new HashMap<>();
-        Map<Long, Product> productCache = new HashMap<>();
-        //cocktailId -> weight
-        Map<Long, Integer> weightsById = dto.cocktails().stream()
-                .collect(Collectors.toMap(
-                        OrderCocktailsWeightDto::cocktailId,
-                        c -> c.weight() == null ? 1 : c.weight(),
-                        Integer::sum,
-                        LinkedHashMap::new
+            ));
 
+    // Distribuir totalDrinks entre los cócteles según sus pesos
+    Map<Long, Integer> drinksById = distributeByWeights(totalDrinks, weightsById);
+    int assignedTotal = drinksById.values().stream().mapToInt(Integer::intValue).sum();
+    order.setTotalDrinks(assignedTotal);
+
+
+    for (Map.Entry<Long, Integer> e : drinksById.entrySet()) {
+
+        Long cocktailId = e.getKey();
+        int drinksForThisCocktail = e.getValue();
+        if (drinksForThisCocktail <= 0) continue;
+        // Obtener cocktail con ingredientes
+        Cocktail cocktail = cocktailRepository.findByWithIngredients(cocktailId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Cocktail with id " + cocktailId + " not found"
                 ));
+        // Agregar cocktail alpedido
+        OrderCocktail orderCocktail = new OrderCocktail();
+        orderCocktail.setOrder(order);
+        orderCocktail.setCocktail(cocktail);
+        orderCocktail.setDrinks(drinksForThisCocktail);
+        order.getCocktails().add(orderCocktail);
+// Calcular ingredientes requeridos para este cocktail y acumular por producto
+        for (CocktailIngredient ing : cocktail.getIngredients()) {
 
-        Map<Long,Integer> drinksById = distributeByWeights(totalDrinks, weightsById);
-        int assignedTotal = drinksById.values().stream().mapToInt(Integer::intValue).sum();
-        order.setTotalDrinks(assignedTotal);
+            Product product = ing.getProduct();
+            productCache.putIfAbsent(product.getId(), product);
+
+            // amount por trago en unidad del producto (ml/gr/unid)
+            BigDecimal perDrinkInProductUnit =
+                    toProductUnit(ing.getAmount(), ing.getUnit(), product.getUnit());
+
+            // total requerido para este cocktail
+            BigDecimal totalRequired =
+                    perDrinkInProductUnit.multiply(BigDecimal.valueOf(drinksForThisCocktail));
+
+            requiredByProductId.merge(product.getId(), totalRequired, BigDecimal::add);
+        }
+    }
 
 
-        for (Map.Entry<Long, Integer> e : drinksById.entrySet()) {
+    // ----- Crear OrderItems (packs a comprar) -----
+    // Para cada producto requerido, calcular cuántos packs comprar y crear el OrderItem correspondiente
+    for (Map.Entry<Long, BigDecimal> entry : requiredByProductId.entrySet()) {
 
-            Long cocktailId = e.getKey();
-            int drinksForThisCocktail = e.getValue();
-            if (drinksForThisCocktail <= 0) continue;
-
-            Cocktail cocktail = cocktailRepository.findByWithIngredients(cocktailId)
+        Long productId = entry.getKey();
+        BigDecimal requiredAmountInProductUnit = entry.getValue();
+// Obtener producto (de cache o DB)
+        Product product = productCache.get(productId);
+        if (product == null) {
+            product = productRepository.findById(productId)
                     .orElseThrow(() -> new ResourceNotFoundException(
-                            "Cocktail with id " + cocktailId + " not found"
+                            "Product with id " + productId + " not found"
                     ));
-
-            OrderCocktail orderCocktail = new OrderCocktail();
-            orderCocktail.setOrder(order);
-            orderCocktail.setCocktail(cocktail);
-            orderCocktail.setDrinks(drinksForThisCocktail);
-            order.getCocktails().add(orderCocktail);
-
-            for (CocktailIngredient ing : cocktail.getIngredients()) {
-
-                Product product = ing.getProduct();
-                productCache.putIfAbsent(product.getId(), product);
-
-                // amount por trago en unidad del producto (ml/gr/unid)
-                BigDecimal perDrinkInProductUnit =
-                        toProductUnit(ing.getAmount(), ing.getUnit(), product.getUnit());
-
-                // total requerido para este cocktail
-                BigDecimal totalRequired =
-                        perDrinkInProductUnit.multiply(BigDecimal.valueOf(drinksForThisCocktail));
-
-                requiredByProductId.merge(product.getId(), totalRequired, BigDecimal::add);
-            }
         }
+// Calcular packs a comprar
+        int packsToBuy = packsToBuy(product, requiredAmountInProductUnit);
+// Crear OrderItem
+        OrderItem orderItem = new OrderItem();
+        orderItem.setOrder(order);
+        orderItem.setProduct(product);
 
-        // ----- Crear OrderItems (packs a comprar) -----
-        for (Map.Entry<Long, BigDecimal> entry : requiredByProductId.entrySet()) {
+        orderItem.setQuantity(packsToBuy);
 
-            Long productId = entry.getKey();
-            BigDecimal requiredAmountInProductUnit = entry.getValue();
 
-            Product product = productCache.get(productId);
-            if (product == null) {
-                product = productRepository.findById(productId)
-                        .orElseThrow(() -> new ResourceNotFoundException(
-                                "Product with id " + productId + " not found"
-                        ));
-            }
+        orderItem.setUnit(product.getUnit());
 
-            int packsToBuy = packsToBuy(product, requiredAmountInProductUnit);
+        order.getOrderItems().add(orderItem);
+    }
+    log.info("Order created with totalDrinks={}, cocktails={}, items={}",
+            order.getTotalDrinks(), order.getCocktails().size(), order.getOrderItems().size());
+    Order savedOrder = orderRepository.save(order);
+    return toResponse(savedOrder);
+    } catch (Exception ex) {
+        log.error("createOrder failed: guest={}, durationHours={}", dto.guests(), dto.durationHours());
+    throw ex;}
 
-            OrderItem orderItem = new OrderItem();
-            orderItem.setOrder(order);
-            orderItem.setProduct(product);
-
-            // GUARDÁS PACKS (no ml/gr/unid)
-            orderItem.setQuantity(packsToBuy);
-
-            // esto NO debería ser "ml/gr", es confuso.
-            // si no querés cambiar entidad todavía, al menos guardá "pack" o "units"
-            orderItem.setUnit(product.getUnit());
-
-            order.getOrderItems().add(orderItem);
-        }
-
-        Order savedOrder = orderRepository.save(order);
-        return toResponse(savedOrder);
     }
 
     @Override
     public OrderResponseDto createOrderByDrinks(OrderByDrinksRequestDto dto) {
-        if (dto.totalDrinks() == null || dto.totalDrinks() <=0 ){
-            throw  new BadRequestException("total drinks must be greater than 0");
+
+        log.info("createOrderByDrinks started: totalDrinks={}, cocktails={}", dto.totalDrinks(), dto.cocktails());
+
+        // ----- Validaciones -----
+
+        if (dto.totalDrinks() == null || dto.totalDrinks() <= 0) {
+            throw new BadRequestException("total drinks must be greater than 0");
         }
 
-        if (dto.cocktails() == null || dto.cocktails().isEmpty()){
-            throw   new BadRequestException("cocktails must be greater than 0");
+        if (dto.cocktails() == null || dto.cocktails().isEmpty()) {
+            throw new BadRequestException("cocktails must be greater than 0");
         }
 
         boolean invalid = dto.cocktails().stream().anyMatch(
-                c -> c.cocktailId()== null || c.quantity() == null || c.quantity() <= 0
+                c -> c.cocktailId() == null || c.quantity() == null || c.quantity() <= 0
         );
 
         if (invalid) {
-            throw   new BadRequestException("cocktails must be greater than 0");
+            throw new BadRequestException("cocktails must be greater than 0");
         }
 
 
@@ -197,80 +224,85 @@ public class OrderServiceImpl implements IOrderService {
         ).sum();
 
         if (sum != dto.totalDrinks()) {
-            throw  new BadRequestException("sum of cocktails quantity must equal total drinks (" + dto.totalDrinks() + ")");
+            throw new BadRequestException("sum of cocktails quantity must equal total drinks (" + dto.totalDrinks() + ")");
         }
 
 
-      //  --- create order ---
-
-    Order order = new Order();
-
-        order.setMode(OrderMode.DRINKS);
-        order.setTotalDrinks(dto.totalDrinks());
-        order.setStatus("Draft");
-        order.setCocktails(new ArrayList<>());
-        order.setOrderItems(new ArrayList<>());
-
-        Map<Long, BigDecimal> requiredByProductId = new HashMap<>();
-        Map<Long, Product> productCache = new HashMap<>();
-
-        for (OrderCocktailQuantityDto cDto : dto.cocktails()) {
-
-            Cocktail cocktail = cocktailRepository.findByWithIngredients(cDto.cocktailId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Cocktail with id "+ cDto.cocktailId() + " not found"));
-
-            int drinkForThisCocktail = cDto.quantity();
+        //  --- create order ---
+        try {
 
 
-            OrderCocktail orderCocktail = new OrderCocktail();
+            Order order = new Order();
 
-            orderCocktail.setOrder(order);
-            orderCocktail.setCocktail(cocktail);
-            orderCocktail.setDrinks(drinkForThisCocktail);
-            order.getCocktails().add(orderCocktail);
+            order.setMode(OrderMode.DRINKS);
+            order.setTotalDrinks(dto.totalDrinks());
+            order.setStatus("Draft");
+            order.setCocktails(new ArrayList<>());
+            order.setOrderItems(new ArrayList<>());
 
-            for (CocktailIngredient ing : cocktail.getIngredients()){
-                Product product = ing.getProduct();
+            Map<Long, BigDecimal> requiredByProductId = new HashMap<>();
+            Map<Long, Product> productCache = new HashMap<>();
 
-                productCache.putIfAbsent(product.getId(), product);
+            for (OrderCocktailQuantityDto cDto : dto.cocktails()) {
 
-                BigDecimal perDrinkInProductUnit = toProductUnit(ing.getAmount(), ing.getUnit(), product.getUnit());
+                Cocktail cocktail = cocktailRepository.findByWithIngredients(cDto.cocktailId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Cocktail with id " + cDto.cocktailId() + " not found"));
 
-                BigDecimal totalRequired = perDrinkInProductUnit.multiply(BigDecimal.valueOf(drinkForThisCocktail));
+                int drinkForThisCocktail = cDto.quantity();
 
-                requiredByProductId.merge(product.getId(), totalRequired, BigDecimal::add);
-            }
-        }
 
-        // order items
+                OrderCocktail orderCocktail = new OrderCocktail();
 
-        for (Map.Entry<Long, BigDecimal> entry : requiredByProductId.entrySet()) {
+                orderCocktail.setOrder(order);
+                orderCocktail.setCocktail(cocktail);
+                orderCocktail.setDrinks(drinkForThisCocktail);
+                order.getCocktails().add(orderCocktail);
 
-            Long productId = entry.getKey();
-            BigDecimal requiredAmountInProductUnit = entry.getValue();
+                for (CocktailIngredient ing : cocktail.getIngredients()) {
+                    Product product = ing.getProduct();
 
-            Product product = productCache.get(productId);
-            if (product == null) {
-                product = productRepository.findById(productId)
-                        .orElseThrow(() -> new ResourceNotFoundException("Product with id "+ productId + " not found"));
+                    productCache.putIfAbsent(product.getId(), product);
+
+                    BigDecimal perDrinkInProductUnit = toProductUnit(ing.getAmount(), ing.getUnit(), product.getUnit());
+
+                    BigDecimal totalRequired = perDrinkInProductUnit.multiply(BigDecimal.valueOf(drinkForThisCocktail));
+
+                    requiredByProductId.merge(product.getId(), totalRequired, BigDecimal::add);
+                }
             }
 
-            int packsToBuy = packsToBuy(product, requiredAmountInProductUnit);
+            // order items
 
-            OrderItem orderItem = new OrderItem();
-            orderItem.setOrder(order);
-            orderItem.setProduct(product);
-            orderItem.setQuantity(packsToBuy);
-            orderItem.setUnit(product.getUnit());
-            order.getOrderItems().add(orderItem);
+            for (Map.Entry<Long, BigDecimal> entry : requiredByProductId.entrySet()) {
 
+                Long productId = entry.getKey();
+                BigDecimal requiredAmountInProductUnit = entry.getValue();
+
+                Product product = productCache.get(productId);
+                if (product == null) {
+                    product = productRepository.findById(productId)
+                            .orElseThrow(() -> new ResourceNotFoundException("Product with id " + productId + " not found"));
+                }
+
+                int packsToBuy = packsToBuy(product, requiredAmountInProductUnit);
+
+                OrderItem orderItem = new OrderItem();
+                orderItem.setOrder(order);
+                orderItem.setProduct(product);
+                orderItem.setQuantity(packsToBuy);
+                orderItem.setUnit(product.getUnit());
+                order.getOrderItems().add(orderItem);
+
+            }
+        log.info("Order created by drinks with totalDrinks={}, cocktails={}, items={}",
+                order.getTotalDrinks(), order.getCocktails().size(), order.getOrderItems() != null ? order.getOrderItems().size() : 0);            Order savedOrder = orderRepository.save(order);
+
+            return toResponse(savedOrder);
+        } catch (Exception ex) {
+            log.error("createOrderByDrinks failed: totalDrinks={}", dto.totalDrinks());
+            throw ex;
         }
-
-        Order savedOrder = orderRepository.save(order);
-
-        return  toResponse(savedOrder);
     }
-
 
     private Map<Long, Integer> distributeByWeights(int totalDrinks, Map<Long, Integer> weightsById) {
 
