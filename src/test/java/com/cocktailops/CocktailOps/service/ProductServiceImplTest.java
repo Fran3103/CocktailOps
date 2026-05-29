@@ -4,6 +4,7 @@ import com.cocktailops.CocktailOps.dto.productDto.ProductRequestDto;
 import com.cocktailops.CocktailOps.dto.productDto.ProductResponseDto;
 import com.cocktailops.CocktailOps.entitie.Category;
 import com.cocktailops.CocktailOps.entitie.Product;
+import com.cocktailops.CocktailOps.exception.ResourceNotFoundException;
 import com.cocktailops.CocktailOps.repository.IProductRepository;
 import com.cocktailops.CocktailOps.service.impl.ProductServiceImpl;
 import org.junit.jupiter.api.Test;
@@ -83,4 +84,28 @@ public class ProductServiceImplTest {
         verifyNoMoreInteractions(productRepository);
         verifyNoInteractions(categoryService);
     }
+
+    @Test
+    void findById_whenProductDoesNotExist_thenThrowResourceNotFoundException() {
+        // Arrange
+        Long productId = 14L;
+        when(productRepository.findById(productId)).thenReturn(Optional.empty());
+
+       // Act
+
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> {
+            productServiceImpl.findById(productId);
+        });
+
+        //Assert
+
+        assertEquals("Product not found with id: " + productId, exception.getMessage());
+
+
+        //verify
+        verify(productRepository).findById(productId);
+        verifyNoMoreInteractions(productRepository);
+        verifyNoInteractions(categoryService);
+    }
+
 }
