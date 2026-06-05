@@ -5,6 +5,7 @@ import com.cocktailops.CocktailOps.dto.productDto.ProductResponseDto;
 import com.cocktailops.CocktailOps.entitie.Category;
 import com.cocktailops.CocktailOps.entitie.Product;
 import com.cocktailops.CocktailOps.exception.ResourceNotFoundException;
+import com.cocktailops.CocktailOps.repository.ICategoryRepository;
 import com.cocktailops.CocktailOps.repository.IProductRepository;
 import com.cocktailops.CocktailOps.service.impl.ProductServiceImpl;
 import org.junit.jupiter.api.Test;
@@ -26,7 +27,7 @@ public class ProductServiceImplTest {
     private IProductRepository productRepository;
 
     @Mock
-    private ICategoryService categoryService;
+    private ICategoryRepository categoryRepository;
 
     @InjectMocks
     private ProductServiceImpl productServiceImpl;
@@ -82,7 +83,6 @@ public class ProductServiceImplTest {
 
         verify(productRepository).findById(productId);
         verifyNoMoreInteractions(productRepository);
-        verifyNoInteractions(categoryService);
     }
 
     @Test
@@ -105,7 +105,118 @@ public class ProductServiceImplTest {
         //verify
         verify(productRepository).findById(productId);
         verifyNoMoreInteractions(productRepository);
-        verifyNoInteractions(categoryService);
     }
 
+    @Test
+    void create_whenRequestIsValid_savesAndReturnsProductDto() {
+        Category category = new Category();
+        category.setId(10L);
+        category.setName("Alcohol");
+
+
+
+        Product product = new Product();
+
+
+        product.setId(1L);
+        product.setName("Vodka");
+        product.setUnit("ml");
+        product.setImageAlt("Vodka Sernova");
+        product.setImageUrl("https://res.cloudinary.com/dzj8q4q");
+        product.setActive(true);
+        product.setUnitSize(new BigDecimal("750"));
+        product.setCategory(category);
+
+        ProductRequestDto requestDto = new ProductRequestDto(
+                1L,
+                "Vodka",
+                10L,
+                "ml",
+                new BigDecimal("750"),
+                true,
+                "https://res.cloudinary.com/dzj8q4q",
+                "Vodka Sernova"
+        );
+
+        when(productRepository.existsByName("Vodka")).thenReturn(false);
+        when(categoryRepository.findById(10L)).thenReturn(Optional.of(category));
+        when(productRepository.save(any(Product.class))).thenReturn(product);
+
+
+        ProductResponseDto result = productServiceImpl.create(requestDto);
+
+
+        assertNotNull(result);
+        assertEquals(1L,result.productId());
+        assertEquals("Vodka", result.name());
+        assertEquals("ml", result.unit());
+        assertEquals("Vodka Sernova", result.imageAlt());
+        assertTrue(result.active());
+        assertEquals(new BigDecimal("750"), result.unitSize());
+        assertEquals(10L, result.category());
+
+
+        verify(productRepository).existsByName("Vodka");
+        verify(categoryRepository).findById(10L);
+        verify(productRepository).save(any(Product.class));
+        verifyNoMoreInteractions(productRepository, categoryRepository);
+
+
+    }
+
+
+    @Test
+    void create_whenProductNameAlreadyExists_thenThrowResourceNotFoundException() {
+        ProductRequestDto requestDto = new ProductRequestDto(
+                1L,
+                "Vodka",
+                10L,
+                "ml",
+                new BigDecimal("750"),
+                true,
+                "https://res.cloudinary.com/dzj8q4q",
+                "Vodka Sernova"
+        );
+
+        when(productRepository.existsByName("Vodka")).thenReturn(true);
+
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> {
+            productServiceImpl.create(requestDto);
+        });
+
+        assertEquals("Product with name Vodka already exists", exception.getMessage());
+
+        verify(productRepository).existsByName("Vodka");
+        verifyNoMoreInteractions(productRepository);
+        verifyNoInteractions(categoryRepository);
+    }
+
+
+    @Test
+    void create_whenCategoryDoesNotExist_thenThrowResourceNotFoundException() {
+        ProductRequestDto requestDto = new ProductRequestDto(
+                1L,
+                "Vodka",
+                10L,
+                "ml",
+                new BigDecimal("750"),
+                true,
+                "https://res.cloudinary.com/dzj8q4q",
+                "Vodka Sernova"
+        );
+
+        when(productRepository.existsByName("Vodka")).thenReturn(false);
+        when(categoryRepository.findById(10L)).thenReturn(Optional.empty());
+
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> {
+            productServiceImpl.create(requestDto);
+        });
+
+        assertEquals("Category with id 10 not found", exception.getMessage());
+
+        verify(productRepository).existsByName("Vodka");
+        verify(categoryRepository).findById(10L);
+        verifyNoMoreInteractions(productRepository, categoryRepository);
+        verify(productRepository, never()).save(any(Product.class));
+    }
 }
