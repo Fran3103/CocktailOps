@@ -15,6 +15,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -348,6 +351,184 @@ public class ProductServiceImplTest {
         assertEquals("Product not found with id: " + productId, exception.getMessage());
 
         verify(productRepository).findById(productId);
+        verifyNoMoreInteractions(productRepository);
+        verifyNoInteractions(categoryRepository);
+    }
+
+
+    @Test
+    void delete_whenProductExists_deletesProduct() {
+        Long productId = 1L;
+
+        Product product = new Product();
+        product.setId(productId);
+
+        when(productRepository.findById(productId)).thenReturn(Optional.of(product));
+
+        productServiceImpl.delete(productId);
+
+        verify(productRepository).findById(productId);
+        verify(productRepository).delete(product);
+        verifyNoMoreInteractions(productRepository);
+        verifyNoInteractions(categoryRepository);
+    }
+
+    @Test
+    void delete_whenProductDoesNotExist_throwsResourceNotFoundException() {
+        Long productId = 1L;
+
+        when(productRepository.findById(productId)).thenReturn(Optional.empty());
+
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> productServiceImpl.delete(productId)
+        );
+
+        assertEquals("Product not found with id: " + productId, exception.getMessage());
+
+
+        verify(productRepository).findById(productId);
+        verify(productRepository, never()).delete(any(Product.class));
+        verifyNoMoreInteractions(productRepository);
+        verifyNoInteractions(categoryRepository);
+    }
+
+
+    @Test
+    void findAll_whenProductExists_returnsResponseProductsDtoList() {
+
+        Category category = new Category();
+        category.setId(10L);
+        category.setName("Alcohol");
+
+
+        Long productId = 1L;
+        Product product = new Product();
+        product.setId(productId);
+        product.setName("Vodka");
+        product.setCategory(category);
+
+        Long  productId2 = 2L;
+        Product product2 = new Product();
+        product2.setId(productId2);
+        product2.setName("Ron");
+        product2.setCategory(category);
+
+        Long  productId3 = 3L;
+        Product product3 = new Product();
+        product3.setId(productId3);
+        product3.setName("Whisky");
+        product3.setCategory(category);
+
+
+        List<Product> products = new ArrayList<>();
+
+        products.add(product);
+        products.add(product2);
+        products.add(product3);
+
+
+        when(productRepository.findAll()).thenReturn(products);
+
+        List<ProductResponseDto> result = productServiceImpl.findAll();
+
+
+        assertNotNull(result);
+        assertEquals(3, result.size());
+
+        assertEquals(1L, result.get(0).productId());
+        assertEquals("Vodka", result.get(0).name());
+        assertEquals(10L, result.get(0).category());
+
+        assertEquals(2L, result.get(1).productId());
+        assertEquals("Ron", result.get(1).name());
+        assertEquals(10L, result.get(1).category());
+
+        assertEquals(3L, result.get(2).productId());
+        assertEquals("Whisky", result.get(2).name());
+        assertEquals(10L, result.get(2).category());
+
+
+
+        verify(productRepository).findAll();
+        verifyNoMoreInteractions(productRepository);
+        verifyNoInteractions(categoryRepository);
+
+
+
+
+    }
+
+    @Test
+    void findAll_whenProductsDoesNotExist_ReturnsEmptyList() {
+
+        when(productRepository.findAll()).thenReturn(Collections.emptyList());
+
+        List<ProductResponseDto> result = productServiceImpl.findAll();
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+
+        verify(productRepository).findAll();
+        verifyNoMoreInteractions(productRepository);
+        verifyNoInteractions(categoryRepository);
+
+
+    }
+
+
+    @Test
+    void findByName_whenProductExists_returnsResponseProductDto() {
+
+        String name = "Vodka";
+
+        ProductResponseDto productResponseDto  = new ProductResponseDto(
+                1L,
+                "Vodka",
+                10L,
+                "ml",
+                "hola",
+                "Vodka Sernova",
+                true,
+                new BigDecimal("750")
+        );
+
+
+        when(productRepository.findByName(name)).thenReturn(productResponseDto);
+
+
+        ProductResponseDto result = productServiceImpl.findByName(name);
+
+        assertNotNull(result);
+        assertEquals(1L, result.productId());
+        assertEquals("Vodka", result.name());
+        assertEquals(10L, result.category());
+        assertEquals("ml", result.unit());
+        assertEquals("hola", result.imageUrl());
+        assertEquals("Vodka Sernova", result.imageAlt());
+        assertTrue(result.active());
+        assertEquals(new BigDecimal("750"), result.unitSize());
+
+
+        verify(productRepository).findByName(name);
+        verifyNoMoreInteractions(productRepository);
+        verifyNoInteractions(categoryRepository);
+
+    }
+
+
+    @Test
+    void findByName_whenProductDoesNotExist_throwsResourceNotFoundException() {
+        String name = "Vodka";
+        when(productRepository.findByName(name)).thenReturn(null);
+
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> {
+            productServiceImpl.findByName(name);
+        });
+
+        assertEquals("Product with name " + name + " not found", exception.getMessage());
+
+        verify(productRepository).findByName(name);
         verifyNoMoreInteractions(productRepository);
         verifyNoInteractions(categoryRepository);
     }

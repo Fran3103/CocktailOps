@@ -47,7 +47,7 @@ public class ProductServiceImpl implements IProductService {
     public ProductResponseDto findByName(String name) {
         ProductResponseDto product = productRepository.findByName(name);
         if (product == null) {
-            throw new ResourceNotFoundException("Shop with name " + name + " not found");
+            throw new ResourceNotFoundException("Product with name " + name + " not found");
         }
 
         return product;
