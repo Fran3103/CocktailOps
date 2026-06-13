@@ -532,4 +532,124 @@ public class ProductServiceImplTest {
         verifyNoMoreInteractions(productRepository);
         verifyNoInteractions(categoryRepository);
     }
+
+    @Test
+    void findByCategoryName_whenProductExists_returnsProductResponseDto() {
+
+        String categoryName1 = "alcohol";
+
+        Category alcohol = new Category();
+        alcohol.setId(10L);
+        alcohol.setName("Alcohol");
+
+        Category sinAlcohol = new Category();
+        sinAlcohol.setId(20L);
+        sinAlcohol.setName("Sin Alcohol");
+        Product product = new Product();
+
+        product.setCategory(new Category());
+        product.setCategory(alcohol);
+        product.setId(1L);
+        product.setName("Vodka");
+        product.setUnit("ml");
+        product.setImageAlt("Vodka Sernova");
+        product.setImageUrl("https://res.cloudinary.com/dzj8q4qeu/image/upload/v1700000000/products/vodka_sernova.png");
+        product.setActive(true);
+        product.setUnitSize(new BigDecimal(750));
+
+
+        Product product2 = new Product();
+
+        product2.setCategory(new Category());
+        product2.setCategory(sinAlcohol);
+        product2.setId(2L);
+        product2.setName("jugo");
+        product2.setUnit("ml");
+        product2.setImageAlt("Jugo de Naranja");
+        product2.setImageUrl("https://res.cloudinary.com/dzj8q4qeu/image/upload/v1700000000/products/jugo_naranja.png");
+        product2.setActive(true);
+        product2.setUnitSize(new BigDecimal(250));
+
+
+        List<Product> productList = List.of(product, product2);
+
+
+
+
+        when(productRepository.findAll()).thenReturn(productList);
+
+        List<ProductResponseDto> result = productServiceImpl.findByCategoryName(categoryName1);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+
+        assertEquals(1L, result.get(0).productId());
+        assertEquals("Vodka", result.get(0).name());
+        assertEquals(10L, result.get(0).category());
+        assertEquals("ml", result.get(0).unit());
+        assertEquals("Vodka Sernova", result.get(0).imageAlt());
+        assertTrue(result.get(0).active());
+        assertEquals(new BigDecimal("750"), result.get(0).unitSize());
+
+        verify(productRepository).findAll();
+        verifyNoMoreInteractions(productRepository);
+        verifyNoInteractions(categoryRepository);
+
+
+
+
+
+
+    }
+
+
+    @Test
+    void findByCategoryName_whenCategoryDoesNotExist_returnsEmptyList() {
+
+        String categoryName = "alcohol";
+
+        Category alcohol = new Category();
+        alcohol.setId(1L);
+        alcohol.setName("Sin Alcohol");
+
+        Product product = new Product();
+        product.setCategory(alcohol);
+        product.setId(1L);
+        product.setName("Vodka");
+        product.setUnit("ml");
+        product.setImageAlt("Vodka Sernova");
+        product.setActive(true);
+        product.setUnitSize(new BigDecimal("750"));
+
+        List<Product> productList = List.of(product);
+
+        when(productRepository.findAll()).thenReturn(productList);
+
+        List<ProductResponseDto> result = productServiceImpl.findByCategoryName(categoryName);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+
+        verify(productRepository).findAll();
+        verifyNoMoreInteractions(productRepository);
+        verifyNoInteractions(categoryRepository);
+
+    }
+
+    @Test
+    void findByCategoryName_whenNoProductsExist_returnsEmptyList() {
+
+        String categoryName = "alcohol";
+
+        when(productRepository.findAll()).thenReturn(Collections.emptyList());
+
+        List<ProductResponseDto> result = productServiceImpl.findByCategoryName(categoryName);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+
+        verify(productRepository).findAll();
+        verifyNoMoreInteractions(productRepository);
+        verifyNoInteractions(categoryRepository);
+    }
 }
