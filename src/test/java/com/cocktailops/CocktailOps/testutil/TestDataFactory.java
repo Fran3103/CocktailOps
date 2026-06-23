@@ -1,5 +1,7 @@
 package com.cocktailops.CocktailOps.testutil;
 
+import com.cocktailops.CocktailOps.dto.orderDto.OrderCocktailsWeightDto;
+import com.cocktailops.CocktailOps.dto.orderDto.OrderRequestDto;
 import com.cocktailops.CocktailOps.entitie.*;
 
 import java.math.BigDecimal;
@@ -159,5 +161,38 @@ public final class TestDataFactory {
         order.getOrderItems().add(orderItem);
 
         return order;
+    }
+
+    public static OrderCocktailsWeightDto createOrderCocktailsWeightDto(
+            Long cocktailId,
+            Integer weight
+    ) {
+        return new OrderCocktailsWeightDto(cocktailId, weight);
+    }
+
+    public static List<OrderCocktailsWeightDto> createValidOrderCocktailsWeightList() {
+        return List.of(
+                createOrderCocktailsWeightDto(1L, 1)
+        );
+    }
+
+    public static OrderRequestDto createOrderRequestDto(
+            Integer guests,
+            Integer durationHours,
+            List<OrderCocktailsWeightDto> cocktails
+    ) {
+        return new OrderRequestDto(
+                guests,
+                durationHours,
+                cocktails
+        );
+    }
+
+    public static OrderRequestDto createValidOrderRequestDto() {
+        return createOrderRequestDto(
+                50,
+                4,
+                createValidOrderCocktailsWeightList()
+        );
     }
 }

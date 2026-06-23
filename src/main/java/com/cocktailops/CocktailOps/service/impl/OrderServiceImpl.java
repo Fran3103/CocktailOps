@@ -70,7 +70,8 @@ public class OrderServiceImpl implements IOrderService {
     @Transactional
     public OrderResponseDto createOrder(OrderRequestDto dto) {
 
-        log.info("createOrder started: guests={}, durationHours={}, cocktails={}, ", dto.guests(), dto.durationHours(), dto.cocktails().size());
+        int cocktailsCount = dto.cocktails() != null ? dto.cocktails().size() : 0 ;
+        log.info("createOrder started: guests={}, durationHours={}, cocktails={}, ", dto.guests(), dto.durationHours(), cocktailsCount);
         // ----- Validaciones -----
         if (dto.guests() == null || dto.guests() <= 0) {
             throw new BadRequestException("Guests must be greater than 0");

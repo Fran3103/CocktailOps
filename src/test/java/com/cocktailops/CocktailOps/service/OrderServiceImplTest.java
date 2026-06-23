@@ -1,15 +1,19 @@
 package com.cocktailops.CocktailOps.service;
 
 
+import com.cocktailops.CocktailOps.dto.orderDto.OrderCocktailsWeightDto;
+import com.cocktailops.CocktailOps.dto.orderDto.OrderRequestDto;
 import com.cocktailops.CocktailOps.dto.orderDto.OrderResponseDto;
 import com.cocktailops.CocktailOps.entitie.Order;
 import com.cocktailops.CocktailOps.entitie.OrderMode;
+import com.cocktailops.CocktailOps.exception.BadRequestException;
 import com.cocktailops.CocktailOps.exception.ResourceNotFoundException;
 import com.cocktailops.CocktailOps.repository.ICocktailRepository;
 import com.cocktailops.CocktailOps.repository.IOrderRepository;
 import com.cocktailops.CocktailOps.repository.IProductRepository;
 import com.cocktailops.CocktailOps.service.impl.OrderServiceImpl;
 import com.fasterxml.jackson.databind.introspect.TypeResolutionContext;
+import org.hamcrest.text.IsEmptyString;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -144,7 +148,7 @@ public class OrderServiceImplTest {
     }
 
     @Test
-    void  getAllOrdes_whenOrdersNotExist_returnListEmpty(){
+    void  getAllOrdes_whenOrdersDoNotExist_returnsEmptyList(){
 
         when(orderRepository.findAll()).thenReturn(Collections.emptyList());
 
@@ -160,6 +164,143 @@ public class OrderServiceImplTest {
 
     }
 
+    @Test
+    void createOrder_whenGuestsIsNull_throwsBadRequestException(){
+
+        List<OrderCocktailsWeightDto> listWeightDto = createValidOrderCocktailsWeightList();
+
+        OrderRequestDto dto = createOrderRequestDto(null, 5 ,listWeightDto);
+
+        BadRequestException exception = assertThrows(BadRequestException.class, () ->{
+            orderServiceImpl.createOrder(dto);
+        });
+
+        assertEquals("Guests must be greater than 0", exception.getMessage() );
+
+        verifyNoInteractions(orderRepository);
+        verifyNoInteractions(productRepository);
+        verifyNoInteractions(cocktailRepository);
+    }
+
+
+    @Test
+    void createOrder_whenGuestsIsZero_throwsBadRequestException(){
+
+        List<OrderCocktailsWeightDto> listWeightDto = createValidOrderCocktailsWeightList();
+
+        OrderRequestDto order = createOrderRequestDto(0, 5 ,listWeightDto);
+
+        BadRequestException exception = assertThrows(BadRequestException.class, () ->{
+            orderServiceImpl.createOrder(order);
+        });
+
+        assertEquals("Guests must be greater than 0", exception.getMessage() );
+
+        verifyNoInteractions(orderRepository);
+        verifyNoInteractions(productRepository);
+        verifyNoInteractions(cocktailRepository);
+    }
+
+
+
+    @Test
+    void createOrder_whenDurationHoursIsZero_throwsBadRequestException(){
+
+        List<OrderCocktailsWeightDto> listWeightDto = createValidOrderCocktailsWeightList();
+
+        OrderRequestDto dto = createOrderRequestDto(15, 0 ,listWeightDto);
+
+        BadRequestException exception = assertThrows(BadRequestException.class, () ->{
+            orderServiceImpl.createOrder(dto);
+        });
+
+        assertEquals("Duration hours must be greater than 0", exception.getMessage() );
+
+        verifyNoInteractions(orderRepository);
+        verifyNoInteractions(productRepository);
+        verifyNoInteractions(cocktailRepository);
+    }
+
+
+
+
+    @Test
+    void createOrder_whenDurationHoursIsNull_throwsBadRequestException(){
+
+        List<OrderCocktailsWeightDto> listWeightDto = createValidOrderCocktailsWeightList();
+
+        OrderRequestDto order = createOrderRequestDto(50, null ,listWeightDto);
+
+        BadRequestException exception = assertThrows(BadRequestException.class, () ->{
+            orderServiceImpl.createOrder(order);
+        });
+
+        assertEquals("Duration hours must be greater than 0", exception.getMessage() );
+
+        verifyNoInteractions(orderRepository);
+        verifyNoInteractions(productRepository);
+        verifyNoInteractions(cocktailRepository);
+    }
+
+
+    @Test
+    void createOrder_whenListCocktailsIsNull_throwsBadRequestException(){
+
+        OrderRequestDto order = createOrderRequestDto(50, 5 ,null);
+
+        BadRequestException exception = assertThrows(BadRequestException.class, () ->{
+            orderServiceImpl.createOrder(order);
+        });
+
+        assertEquals("At least one cocktail must be included in the order", exception.getMessage() );
+
+        verifyNoInteractions(orderRepository);
+        verifyNoInteractions(productRepository);
+        verifyNoInteractions(cocktailRepository);
+    }
+
+
+    @Test
+    void createOrder_whenListCocktailsIsEmpty_throwsBadRequestException(){
+
+        List<OrderCocktailsWeightDto> listWeightDto = Collections.emptyList();
+
+        OrderRequestDto dto = createOrderRequestDto(50, 5 ,listWeightDto);
+
+        BadRequestException exception = assertThrows(BadRequestException.class, () ->{
+            orderServiceImpl.createOrder(dto);
+        });
+
+        assertEquals("At least one cocktail must be included in the order", exception.getMessage() );
+
+        verifyNoInteractions(orderRepository);
+        verifyNoInteractions(productRepository);
+        verifyNoInteractions(cocktailRepository);
+    }
+//    boolean invalidWeight = dto.cocktails().stream()
+//            .anyMatch(c -> c.cocktailId() == null || (c.weight() != null && c.weight() <= 0));
+//
+//        if (invalidWeight) {
+//        throw new BadRequestException("cocktailId is required and weight must be > 0");
+//    }
+
+    @Test
+    void createOrder_whenCocktailIdIsNull_throwsBadRequestException(){
+
+        OrderCocktailsWeightDto weightDto = createOrderCocktailsWeightDto(null, 2);
+
+        OrderRequestDto dto = createOrderRequestDto(50, 5 ,List.of(weightDto));
+
+        BadRequestException exception = assertThrows(BadRequestException.class, () ->{
+            orderServiceImpl.createOrder(dto);
+        });
+
+        assertEquals("cocktailId is required and weight must be > 0", exception.getMessage() );
+
+        verifyNoInteractions(orderRepository);
+        verifyNoInteractions(productRepository);
+        verifyNoInteractions(cocktailRepository);
+    }
 
 
 }
