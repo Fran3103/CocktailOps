@@ -302,5 +302,21 @@ public class OrderServiceImplTest {
         verifyNoInteractions(cocktailRepository);
     }
 
+    @Test
+    void createOrder_whenCocktailIdIsZero_throwsBadRequestException(){
 
+        OrderCocktailsWeightDto weightDto = createOrderCocktailsWeightDto(1L, 0);
+
+        OrderRequestDto dto = createOrderRequestDto(50, 5 ,List.of(weightDto));
+
+        BadRequestException exception = assertThrows(BadRequestException.class, () ->{
+            orderServiceImpl.createOrder(dto);
+        });
+
+        assertEquals("cocktailId is required and weight must be > 0", exception.getMessage() );
+
+        verifyNoInteractions(orderRepository);
+        verifyNoInteractions(productRepository);
+        verifyNoInteractions(cocktailRepository);
+    }
 }
