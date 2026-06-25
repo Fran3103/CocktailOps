@@ -2,8 +2,8 @@
 CocktailOps es una aplicación diseñada para facilitar la planificación y gestión de pedidos de cócteles para eventos. Permite a los usuarios seleccionar cócteles, calcular las cantidades necesarias de ingredientes y generar listas de compras detalladas y PDFs listos para imprimir.
 
 ## Índice
-- [Decisiones Técnicas](#decisiones-técnicas)
-- [Tiempos y Alcance](#tiempos-y-alcance)
+- [Decisiones Técnicas](#-decisiones-técnicas)
+- [Tiempos y Alcance](#-tiempos-y-alcance-)
 - [Características Principales](#características-principales)
 - [Tecnologías Utilizadas](#tecnologías-utilizadas)
 - [Diagramas](#diagramas)
@@ -17,7 +17,9 @@ CocktailOps es una aplicación diseñada para facilitar la planificación y gest
   - [Configuración de la Aplicación](#configuración-de-la-aplicación)
   - [Ejecutar la Aplicación](#ejecutar-la-aplicación)
 - [API - Ejemplos y Postman](#api---ejemplos-y-postman)
-- [Qué haría distinto / Próximos pasos](#qué-haría-distinto--próximos-pasos)
+- [Testing Unitarios](#testing-unitarios)
+- [Estado actual del proyecto](#estado-actual-del-proyecto)
+- [Qué haría distinto / Próximos pasos](#-qué-haría-distinto--próximos-pasos)
 
 ## 🧠 Decisiones técnicas
 
@@ -64,16 +66,18 @@ Agregué **logs estructurados** en la capa service para:
 
 
 ## ⏱ Tiempos y alcance 
-Este proyecto se desarrolló por iteraciones. Algunas tareas se encuentran **en desarrollo** (ej: JWT / Frontend / Tests completos).
+Este proyecto se desarrolla por iteraciones, priorizando primero un backend funcional, mantenible y fácil de evaluar técnicamente.
 
-- **Base API + modelo + migraciones (Flyway)**: listo
-- **Cálculo de pedidos (TIME / DRINKS) + generación PDF**: listo
-- **Documentación (Swagger + README + Mermaid)**: en mejora continua
-- **Testing + CI**: pendiente / en desarrollo
-- **JWT + Frontend**: planificado / en desarrollo
+Base API + modelo + migraciones con Flyway: listo
+Cálculo de pedidos TIME / DRINKS + generación de PDF: listo
+Documentación Swagger + README + diagramas Mermaid: en mejora continua
+Testing unitario de servicios: en progreso
+ProductServiceImpl: cobertura básica completada
+OrderServiceImpl: cobertura parcial en progreso
+Docker + CI: próximo paso
+JWT + Frontend: planificado
 
-> Objetivo: priorizar un backend sólido, mantenible y fácil de evaluar en entrevista.
-
+Objetivo: construir un backend sólido para portfolio, aplicando buenas prácticas de arquitectura, testing, documentación y mejora incremental.
 
 ## Características Principales
 - **Gestión de Productos**: Almacena información sobre productos, incluyendo nombre, categoría y unidades.
@@ -82,15 +86,20 @@ Este proyecto se desarrolló por iteraciones. Algunas tareas se encuentran **en 
 - **Generación de Listas de Compras**: Calcula automáticamente las cantidades necesarias de cada ingrediente, sugiere packs a comprar y genera PDFs con la lista de compra.
 
 ## Tecnologías Utilizadas
-- Backend: Java 17+ con Spring Boot
-- Base de Datos: PostgreSQL
-- ORM: Hibernate / JPA
-- Build: Maven
-- Documentación: Markdown
-- Diagramas: Mermaid
-- Frontend: React (en desarrollo)
-- Autenticación: JWT (en desarrollo)
-- Pruebas: JUnit y Mockito (en desarrollo)
+
+* **Backend**: Java 17, Spring Boot
+* **Base de Datos**: PostgreSQL
+* **Persistencia**: Spring Data JPA / Hibernate
+* **Migraciones**: Flyway
+* **Build Tool**: Maven
+* **Documentación API**: Swagger / OpenAPI
+* **Generación PDF**: Thymeleaf + OpenHTMLToPDF
+* **Testing**: JUnit 5, Mockito
+* **Documentación técnica**: Markdown, Mermaid
+* **Frontend**: React (planificado)
+* **Autenticación**: Spring Security + JWT (planificado)
+* **DevOps**: Docker / GitHub Actions (próximo paso)
+
 
 
 ## Diagramas
@@ -415,11 +424,53 @@ El servicio puede generar un PDF con la lista de compra y el detalle del pedido.
 
 ![PDF Renderizado](docs/postman/pdf-render.png)
 
+## Testing unitario
+
+El proyecto incorpora tests unitarios en la capa service usando JUnit 5 y Mockito.
+
+Estado actual:
+
+* **ProductServiceImpl**: cobertura básica completada
+
+  * búsqueda por ID
+  * creación
+  * actualización
+  * eliminación
+  * búsqueda por nombre
+  * búsqueda por categoría
+  * listado general
+  * validaciones y excepciones principales
+
+* **OrderServiceImpl**: cobertura parcial en progreso
+
+  * búsqueda por ID
+  * listado general
+  * validaciones iniciales de creación de órdenes
+
+Objetivo de testing:
+
+* Validar caminos felices y caminos alternativos
+* Asegurar reglas de negocio principales
+* Probar excepciones controladas
+* Evitar dependencia de base de datos real en tests unitarios
+
+## Estado actual del proyecto
+
+* **Backend API**: listo
+* **Cálculo de órdenes TIME / DRINKS**: listo
+* **Generación de PDF**: listo
+* **Swagger / documentación API**: listo, en mejora continua
+* **Tests unitarios**: en progreso
+* **Docker / CI**: próximo paso
+* **Spring Security + JWT**: planificado
+* **Frontend**: planificado
 
 ## 🔄 Qué haría distinto / Próximos pasos
-- Agregar **Docker + docker-compose** (app + PostgreSQL) para levantar todo con 1 comando
-- Agregar **GitHub Actions CI** para correr `mvn test` en cada push
-- Aumentar **cobertura de tests** (Service + Controller + integración con Testcontainers)
-- Agregar **Spring Boot Actuator** para health checks y métricas básicas
-- Optimizar consultas y rendimiento (índices, queries específicas si aplica)
-- Evaluar ejecución asíncrona para procesos pesados (ej: generación de PDFs) si escala
+
+* Agregar **Docker + docker-compose** para levantar aplicación + PostgreSQL con un solo comando
+* Agregar **GitHub Actions CI** para correr tests automáticamente en cada push
+* Crear un perfil específico de testing para no depender de PostgreSQL local
+* Aumentar cobertura de tests en services y controllers
+* Agregar autenticación con **Spring Security + JWT**
+* Preparar una demo visual o frontend mínimo para mostrar el flujo principal
+* Agregar documentación QA cuando avance el curso de QA Manual
