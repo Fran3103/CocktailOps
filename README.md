@@ -15,6 +15,7 @@ CocktailOps es una aplicación diseñada para facilitar la planificación y gest
   - [Pasos para Ejecutar la Aplicación](#pasos-para-ejecutar-la-aplicación)
   - [Creación de la Base de Datos](#creación-de-la-base-de-datos)
   - [Configuración de la Aplicación](#configuración-de-la-aplicación)
+  - [Ejecucion de Docker Compose](#Ejecución-con-Docker-Compose)
   - [Ejecutar la Aplicación](#ejecutar-la-aplicación)
 - [API - Ejemplos y Postman](#api---ejemplos-y-postman)
 - [Testing Unitarios](#testing-unitarios)
@@ -323,7 +324,8 @@ classDef entity fill:#000000,stroke:#1f7a3a,stroke-width:1px;
 - Java 17 o superior
 - Maven 3.6.3 o superior
 - PostgreSQL 13 o superior
-- (Opcional) Docker y Docker Compose
+- Docker Desktop y Docker Compose para levantar PostgreSQL localmente
+
 
 ### Pasos para Ejecutar la Aplicación
 1. Clona el repositorio:
@@ -343,30 +345,89 @@ CREATE DATABASE cocktailops;
 ```
 
 ### Configuración de la Aplicación
-Edita `src/main/resources/application-local.properties` (o usa variables de entorno). Ejemplo mínimo:
+
+Para ejecutar la aplicación en entorno local, crear el archivo:
+
+```txt
+src/main/resources/application-local.properties
+```
+
+Puede tomarse como base el archivo:
+
+```txt
+src/main/resources/application-local.example.properties
+```
+
+Ejemplo de configuración local usando PostgreSQL levantado con Docker Compose:
 
 ```properties
-spring.profiles.active=local
 server.port=8081
 
-spring.datasource.url=jdbc:postgresql://localhost:5432/cocktailops
+spring.datasource.url=jdbc:postgresql://localhost:5433/cocktailOps_db?sslmode=disable
 spring.datasource.username=postgres
-spring.datasource.password=postgres
+spring.datasource.password=admin
 spring.datasource.driver-class-name=org.postgresql.Driver
 
 spring.flyway.enabled=true
 spring.flyway.locations=classpath:db/migration
 
 spring.jpa.hibernate.ddl-auto=validate
+
+order.drinksPerPersonPerHour=2
 ```
 
-Recomendación: no versionar credenciales; usar un archivo `application-local.properties` en `.gitignore` o variables de entorno.
+> El archivo `application-local.properties` no debe versionarse porque puede contener credenciales locales. Para compartir configuración de ejemplo, usar `application-local.example.properties`.
+
+### Ejecución con Docker Compose
+
+El proyecto incluye un archivo `docker-compose.yml` para levantar una base de datos PostgreSQL local sin instalar ni configurar PostgreSQL manualmente.
+
+> En Windows, asegurarse de tener **Docker Desktop abierto** antes de ejecutar los comandos.
+
+Levantar PostgreSQL:
+
+```bash
+docker compose up -d
+```
+
+Verificar que el contenedor esté corriendo:
+
+```bash
+docker compose ps
+```
+
+Luego ejecutar la aplicación con el perfil `local`:
+
+```bash
+mvn spring-boot:run "-Dspring-boot.run.profiles=local"
+```
+
+Si la aplicación levanta correctamente, Swagger UI estará disponible en:
+
+```txt
+http://localhost:8081/swagger-ui/index.html
+```
+
+Para apagar PostgreSQL sin borrar los datos:
+
+```bash
+docker compose down
+```
+
+Para apagar PostgreSQL y borrar también el volumen de datos:
+
+```bash
+docker compose down -v
+```
+
+> Usar `docker compose down -v` solo si se quiere reiniciar completamente la base de datos local.
+
 
 ### Ejecutar la Aplicación
 Con PostgreSQL en ejecución:
 
 ```bash
-mvn clean spring-boot:run -Dspring-boot.run.profiles=local
+mvn clean spring-boot:run "-Dspring-boot.run.profiles=local"
 ```
 
 O empaqueta y ejecuta el jar:
