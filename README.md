@@ -1,4 +1,6 @@
 # CocktailOps
+![Java CI](https://github.com/Fran3103/CocktailOps/actions/workflows/ci.yml/badge.svg)
+
 CocktailOps es una aplicación diseñada para facilitar la planificación y gestión de pedidos de cócteles para eventos. Permite a los usuarios seleccionar cócteles, calcular las cantidades necesarias de ingredientes y generar listas de compras detalladas y PDFs listos para imprimir.
 
 ## Índice
