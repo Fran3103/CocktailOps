@@ -524,16 +524,30 @@ Objetivo de testing:
 * **Generación de PDF**: listo
 * **Swagger / documentación API**: listo, en mejora continua
 * **Tests unitarios**: en progreso
-* **Docker / CI**: próximo paso
-* **Spring Security + JWT**: planificado
+
+  * `ProductServiceImpl`: cobertura básica completada
+  * `OrderServiceImpl`: cobertura parcial en progreso
+* **Perfil de testing**: listo
+
+  * Tests configurados con perfil `test`
+  * Base H2 en memoria para evitar dependencia de PostgreSQL local
+* **Docker Compose**: listo
+
+  * PostgreSQL local levantado con `docker compose`
+  * Aplicación ejecutada localmente con perfil `local`
+* **GitHub Actions CI**: listo
+
+  * Build y tests automáticos en cada push / pull request a `master`
+* **Spring Security + JWT**: próximo paso
 * **Frontend**: planificado
 
 ## 🔄 Qué haría distinto / Próximos pasos
 
-* Agregar **Docker + docker-compose** para levantar aplicación + PostgreSQL con un solo comando
-* Agregar **GitHub Actions CI** para correr tests automáticamente en cada push
-* Crear un perfil específico de testing para no depender de PostgreSQL local
 * Aumentar cobertura de tests en services y controllers
 * Agregar autenticación con **Spring Security + JWT**
+* Proteger endpoints según roles simples, por ejemplo `USER` y `ADMIN`
+* Actualizar Swagger/Postman con el flujo de autenticación
+* Evaluar Dockerizar también la aplicación Spring Boot, no solo PostgreSQL
 * Preparar una demo visual o frontend mínimo para mostrar el flujo principal
 * Agregar documentación QA cuando avance el curso de QA Manual
+* Evaluar a futuro una página compartible de orden con links de compra
