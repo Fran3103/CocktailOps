@@ -2,6 +2,7 @@ package com.cocktailops.CocktailOps.service.impl;
 
 import com.cocktailops.CocktailOps.dto.userDto.UserRequestDto;
 import com.cocktailops.CocktailOps.dto.userDto.UserResponseDto;
+import com.cocktailops.CocktailOps.entitie.Role;
 import com.cocktailops.CocktailOps.entitie.Shop;
 import com.cocktailops.CocktailOps.entitie.User;
 import com.cocktailops.CocktailOps.exception.DuplicateResourceException;
@@ -21,76 +22,65 @@ public class UserServiceImpl implements IUserService {
     private final IUserRepository userRepository;
     private final IShopRepository shopRepository;
 
-
     @Override
     public UserResponseDto findByEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User with email " + email + " not found"));
 
-        UserResponseDto user = userRepository.findByEmail(email);
-
-        if (user == null) {
-            throw new ResourceNotFoundException("User with email " + email + "not found");
-        }
-
-        return user;
-
+        return toResponse(user);
     }
 
-    // falta implementar la busca del shop, si no hay shop avisar que ese shop no existe.
     @Override
     public UserResponseDto findByShop(Long shop) {
-        UserResponseDto user = userRepository.findByShop(shop);
-
-        if (user == null) {
-            throw new ResourceNotFoundException("User with shop " + shop + "not found");
-        }
-
-        return user;
+        throw new UnsupportedOperationException("findByShop is not implemented yet");
     }
 
     @Override
     public UserResponseDto findById(long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(()-> new ResourceNotFoundException("User with id " + id + " not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User with id " + id + " not found"));
 
-
-
-        return new UserResponseDto( user.getFirstName(),user.getLastName(), user.getShop().getId(), user.getId(), user.getRole(), user.getEmail());
+        return toResponse(user);
     }
 
     @Override
     public UserResponseDto save(UserRequestDto userRequestDto) {
-        if(userRepository.existsByEmail(userRequestDto.email())){
+        if (userRepository.existsByEmail(userRequestDto.email())) {
             throw new DuplicateResourceException("User with email " + userRequestDto.email() + " already exists");
         }
 
         User user = new User();
 
-        Shop shop = shopRepository.findById(userRequestDto.shop())
-                .orElseThrow(() -> new ResourceNotFoundException("Shop with id " + userRequestDto.shop() + " not found"));
+        Shop shop = null;
+
+        if (userRequestDto.shop() != null) {
+            shop = shopRepository.findById(userRequestDto.shop())
+                    .orElseThrow(() -> new ResourceNotFoundException("Shop with id " + userRequestDto.shop() + " not found"));
+        }
 
         user.setEmail(userRequestDto.email());
         user.setFirstName(userRequestDto.firstName());
         user.setLastName(userRequestDto.lastName());
         user.setShop(shop);
         user.setPassword(userRequestDto.password());
-        user.setRole(userRequestDto.role());
 
+        Role role = userRequestDto.role() != null ? userRequestDto.role() : Role.USER;
+        user.setRole(role);
 
         User savedUser = userRepository.save(user);
 
-        return new UserResponseDto(savedUser.getFirstName(), savedUser.getLastName(), savedUser.getShop().getId(),  savedUser.getId(), savedUser.getRole(),  savedUser.getEmail());
+        return toResponse(savedUser);
     }
 
+    @Override
     public UserResponseDto update(long id, UserRequestDto dto) {
-
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User with id " + id + " not found"));
 
         if (dto.firstName() != null) user.setFirstName(dto.firstName());
-        if (dto.lastName()  != null) user.setLastName(dto.lastName());
+        if (dto.lastName() != null) user.setLastName(dto.lastName());
 
-
-        if (dto.shop() != null) {;
+        if (dto.shop() != null) {
             Shop shop = shopRepository.findById(dto.shop())
                     .orElseThrow(() -> new ResourceNotFoundException("Shop with id " + dto.shop() + " not found"));
             user.setShop(shop);
@@ -101,32 +91,36 @@ public class UserServiceImpl implements IUserService {
 
         User saved = userRepository.save(user);
 
-        return new UserResponseDto(
-                saved.getFirstName(),
-                saved.getLastName(),
-                saved.getShop().getId(),
-                saved.getId(),
-                saved.getRole(),
-                saved.getEmail()
-        );
+        return toResponse(saved);
     }
 
     @Override
     public void delete(long id) {
-
         User user = userRepository.findById(id)
-                .orElseThrow(()-> new ResourceNotFoundException("User with id " + id + " not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User with id " + id + " not found"));
 
         userRepository.delete(user);
     }
 
     @Override
-    public List<UserResponseDto> findAll(){
+    public List<UserResponseDto> findAll() {
         List<User> users = userRepository.findAll();
 
         return users.stream()
-                .map(u -> new UserResponseDto(u.getFirstName(), u.getLastName(), u.getShop().getId(), u.getId(), u.getRole(), u.getEmail() ))
+                .map(this::toResponse)
                 .toList();
+    }
 
+    private UserResponseDto toResponse(User user) {
+        Long shopId = user.getShop() != null ? user.getShop().getId() : null;
+
+        return new UserResponseDto(
+                user.getFirstName(),
+                user.getLastName(),
+                shopId,
+                user.getId(),
+                user.getRole(),
+                user.getEmail()
+        );
     }
 }
