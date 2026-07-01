@@ -11,6 +11,7 @@ import com.cocktailops.CocktailOps.repository.IShopRepository;
 import com.cocktailops.CocktailOps.repository.IUserRepository;
 import com.cocktailops.CocktailOps.service.IUserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,6 +22,7 @@ public class UserServiceImpl implements IUserService {
 
     private final IUserRepository userRepository;
     private final IShopRepository shopRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public UserResponseDto findByEmail(String email) {
@@ -62,7 +64,7 @@ public class UserServiceImpl implements IUserService {
         user.setFirstName(userRequestDto.firstName());
         user.setLastName(userRequestDto.lastName());
         user.setShop(shop);
-        user.setPassword(userRequestDto.password());
+        user.setPassword(passwordEncoder.encode(userRequestDto.password()));
 
         Role role = userRequestDto.role() != null ? userRequestDto.role() : Role.USER;
         user.setRole(role);
@@ -86,7 +88,7 @@ public class UserServiceImpl implements IUserService {
             user.setShop(shop);
         }
 
-        if (dto.password() != null) user.setPassword(dto.password());
+        if (dto.password() != null) user.setPassword(passwordEncoder.encode(dto.password()));
         if (dto.role() != null) user.setRole(dto.role());
 
         User saved = userRepository.save(user);
