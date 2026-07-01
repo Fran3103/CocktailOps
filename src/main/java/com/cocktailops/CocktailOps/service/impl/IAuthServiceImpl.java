@@ -8,6 +8,7 @@ import com.cocktailops.CocktailOps.entitie.User;
 import com.cocktailops.CocktailOps.exception.BadRequestException;
 import com.cocktailops.CocktailOps.exception.DuplicateResourceException;
 import com.cocktailops.CocktailOps.repository.IUserRepository;
+import com.cocktailops.CocktailOps.security.JwtService;
 import com.cocktailops.CocktailOps.service.IAuthService;
 import com.cocktailops.CocktailOps.service.IUserService;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,8 @@ public class IAuthServiceImpl implements IAuthService {
     private final IUserRepository userRepository;
 
     private final PasswordEncoder passwordEncoder;
+
+    private final JwtService jwtService;
 
 
     @Override
@@ -40,9 +43,11 @@ public class IAuthServiceImpl implements IAuthService {
         user.setRole(Role.USER);
         user.setShop(null);
 
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
 
-        return toResponse(user);
+        String token = jwtService.generateToken(savedUser);
+
+        return toResponse(savedUser, token);
     }
 
     @Override
@@ -57,17 +62,20 @@ public class IAuthServiceImpl implements IAuthService {
             throw new BadRequestException("Invalid email or password");
         }
 
-        return toResponse(user);
+        String token = jwtService.generateToken(user);
+
+        return toResponse(user, token);
     }
 
 
-    private AuthResponseDto toResponse(User user) {
+    private AuthResponseDto toResponse(User user, String token) {
         return new AuthResponseDto(
                 user.getId(),
                 user.getEmail(),
                 user.getFirstName(),
                 user.getLastName(),
-                user.getRole()
+                user.getRole(),
+                token
         );
     }
 }

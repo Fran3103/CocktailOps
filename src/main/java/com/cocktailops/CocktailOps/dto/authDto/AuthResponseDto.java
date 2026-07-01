@@ -7,6 +7,7 @@ public record AuthResponseDto(
         String email,
         String firstName,
         String lastName,
-        Role role
+        Role role,
+        String token
 ) {
 }
