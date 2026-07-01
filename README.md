@@ -8,6 +8,7 @@ CocktailOps es una aplicación diseñada para facilitar la planificación y gest
 - [Tiempos y Alcance](#-tiempos-y-alcance-)
 - [Características Principales](#características-principales)
 - [Tecnologías Utilizadas](#tecnologías-utilizadas)
+- [Autenticación y Seguridad](#autenticación-y-seguridad)
 - [Diagramas](#diagramas)
   - [Diagrama de Entidad-Relación](#diagrama-de-entidad-relación)
   - [Diagrama de Arquitectura](#diagrama-de-arquitectura)
@@ -17,10 +18,10 @@ CocktailOps es una aplicación diseñada para facilitar la planificación y gest
   - [Pasos para Ejecutar la Aplicación](#pasos-para-ejecutar-la-aplicación)
   - [Creación de la Base de Datos](#creación-de-la-base-de-datos)
   - [Configuración de la Aplicación](#configuración-de-la-aplicación)
-  - [Ejecucion de Docker Compose](#Ejecución-con-Docker-Compose)
+  - [Ejecución con Docker Compose](#Ejecución-con-Docker-Compose)
   - [Ejecutar la Aplicación](#ejecutar-la-aplicación)
 - [API - Ejemplos y Postman](#api---ejemplos-y-postman)
-- [Testing Unitarios](#testing-unitarios)
+- [Testing Unitario](#testing-unitario)
 - [Estado actual del proyecto](#estado-actual-del-proyecto)
 - [Qué haría distinto / Próximos pasos](#-qué-haría-distinto--próximos-pasos)
 
@@ -68,19 +69,25 @@ Agregué **logs estructurados** en la capa service para:
 
 
 
-## ⏱ Tiempos y alcance 
+## ⏱ Tiempos y alcance
+
 Este proyecto se desarrolla por iteraciones, priorizando primero un backend funcional, mantenible y fácil de evaluar técnicamente.
 
-Base API + modelo + migraciones con Flyway: listo
-Cálculo de pedidos TIME / DRINKS + generación de PDF: listo
-Documentación Swagger + README + diagramas Mermaid: en mejora continua
-Testing unitario de servicios: en progreso
-ProductServiceImpl: cobertura básica completada
-OrderServiceImpl: cobertura parcial en progreso
-Docker + CI: próximo paso
-JWT + Frontend: planificado
+* **Base API + modelo + migraciones con Flyway**: listo
+* **Cálculo de pedidos TIME / DRINKS + generación de PDF**: listo
+* **Documentación Swagger + README + diagramas Mermaid**: en mejora continua
+* **Testing unitario de servicios**: en progreso
 
-Objetivo: construir un backend sólido para portfolio, aplicando buenas prácticas de arquitectura, testing, documentación y mejora incremental.
+  * `ProductServiceImpl`: cobertura básica completada
+  * `OrderServiceImpl`: cobertura parcial en progreso
+* **Perfil de testing con H2**: listo
+* **Docker Compose para PostgreSQL local**: listo
+* **GitHub Actions CI**: listo
+* **Spring Security + JWT**: listo en versión inicial
+* **Frontend**: planificado
+
+Objetivo: construir un backend sólido para portfolio, aplicando buenas prácticas de arquitectura, testing, documentación, seguridad, automatización y mejora incremental.
+
 
 ## Características Principales
 - **Gestión de Productos**: Almacena información sobre productos, incluyendo nombre, categoría y unidades.
@@ -97,12 +104,108 @@ Objetivo: construir un backend sólido para portfolio, aplicando buenas práctic
 * **Build Tool**: Maven
 * **Documentación API**: Swagger / OpenAPI
 * **Generación PDF**: Thymeleaf + OpenHTMLToPDF
-* **Testing**: JUnit 5, Mockito
+* **Testing**: JUnit 5, Mockito, H2
+* **Seguridad**: Spring Security + JWT
+* **DevOps**: Docker Compose, GitHub Actions CI
 * **Documentación técnica**: Markdown, Mermaid
 * **Frontend**: React (planificado)
-* **Autenticación**: Spring Security + JWT (planificado)
-* **DevOps**: Docker / GitHub Actions (próximo paso)
 
+
+## Autenticación y Seguridad
+
+El proyecto incorpora autenticación basada en **Spring Security + JWT**.
+
+Actualmente el flujo de autenticación permite:
+
+* Registrar usuarios desde `/auth/register`
+* Iniciar sesión desde `/auth/login`
+* Recibir un token JWT al registrarse o iniciar sesión
+* Enviar el token en requests protegidas usando el header `Authorization`
+* Proteger endpoints privados mediante autenticación stateless
+* Guardar contraseñas hasheadas usando `PasswordEncoder`
+
+### Registro de usuario
+
+```http
+POST /auth/register
+```
+
+Ejemplo de body:
+
+```json
+{
+  "email": "usuario@ejemplo.com",
+  "password": "123456",
+  "firstName": "Juan",
+  "lastName": "Pérez"
+}
+```
+
+Respuesta esperada:
+
+```json
+{
+  "id": 1,
+  "email": "usuario@ejemplo.com",
+  "firstName": "Juan",
+  "lastName": "Pérez",
+  "role": "USER",
+  "token": "eyJhbGciOiJIUzI1NiJ9..."
+}
+```
+
+### Inicio de sesión
+
+```http
+POST /auth/login
+```
+
+Ejemplo de body:
+
+```json
+{
+  "email": "usuario@ejemplo.com",
+  "password": "123456"
+}
+```
+
+Respuesta esperada:
+
+```json
+{
+  "id": 1,
+  "email": "usuario@ejemplo.com",
+  "firstName": "Juan",
+  "lastName": "Pérez",
+  "role": "USER",
+  "token": "eyJhbGciOiJIUzI1NiJ9..."
+}
+```
+
+### Uso del token
+
+Para acceder a endpoints protegidos, enviar el token en el header:
+
+```http
+Authorization: Bearer <token>
+```
+
+Ejemplo:
+
+```http
+GET /user
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
+```
+
+### Estado actual de seguridad
+
+* `/auth/**`: público
+* Swagger/OpenAPI: público
+* Consultas GET de catálogo: públicas
+* Endpoints privados: requieren JWT
+* Roles actuales: `USER` y `ADMIN`
+
+> En próximas iteraciones se agregarán reglas más finas por rol, por ejemplo restringir administración de usuarios, productos y categorías a usuarios con rol `ADMIN`.
 
 
 ## Diagramas
@@ -222,7 +325,7 @@ U[Usuario final]
 A[Admin]
 S[Dueño de tienda]
 
-subgraph SYS[App: Cocktail Supply Planner]
+subgraph SYS[App: CocktailOps]
   FE[Web App React]
   BE[Backend API Spring Boot]
   DB[(PostgreSQL)]
@@ -325,7 +428,7 @@ classDef entity fill:#000000,stroke:#1f7a3a,stroke-width:1px;
 ### Requisitos Previos
 - Java 17 o superior
 - Maven 3.6.3 o superior
-- PostgreSQL 13 o superior
+- PostgreSQL 13 o superior, solo si no se utiliza Docker
 - Docker Desktop y Docker Compose para levantar PostgreSQL localmente
 
 
@@ -337,14 +440,13 @@ git clone https://github.com/Fran3103/CocktailOps.git
 cd CocktailOps
 ```
 
-2. Asegúrate de crear la base de datos (ver sección siguiente) y de tener las credenciales configuradas.
-
+2. Levanta PostgreSQL con Docker Compose y configura el archivo `application-local.properties` tomando como base `application-local.example.properties`.
 ### Creación de la Base de Datos
-Ejecuta en tu servidor PostgreSQL:
 
-```sql
-CREATE DATABASE cocktailops;
-```
+El flujo recomendado para desarrollo local es levantar PostgreSQL con Docker Compose, usando el archivo `docker-compose.yml` incluido en el proyecto.
+
+Si se prefiere usar una instalación local de PostgreSQL en lugar de Docker, crear manualmente una base de datos y ajustar las credenciales en `application-local.properties`.
+
 
 ### Configuración de la Aplicación
 
@@ -524,29 +626,23 @@ Objetivo de testing:
 * **Generación de PDF**: listo
 * **Swagger / documentación API**: listo, en mejora continua
 * **Tests unitarios**: en progreso
-
-  * `ProductServiceImpl`: cobertura básica completada
-  * `OrderServiceImpl`: cobertura parcial en progreso
 * **Perfil de testing**: listo
-
-  * Tests configurados con perfil `test`
-  * Base H2 en memoria para evitar dependencia de PostgreSQL local
 * **Docker Compose**: listo
-
-  * PostgreSQL local levantado con `docker compose`
-  * Aplicación ejecutada localmente con perfil `local`
 * **GitHub Actions CI**: listo
-
-  * Build y tests automáticos en cada push / pull request a `master`
-* **Spring Security + JWT**: próximo paso
+* **Spring Security + JWT**: listo en versión inicial
+* **Autenticación de usuarios**: lista en versión inicial
+* **Roles USER / ADMIN**: definidos
 * **Frontend**: planificado
 
 ## 🔄 Qué haría distinto / Próximos pasos
 
+* Agregar reglas de autorización más finas por rol
+* Restringir creación, edición y eliminación de recursos administrativos a usuarios `ADMIN`
+* Asociar órdenes al usuario autenticado
+* Permitir historial de órdenes para usuarios registrados
 * Aumentar cobertura de tests en services y controllers
-* Agregar autenticación con **Spring Security + JWT**
-* Proteger endpoints según roles simples, por ejemplo `USER` y `ADMIN`
-* Actualizar Swagger/Postman con el flujo de autenticación
+* Agregar tests específicos para endpoints protegidos
+* Actualizar Swagger/Postman con flujo completo de autenticación
 * Evaluar Dockerizar también la aplicación Spring Boot, no solo PostgreSQL
 * Preparar una demo visual o frontend mínimo para mostrar el flujo principal
 * Agregar documentación QA cuando avance el curso de QA Manual
