@@ -17,6 +17,46 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
+    private static final String[] SWAGGER_ENDPOINTS = {
+            "/swagger-ui.html",
+            "/swagger-ui/**",
+            "/v3/api-docs/**"
+    };
+
+    private static final String[] AUTH_ENDPOINTS = {
+            "/auth/**"
+    };
+
+    private static final String[] PUBLIC_CATALOG_ENDPOINTS = {
+            "/products",
+            "/products/**",
+            "/cocktails",
+            "/cocktails/**",
+            "/categories",
+            "/categories/**"
+    };
+
+    private static final String[] ADMIN_ENDPOINTS = {
+            "/user",
+            "/user/**",
+            "/shop",
+            "/shop/**"
+    };
+
+    private static final String[] ADMIN_CATALOG_ENDPOINTS = {
+            "/products",
+            "/products/**",
+            "/cocktails",
+            "/cocktails/**",
+            "/categories",
+            "/categories/**"
+    };
+
+    private static final String[] ORDER_ENDPOINTS = {
+            "/orders",
+            "/orders/**"
+    };
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
@@ -27,21 +67,21 @@ public class SecurityConfig {
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/swagger-ui.html",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**"
-                        ).permitAll()
-                        .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET,
-                                "/product/**",
-                                "/products/**",
-                                "/cocktail/**",
-                                "/cocktails/**",
-                                "/category/**",
-                                "/categories/**"
-                        ).permitAll()
-                        .requestMatchers("/user","/user/**").authenticated()
+
+                        .requestMatchers(SWAGGER_ENDPOINTS).permitAll()
+                        .requestMatchers(AUTH_ENDPOINTS).permitAll()
+
+                        .requestMatchers(HttpMethod.GET, PUBLIC_CATALOG_ENDPOINTS).permitAll()
+
+                        .requestMatchers(ADMIN_ENDPOINTS).hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.POST, ADMIN_CATALOG_ENDPOINTS).hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, ADMIN_CATALOG_ENDPOINTS).hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, ADMIN_CATALOG_ENDPOINTS).hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, ADMIN_CATALOG_ENDPOINTS).hasRole("ADMIN")
+
+                        .requestMatchers(ORDER_ENDPOINTS).authenticated()
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
