@@ -23,7 +23,9 @@ public record OrderResponseDto(
         @Schema(description = "lista de items del pedido")
         List<OrderItemsResponseDto> items,
         @Schema(description = "lista de cócteles del pedido")
-        List<OrderCocktailResponseDto> cocktail
+        List<OrderCocktailResponseDto> cocktail,
+        @Schema(description = "ID del usuario que realizó el pedido")
+        Long userId
 
 ) {
 }

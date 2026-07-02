@@ -55,5 +55,9 @@ public class Order {
         if (createdAt == null) createdAt = Instant.now();
     }
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
 
 }

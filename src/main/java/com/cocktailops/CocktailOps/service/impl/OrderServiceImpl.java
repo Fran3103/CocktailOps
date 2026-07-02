@@ -396,6 +396,8 @@ private OrderResponseDto toResponse(Order order) {
             ))
             .toList();
 
+    Long userId = order.getUser() != null ? order.getUser().getId() : null;
+
     return new OrderResponseDto(
             order.getId(),
             order.getMode().toString(),
@@ -405,7 +407,8 @@ private OrderResponseDto toResponse(Order order) {
             order.getDurationHours(),
             order.getStatus(),
             items,
-            cocktails
+            cocktails,
+            userId
     );
     }
     }
