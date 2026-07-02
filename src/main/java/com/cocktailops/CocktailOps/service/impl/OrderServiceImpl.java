@@ -8,6 +8,7 @@ import com.cocktailops.CocktailOps.exception.ResourceNotFoundException;
 import com.cocktailops.CocktailOps.repository.ICocktailRepository;
 import com.cocktailops.CocktailOps.repository.IOrderRepository;
 import com.cocktailops.CocktailOps.repository.IProductRepository;
+import com.cocktailops.CocktailOps.security.CurrentUserService;
 import com.cocktailops.CocktailOps.service.IOrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,8 @@ public class OrderServiceImpl implements IOrderService {
     private final IProductRepository productRepository;
 
     private final ICocktailRepository cocktailRepository;
+
+    private final CurrentUserService currentUserService;
 
     private static final BigDecimal OZ_TO_ML = new BigDecimal("29.5735");
 
@@ -95,6 +98,8 @@ public class OrderServiceImpl implements IOrderService {
 try {
     // ----- Crear Order -----
     Order order = new Order();
+    User currentUser = currentUserService.getCurrentUser();
+    order.setUser(currentUser);
     order.setGuests(dto.guests());
     order.setDrinksPerPerson(drinksPerPerson);
     order.setDurationHours(dto.durationHours());
@@ -234,6 +239,8 @@ try {
 
 
             Order order = new Order();
+            User currentUser = currentUserService.getCurrentUser();
+            order.setUser(currentUser);
 
             order.setMode(OrderMode.DRINKS);
             order.setTotalDrinks(dto.totalDrinks());
