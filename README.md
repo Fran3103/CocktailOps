@@ -5,7 +5,7 @@ CocktailOps es una aplicación diseñada para facilitar la planificación y gest
 
 ## Índice
 - [Decisiones Técnicas](#-decisiones-técnicas)
-- [Tiempos y Alcance](#-tiempos-y-alcance-)
+- [Tiempos y Alcance](#-tiempos-y-alcance)
 - [Características Principales](#características-principales)
 - [Tecnologías Utilizadas](#tecnologías-utilizadas)
 - [Autenticación y Seguridad](#autenticación-y-seguridad)
@@ -80,20 +80,29 @@ Este proyecto se desarrolla por iteraciones, priorizando primero un backend func
 
   * `ProductServiceImpl`: cobertura básica completada
   * `OrderServiceImpl`: cobertura parcial en progreso
+
 * **Perfil de testing con H2**: listo
 * **Docker Compose para PostgreSQL local**: listo
 * **GitHub Actions CI**: listo
 * **Spring Security + JWT**: listo en versión inicial
+* **Autorización por roles USER / ADMIN**: lista en versión inicial
+* **Órdenes asociadas al usuario autenticado**: listo
+* **Historial de órdenes por usuario**: listo
+* **PDF protegido por ownership**: listo
 * **Frontend**: planificado
 
-Objetivo: construir un backend sólido para portfolio, aplicando buenas prácticas de arquitectura, testing, documentación, seguridad, automatización y mejora incremental.
-
+Objetivo: construir un backend sólido para portfolio, aplicando buenas prácticas de arquitectura, testing, documentación, seguridad, autorización, automatización y mejora incremental.
 
 ## Características Principales
-- **Gestión de Productos**: Almacena información sobre productos, incluyendo nombre, categoría y unidades.
-- **Gestión de Cócteles**: Permite la creación y almacenamiento de recetas de cócteles con sus ingredientes y cantidades.
-- **Planificación de Pedidos**: Los usuarios pueden crear pedidos especificando el número de invitados, bebidas por persona, o el total de bebidas, y la duración del evento.
-- **Generación de Listas de Compras**: Calcula automáticamente las cantidades necesarias de cada ingrediente, sugiere packs a comprar y genera PDFs con la lista de compra.
+
+- **Gestión de Productos**: almacena información sobre productos, incluyendo nombre, categoría y unidades.
+- **Gestión de Cócteles**: permite la creación y almacenamiento de recetas de cócteles con sus ingredientes y cantidades.
+- **Planificación de Pedidos**: los usuarios autenticados pueden crear pedidos especificando el número de invitados, bebidas por persona, total de bebidas y duración del evento.
+- **Generación de Listas de Compras**: calcula automáticamente las cantidades necesarias de cada ingrediente, sugiere packs a comprar y genera PDFs con la lista de compra.
+- **Autenticación de Usuarios**: permite registro e inicio de sesión mediante Spring Security + JWT.
+- **Autorización por Roles**: diferencia permisos entre usuarios `USER` y `ADMIN`.
+- **Historial de Órdenes**: los usuarios registrados pueden consultar sus propias órdenes.
+- **PDF protegido por usuario**: cada usuario puede descargar PDFs de sus propias órdenes, mientras que un administrador puede acceder a todas.
 
 ## Tecnologías Utilizadas
 
@@ -113,9 +122,9 @@ Objetivo: construir un backend sólido para portfolio, aplicando buenas práctic
 
 ## Autenticación y Seguridad
 
-El proyecto incorpora autenticación basada en **Spring Security + JWT**.
+El proyecto incorpora autenticación y autorización basada en **Spring Security + JWT**.
 
-Actualmente el flujo de autenticación permite:
+Actualmente el flujo de seguridad permite:
 
 * Registrar usuarios desde `/auth/register`
 * Iniciar sesión desde `/auth/login`
@@ -123,6 +132,10 @@ Actualmente el flujo de autenticación permite:
 * Enviar el token en requests protegidas usando el header `Authorization`
 * Proteger endpoints privados mediante autenticación stateless
 * Guardar contraseñas hasheadas usando `PasswordEncoder`
+* Diferenciar permisos entre roles `USER` y `ADMIN`
+* Asociar órdenes al usuario autenticado
+* Permitir que cada usuario consulte su propio historial de órdenes
+* Proteger la descarga de PDFs para que solo el dueño de la orden o un administrador puedan acceder
 
 ### Registro de usuario
 
@@ -193,19 +206,43 @@ Authorization: Bearer <token>
 Ejemplo:
 
 ```http
-GET /user
+GET /orders/my-orders
 Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 ```
 
-### Estado actual de seguridad
+### Reglas actuales de acceso
 
 * `/auth/**`: público
 * Swagger/OpenAPI: público
 * Consultas GET de catálogo: públicas
-* Endpoints privados: requieren JWT
-* Roles actuales: `USER` y `ADMIN`
+* Creación, edición y eliminación de catálogo: requiere rol `ADMIN`
+* `/user/**`: requiere rol `ADMIN`
+* `POST /orders`: requiere usuario autenticado
+* `GET /orders/my-orders`: requiere usuario autenticado y devuelve solo las órdenes propias
+* `GET /orders`: requiere rol `ADMIN`
+* `GET /orders/{id}/pdf`: permite acceso al dueño de la orden o a un usuario `ADMIN`
 
-> En próximas iteraciones se agregarán reglas más finas por rol, por ejemplo restringir administración de usuarios, productos y categorías a usuarios con rol `ADMIN`.
+### Historial de órdenes del usuario
+
+```http
+GET /orders/my-orders
+Authorization: Bearer <token>
+```
+
+Este endpoint devuelve únicamente las órdenes asociadas al usuario autenticado.
+
+### Descarga de PDF
+
+```http
+GET /orders/{id}/pdf
+Authorization: Bearer <token>
+```
+
+Reglas actuales:
+
+* Un usuario `USER` puede descargar el PDF de sus propias órdenes.
+* Un usuario `USER` no puede descargar PDFs de órdenes ajenas.
+* Un usuario `ADMIN` puede descargar PDFs de cualquier orden.
 
 
 ## Diagramas
@@ -278,6 +315,7 @@ erDiagram
 
   ORDER {
     bigint id PK
+    bigint user_id FK
     timestamp created_at
     int guests
     int drinks_per_person
@@ -301,6 +339,8 @@ erDiagram
   }
 
   SHOP ||--o{ USER : has
+  USER ||--o{ ORDER : creates
+  
   SHOP ||--o{ CATEGORY : defines
   CATEGORY ||--o{ PRODUCT : contains
 
@@ -632,17 +672,19 @@ Objetivo de testing:
 * **Spring Security + JWT**: listo en versión inicial
 * **Autenticación de usuarios**: lista en versión inicial
 * **Roles USER / ADMIN**: definidos
+* **Autorización por roles**: lista en versión inicial
+* **Órdenes asociadas al usuario autenticado**: listo
+* **Historial de órdenes por usuario**: listo
+* **PDF protegido por ownership**: listo
 * **Frontend**: planificado
 
 ## 🔄 Qué haría distinto / Próximos pasos
 
-* Agregar reglas de autorización más finas por rol
-* Restringir creación, edición y eliminación de recursos administrativos a usuarios `ADMIN`
-* Asociar órdenes al usuario autenticado
-* Permitir historial de órdenes para usuarios registrados
-* Aumentar cobertura de tests en services y controllers
 * Agregar tests específicos para endpoints protegidos
-* Actualizar Swagger/Postman con flujo completo de autenticación
+* Aumentar cobertura de tests en services y controllers
+* Mejorar manejo de respuestas 401/403 para autenticación y autorización
+* Asociar reglas más finas a casos específicos de negocio si el proyecto crece
+* Evaluar endpoint público de preview para usuarios anónimos sin guardar historial
 * Evaluar Dockerizar también la aplicación Spring Boot, no solo PostgreSQL
 * Preparar una demo visual o frontend mínimo para mostrar el flujo principal
 * Agregar documentación QA cuando avance el curso de QA Manual
