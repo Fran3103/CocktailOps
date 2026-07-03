@@ -4,6 +4,9 @@ import com.cocktailops.CocktailOps.dto.orderDto.OrderCocktailPdfDto;
 import com.cocktailops.CocktailOps.dto.orderDto.OrderItemsPdfDto;
 import com.cocktailops.CocktailOps.dto.orderDto.OrderPdfDto;
 import com.cocktailops.CocktailOps.dto.orderDto.OrderResponseDto;
+import com.cocktailops.CocktailOps.entitie.Role;
+import com.cocktailops.CocktailOps.entitie.User;
+import com.cocktailops.CocktailOps.security.CurrentUserService;
 import com.cocktailops.CocktailOps.service.IOrderService;
 import com.cocktailops.CocktailOps.service.IOrderPdfService;
 import com.cocktailops.CocktailOps.service.IProductService;
@@ -11,6 +14,7 @@ import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.coyote.BadRequestException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
@@ -30,6 +34,8 @@ public class OrderPdfServiceImpl implements IOrderPdfService {
 
     private final IOrderService orderService;
 
+    private final CurrentUserService currentUserService;
+
 
     @Override
     public byte[] generateOrderPdf(Long orderId) throws BadRequestException {
@@ -38,6 +44,8 @@ public class OrderPdfServiceImpl implements IOrderPdfService {
 
         // Obtener los datos del pedido
         OrderResponseDto responseDto = orderService.getOrderById(orderId);
+
+        validatePdfAccess(responseDto);
         // Transformar los datos a un formato adecuado para el PDF
         OrderPdfDto orderPdfDto = toPdfDto(responseDto);
         // Renderizar el PDF usando Thymeleaf y OpenHTMLToPDF
@@ -123,6 +131,19 @@ public class OrderPdfServiceImpl implements IOrderPdfService {
                 cocktails,
                 items
         );
+    }
+
+    private void validatePdfAccess(OrderResponseDto order) {
+        User currentUser = currentUserService.getCurrentUser();
+
+        boolean isAdmin = currentUser.getRole() == Role.ADMIN;
+
+        boolean isOwner = order.userId() != null
+                && order.userId().equals(currentUser.getId());
+
+        if (!isAdmin && !isOwner) {
+            throw new AccessDeniedException("You do not have permission to access this order PDF");
+        }
     }
 }
 

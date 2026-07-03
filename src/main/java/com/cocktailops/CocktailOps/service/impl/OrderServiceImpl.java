@@ -354,6 +354,18 @@ try {
         return drinks;
     }
 
+
+
+    public List<OrderResponseDto> getMyOrders() {
+        User currentUser = currentUserService.getCurrentUser();
+
+        return orderRepository.findByUserId(currentUser.getId())
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+
 // ---------- Utils ----------
 
     private BigDecimal toProductUnit(BigDecimal amount, MeasureUnit ingUnit, String productUnit) {

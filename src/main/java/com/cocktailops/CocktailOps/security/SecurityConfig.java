@@ -52,9 +52,19 @@ public class SecurityConfig {
             "/categories/**"
     };
 
+    private static final String[] USER_ORDER_ENDPOINTS = {
+            "/orders/my-orders",
+            "/orders/my-orders/**"
+    };
+
     private static final String[] ORDER_ENDPOINTS = {
             "/orders",
             "/orders/**"
+    };
+
+
+    private static final String[] USER_ORDER_PDF_ENDPOINTS = {
+            "/orders/*/pdf"
     };
 
     @Bean
@@ -80,7 +90,14 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, ADMIN_CATALOG_ENDPOINTS).hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, ADMIN_CATALOG_ENDPOINTS).hasRole("ADMIN")
 
-                        .requestMatchers(ORDER_ENDPOINTS).authenticated()
+                        .requestMatchers(HttpMethod.GET, USER_ORDER_ENDPOINTS).authenticated()
+                        .requestMatchers(HttpMethod.GET, USER_ORDER_PDF_ENDPOINTS).authenticated()
+                        .requestMatchers(HttpMethod.POST, ORDER_ENDPOINTS).authenticated()
+
+                        .requestMatchers(HttpMethod.GET, ORDER_ENDPOINTS).hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, ORDER_ENDPOINTS).hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, ORDER_ENDPOINTS).hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, ORDER_ENDPOINTS).hasRole("ADMIN")
 
                         .anyRequest().authenticated()
                 )

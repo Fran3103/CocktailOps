@@ -16,4 +16,6 @@ public interface IOrderService {
 
     OrderResponseDto createOrderByDrinks(OrderByDrinksRequestDto Dto);
 
+    List<OrderResponseDto> getMyOrders();
+
 }

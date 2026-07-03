@@ -50,6 +50,13 @@ public class OrderController {
     }
 
 
+
+    @GetMapping("/my-orders")
+    public ResponseEntity<List<OrderResponseDto>> getMyOrders() {
+        List<OrderResponseDto> ordes = orderService.getMyOrders();
+        return ResponseEntity.ok(ordes);
+    }
+
     @Operation(
             summary = "Traer orden por Id",
             description = "Calcula packs a comprar en base a invitados/duración y pesos por cocktail." +
