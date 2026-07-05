@@ -32,4 +32,8 @@ build/
 ### VS Code ###
 .vscode/
 
-src/main/resources/application-local.properties
+# Local Spring Boot config
+**/src/main/resources/application-local.properties
+
+# Build outputs
+**/target/
