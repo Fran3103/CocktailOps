@@ -1,0 +1,28 @@
+@layer base {
+  html {
+    font-family: var(--font-body);
+  }
+
+  body {
+    @apply min-h-screen bg-background text-text-main antialiased;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-heading);
+  }
+
+  a {
+    @apply transition-colors;
+  }
+
+  button {
+    @apply cursor-pointer;
+  }
+}
