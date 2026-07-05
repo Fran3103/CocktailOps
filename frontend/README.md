@@ -489,41 +489,6 @@ Usuario solicita descarga
 
 ## Próximos pasos frontend
 
-### Sprint 1 - Base y arquitectura
-
-- Crear estructura de carpetas
-- Configurar rutas principales
-- Crear `AuthLayout`
-- Crear `AppLayout`
-- Crear sidebar
-- Crear pantallas placeholder
-
-### Sprint 2 - Autenticación
-
-- Conectar login con backend
-- Conectar registro con backend
-- Guardar token JWT
-- Implementar logout
-- Crear rutas protegidas
-- Diferenciar usuario invitado y usuario autenticado
-
-### Sprint 3 - Catálogos
-
-- Consumir cócteles desde backend
-- Mostrar cards de cócteles
-- Consumir productos desde backend
-- Mostrar tabla de productos
-- Agregar loading, error y empty states
-
-### Sprint 4 - Órdenes
-
-- Crear formulario de nueva orden
-- Enviar orden al backend
-- Mostrar ingredientes calculados
-- Ver historial propio
-- Ver detalle de orden
-- Descargar PDF protegido
-
 ### Roadmap futuro
 
 - Links de compra por producto
