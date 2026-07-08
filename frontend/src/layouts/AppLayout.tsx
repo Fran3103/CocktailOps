@@ -1,4 +1,4 @@
-import { Sidebar } from "lucide-react";
+import { Sidebar } from "../shared/components/navigation/Sidebar";
 import { Outlet } from "react-router-dom";
 
 export function AppLayout() {
