@@ -7,12 +7,12 @@ import { Card } from "../../shared/components/ui/Card";
 import { Input } from "../../shared/components/ui/Input";
 import { ROUTES } from "../../shared/constants/routes";
 
-import { authService } from "./authService";
-import { saveAuthData } from "./authStorage";
 import type { RegisterRequest } from "./auth.types";
+import { useAuth } from "./useAuth";
 
 export function RegisterPage() {
   const navigate = useNavigate();
+  const { register } = useAuth();
 
   const [formData, setFormData] = useState<RegisterRequest>({
     firstName: "",
@@ -40,9 +40,7 @@ export function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const authData = await authService.register(formData);
-
-      saveAuthData(authData);
+      await register(formData);
       navigate(ROUTES.dashboard);
     } catch {
       setError("No se pudo crear la cuenta. Revisá los datos ingresados.");
@@ -68,6 +66,7 @@ export function RegisterPage() {
           name="firstName"
           value={formData.firstName}
           onChange={handleChange}
+          autoComplete="given-name"
           required
         />
 
@@ -77,6 +76,7 @@ export function RegisterPage() {
           name="lastName"
           value={formData.lastName}
           onChange={handleChange}
+          autoComplete="family-name"
           required
         />
 
@@ -96,7 +96,7 @@ export function RegisterPage() {
           name="password"
           value={formData.password}
           onChange={handleChange}
-          autoComplete="current-password"
+          autoComplete="new-password"
           required
         />
 

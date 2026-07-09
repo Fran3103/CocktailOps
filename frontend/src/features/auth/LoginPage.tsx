@@ -7,12 +7,12 @@ import { Card } from "../../shared/components/ui/Card";
 import { Input } from "../../shared/components/ui/Input";
 import { ROUTES } from "../../shared/constants/routes";
 
-import { authService } from "./authService";
-import { saveAuthData } from "./authStorage";
 import type { LoginRequest } from "./auth.types";
+import { useAuth } from "./useAuth";
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const [formData, setFormData] = useState<LoginRequest>({
     email: "",
@@ -38,9 +38,7 @@ export function LoginPage() {
     setIsLoading(true);
 
     try {
-      const authData = await authService.login(formData);
-
-      saveAuthData(authData);
+      await login(formData);
       navigate(ROUTES.dashboard);
     } catch {
       setError("No se pudo iniciar sesión. Revisá tu email y contraseña.");
@@ -58,6 +56,7 @@ export function LoginPage() {
       <p className="mt-2 text-text-muted">
         Iniciá sesión para guardar tus órdenes e historial.
       </p>
+
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <Input
           type="email"
