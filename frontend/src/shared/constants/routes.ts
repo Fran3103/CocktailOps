@@ -9,5 +9,5 @@ export const ROUTES = {
     orders: '/orders',
     orderDetails: '/orders/:id',
     profile: '/profile',
-    
+    unauthorized: '/unauthorized',
 } as const;

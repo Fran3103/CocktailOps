@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 
 import { Button } from "../../shared/components/ui/Button";
 import { Card } from "../../shared/components/ui/Card";
@@ -12,6 +12,8 @@ import { useAuth } from "./useAuth";
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname ?? ROUTES.dashboard;
   const { login } = useAuth();
 
   const [formData, setFormData] = useState<LoginRequest>({
@@ -39,7 +41,7 @@ export function LoginPage() {
 
     try {
       await login(formData);
-      navigate(ROUTES.dashboard);
+      navigate(from, { replace: true });
     } catch {
       setError("No se pudo iniciar sesión. Revisá tu email y contraseña.");
     } finally {

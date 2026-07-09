@@ -14,6 +14,9 @@ import { OrderDetailPage } from "../features/orders/OrderDetailPage";
 import { ProfilePage } from "../features/profiles/ProfilePage";
 
 import { ROUTES } from "../shared/constants/routes";
+import { UnauthorizedPage } from "../features/auth/UnauthorizedPage";
+import { ProtectedRoute } from "../features/auth/ProtectedRoute";
+import { AdminRoute } from "../features/auth/AdminRoute";
 
 export function AppRouter() {
   return (
@@ -29,9 +32,17 @@ export function AppRouter() {
           <Route path={ROUTES.cocktails} element={<CocktailsPage />} />
           <Route path={ROUTES.products} element={<ProductsPage />} />
           <Route path={ROUTES.createOrder} element={<CreateOrderPage />} />
-          <Route path={ROUTES.orders} element={<OrderHistoryPage />} />
-          <Route path={ROUTES.orderDetails} element={<OrderDetailPage />} />
-          <Route path={ROUTES.profile} element={<ProfilePage />} />
+          <Route path={ROUTES.unauthorized} element={<UnauthorizedPage/>} />
+
+          <Route element={<ProtectedRoute />}>
+            <Route path={ROUTES.orders} element={<OrderHistoryPage />} />
+            <Route path={ROUTES.orderDetails} element={<OrderDetailPage />} />
+            <Route path={ROUTES.profile} element={<ProfilePage />} />
+          </Route>
+
+          <Route element={<AdminRoute />}>
+        
+          </Route>
         </Route>
 
         <Route path="/" element={<Navigate to={ROUTES.dashboard} replace />} />
