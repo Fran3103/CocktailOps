@@ -13,6 +13,10 @@ import { useAuth } from "../../../features/auth/useAuth";
 import { ROUTES } from "../../constants/routes";
 import { Button } from "../ui/Button";
 
+type SidebarProps = {
+  onNavigate?: () => void;
+};
+
 const navItems = [
   {
     label: "Dashboard",
@@ -46,18 +50,24 @@ const navItems = [
   },
 ];
 
-export function Sidebar() {
+export function Sidebar({ onNavigate }: SidebarProps) {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
 
   function handleLogout() {
     logout();
+    onNavigate?.();
+    navigate(ROUTES.login);
+  }
+
+  function handleLoginClick() {
+    onNavigate?.();
     navigate(ROUTES.login);
   }
 
   return (
-    <aside className="flex min-h-screen w-64 shrink-0 flex-col border-r border-border-soft px-4 py-6">
-      <div className="mb-8">
+   <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col overflow-y-auto border-r border-border-soft bg-surface px-4 py-6">
+      <div className="mb-8 pr-10 lg:pr-0">
         <h1 className="font-heading text-xl font-bold text-primary">
           CocktailOps
         </h1>
@@ -75,6 +85,7 @@ export function Sidebar() {
             <NavLink
               key={item.path}
               to={item.path}
+              onClick={onNavigate}
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-control px-3 py-2 text-sm transition ${
                   isActive
@@ -124,7 +135,7 @@ export function Sidebar() {
               type="button"
               variant="secondary"
               fullWidth
-              onClick={() => navigate(ROUTES.login)}
+              onClick={handleLoginClick}
             >
               Iniciar sesión
             </Button>
