@@ -35,6 +35,7 @@ public class ProductServiceImpl implements IProductService {
                 product.getId(),
                  product.getName(),
                 product.getCategory().getId(),
+                product.getCategory().getName(),
                 product.getUnit(),
                 product.getImageUrl(),
                 product.getImageAlt(),
@@ -45,12 +46,10 @@ public class ProductServiceImpl implements IProductService {
 
     @Override
     public ProductResponseDto findByName(String name) {
-        ProductResponseDto product = productRepository.findByName(name);
-        if (product == null) {
-            throw new ResourceNotFoundException("Product with name " + name + " not found");
-        }
+        Product product = productRepository.findByName(name)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found by name: " + name));
 
-        return product;
+        return toResponse(product);
     }
 
     @Override
@@ -81,6 +80,7 @@ public class ProductServiceImpl implements IProductService {
                 savedProduct.getId(),
                 savedProduct.getName(),
                 savedProduct.getCategory().getId(),
+                savedProduct.getCategory().getName(),
                 savedProduct.getUnit(),
                 savedProduct.getImageUrl(),
                 savedProduct.getImageAlt(),
@@ -121,6 +121,7 @@ public class ProductServiceImpl implements IProductService {
                 updatedProduct.getId(),
                 updatedProduct.getName(),
                 updatedProduct.getCategory().getId(),
+                updatedProduct.getCategory().getName(),
                 updatedProduct.getUnit(),
                 updatedProduct.getImageUrl(),
                 updatedProduct.getImageAlt(),
@@ -143,12 +144,13 @@ public class ProductServiceImpl implements IProductService {
 
     @Override
     public List<ProductResponseDto> findAll() {
-        List<Product> products = productRepository.findAll();
+        List<Product> products = productRepository.findAllWithCategory();
         return products.stream()
                 .map(product -> new ProductResponseDto(
                         product.getId(),
                         product.getName(),
                         product.getCategory().getId(),
+                        product.getCategory().getName(),
                         product.getUnit(),
                         product.getImageUrl(),
                         product.getImageAlt(),
@@ -160,13 +162,14 @@ public class ProductServiceImpl implements IProductService {
 
     @Override
     public List<ProductResponseDto> findByCategoryName(String categoryName) {
-        List<Product> products = productRepository.findAll();
+        List<Product> products = productRepository.findAllWithCategory();
         return products.stream()
                 .filter(product -> product.getCategory().getName().equalsIgnoreCase(categoryName))
                 .map(product -> new ProductResponseDto(
                         product.getId(),
                         product.getName(),
                         product.getCategory().getId(),
+                        product.getCategory().getName(),
                         product.getUnit(),
                         product.getImageUrl(),
                         product.getImageAlt(),
@@ -174,5 +177,22 @@ public class ProductServiceImpl implements IProductService {
                         product.getUnitSize()
                 ))
                 .toList();
+    }
+
+    private ProductResponseDto toResponse(Product product) {
+        Category category = product.getCategory();
+
+        return new ProductResponseDto(
+                product.getId(),
+                product.getName(),
+                category.getId(),
+                category.getName(),
+                product.getUnit(),
+                product.getImageUrl(),
+                product.getImageAlt(),
+                product.getActive(),
+                product.getUnitSize()
+
+        );
     }
 }

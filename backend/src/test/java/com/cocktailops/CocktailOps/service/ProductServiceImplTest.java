@@ -81,7 +81,7 @@ public class ProductServiceImplTest {
         assertEquals("Vodka Sernova", result.imageAlt());
         assertTrue(result.active());
         assertEquals(750d, result.unitSize().doubleValue());
-        assertEquals(10L, result.category());
+        assertEquals(10L, result.categoryId());
         assertEquals("https://res.cloudinary.com/dzj8q4qeu/image/upload/v1700000000/products/vodka_sernova.png", result.imageUrl());
 
         verify(productRepository).findById(productId);
@@ -157,7 +157,8 @@ public class ProductServiceImplTest {
         assertEquals("Vodka Sernova", result.imageAlt());
         assertTrue(result.active());
         assertEquals(new BigDecimal("750"), result.unitSize());
-        assertEquals(10L, result.category());
+        assertEquals(10L, result.categoryId());
+        assertEquals("Alcohol", result.categoryName());
 
 
         verify(productRepository).existsByName("Vodka");
@@ -266,7 +267,8 @@ public class ProductServiceImplTest {
         assertEquals("Vodka Sernova", result.imageAlt());
         assertTrue(result.active());
         assertEquals(750d, result.unitSize().doubleValue());
-        assertEquals(10L, result.category());
+        assertEquals(10L, result.categoryId());
+        assertEquals("Spirits", result.categoryName());
 
         verify(productRepository).findById(productId);
         verify(categoryRepository).findById(10L);
@@ -428,7 +430,7 @@ public class ProductServiceImplTest {
         products.add(product3);
 
 
-        when(productRepository.findAll()).thenReturn(products);
+        when(productRepository.findAllWithCategory()).thenReturn(products);
 
         List<ProductResponseDto> result = productServiceImpl.findAll();
 
@@ -438,15 +440,18 @@ public class ProductServiceImplTest {
 
         assertEquals(1L, result.get(0).productId());
         assertEquals("Vodka", result.get(0).name());
-        assertEquals(10L, result.get(0).category());
+        assertEquals(10L, result.get(0).categoryId());
+        assertEquals("Alcohol", result.get(0).categoryName());
 
         assertEquals(2L, result.get(1).productId());
         assertEquals("Ron", result.get(1).name());
-        assertEquals(10L, result.get(1).category());
+        assertEquals(10L, result.get(1).categoryId());
+        assertEquals("Alcohol", result.get(1).categoryName());
 
         assertEquals(3L, result.get(2).productId());
         assertEquals("Whisky", result.get(2).name());
-        assertEquals(10L, result.get(2).category());
+        assertEquals(10L, result.get(2).categoryId());
+        assertEquals("Alcohol", result.get(2).categoryName());
 
 
 
@@ -486,9 +491,10 @@ public class ProductServiceImplTest {
                 1L,
                 "Vodka",
                 10L,
+                "Alcohol",
                 "ml",
-                "hola",
                 "Vodka Sernova",
+                "gogagagkakgakg",
                 true,
                 new BigDecimal("750")
         );
@@ -502,9 +508,10 @@ public class ProductServiceImplTest {
         assertNotNull(result);
         assertEquals(1L, result.productId());
         assertEquals("Vodka", result.name());
-        assertEquals(10L, result.category());
+        assertEquals(10L, result.categoryId());
+        assertEquals("Alcohol", result.categoryName());
         assertEquals("ml", result.unit());
-        assertEquals("hola", result.imageUrl());
+        assertEquals("https://res.cloudinary.com/dzj8q4qeu/image/upload/v1700000000/products/vodka_sernova.png", result.imageUrl());
         assertEquals("Vodka Sernova", result.imageAlt());
         assertTrue(result.active());
         assertEquals(new BigDecimal("750"), result.unitSize());
@@ -585,7 +592,8 @@ public class ProductServiceImplTest {
 
         assertEquals(1L, result.get(0).productId());
         assertEquals("Vodka", result.get(0).name());
-        assertEquals(10L, result.get(0).category());
+        assertEquals(10L, result.get(0).categoryId());
+        assertEquals("Alcohol", result.get(0).categoryName());
         assertEquals("ml", result.get(0).unit());
         assertEquals("Vodka Sernova", result.get(0).imageAlt());
         assertTrue(result.get(0).active());

@@ -6,12 +6,16 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+import java.util.Optional;
+
 @Repository
 public interface IProductRepository extends JpaRepository<Product, Long> {
 
-    @Query("SELECT new com.cocktailops.CocktailOps.dto.productDto.ProductResponseDto(p.id,p.name, p.category.id, p.unit, p.imageUrl, p.imageAlt,p.active,p.unitSize) " +(
-            "FROM Product p WHERE p.name = :name"))
-    ProductResponseDto findByName(String name);
+    Optional<Product> findByName(String name);
+
+    @Query("SELECT p FROM Product p JOIN FETCH p.category")
+    List<Product> findAllWithCategory();
 
     Boolean existsByName(String name);
 }
