@@ -69,6 +69,9 @@ Motivos:
 - validar inputs con Bean Validation
 - controlar qué información se devuelve al cliente
 - mejorar la documentación Swagger
+- devolver responses útiles para el frontend sin exponer relaciones internas del modelo
+
+Por ejemplo, `GET /products` devuelve datos básicos de la categoría (`categoryId` y `categoryName`) para que el frontend pueda mostrar la categoría del producto sin hacer requests adicionales por cada producto.
 
 ---
 
@@ -82,6 +85,7 @@ Ventajas:
 - cambios controlados
 - historial de migraciones
 - integración simple con Spring Boot
+- carga de datos demo para poder probar el flujo del frontend con catálogo inicial
 
 ---
 
@@ -95,6 +99,8 @@ Se usa para:
 - definir relaciones
 - trabajar con repositorios
 - simplificar consultas frecuentes
+
+En relaciones como `Product → Category`, se mantiene `LAZY` en la entidad y se resuelve la información necesaria en el DTO de respuesta, evitando devolver entidades JPA directamente.
 
 ---
 
@@ -131,6 +137,7 @@ Se agregaron logs en servicios principales para registrar flujos importantes:
 - Autenticación con JWT
 - Roles `USER` y `ADMIN`
 - Gestión de productos
+- Listado de productos con información básica de su categoría (`categoryId` y `categoryName`)
 - Gestión de categorías
 - Gestión de cócteles
 - Gestión de tiendas
@@ -142,6 +149,7 @@ Se agregaron logs en servicios principales para registrar flujos importantes:
 - Historial de órdenes por usuario
 - Protección de PDFs por ownership
 - Endpoints administrativos protegidos
+- Seed demo de catálogo con Flyway
 - Documentación Swagger
 - Tests unitarios
 - Perfil de testing con H2
@@ -352,6 +360,12 @@ Verificar contenedor:
 docker compose ps
 ```
 
+El backend local espera PostgreSQL en:
+
+```txt
+localhost:5433
+```
+
 ---
 
 ### Configuración local
@@ -382,8 +396,13 @@ spring.flyway.enabled=true
 spring.flyway.locations=classpath:db/migration
 
 spring.jpa.hibernate.ddl-auto=validate
+spring.jpa.properties.hibernate.jdbc.time_zone=UTC
+
+spring.jackson.time-zone=UTC
 
 order.drinksPerPersonPerHour=2
+
+security.jwt.secret=local-dev-secret-key-32-characters-minimum-change-me-123456
 ```
 
 > `application-local.properties` no debe versionarse porque puede contener credenciales locales.
@@ -403,6 +422,20 @@ O también desde la raíz:
 
 ```bash
 mvn -f backend/pom.xml spring-boot:run "-Dspring-boot.run.profiles=local"
+```
+
+Si se ejecuta desde IntelliJ, configurar:
+
+```txt
+Program arguments:
+--spring.profiles.active=local
+```
+
+Opcionalmente, para forzar zona horaria UTC:
+
+```txt
+VM options:
+-Duser.timezone=UTC
 ```
 
 ---
@@ -452,6 +485,66 @@ docker compose down -v
 ---
 
 ## API - Ejemplos principales
+
+### Listar productos
+
+```http
+GET /products
+```
+
+Este endpoint devuelve los productos disponibles junto con información básica de su categoría, evitando que el frontend tenga que realizar una request adicional por cada producto.
+
+Ejemplo de respuesta:
+
+```json
+[
+  {
+    "productId": 1,
+    "name": "Gin",
+    "unit": "ML",
+    "unitSize": 750.00,
+    "active": true,
+    "imageUrl": null,
+    "imageAlt": "Botella de gin",
+    "categoryId": 1,
+    "categoryName": "Alcoholes"
+  }
+]
+```
+
+Decisión técnica:
+
+```txt
+GET /products devuelve categoryId y categoryName para evitar requests adicionales desde el frontend y prevenir un problema N+1 del lado cliente.
+```
+
+---
+
+### Crear categoría
+
+```http
+POST /categories
+Authorization: Bearer <token-admin>
+```
+
+Body:
+
+```json
+{
+  "name": "Destilados",
+  "shop": 1,
+  "slug": "destilados",
+  "active": true
+}
+```
+
+Notas:
+
+- El campo `shop` representa el ID del shop en el DTO de request.
+- En base de datos la columna se llama `shop_id`, pero en la API se envía como `shop`.
+- El `slug` no debería repetirse dentro del mismo shop.
+
+---
 
 ### Crear orden modo TIME
 
@@ -702,7 +795,7 @@ class SHOPAPI ext
 classDef actor fill:#ffffff,stroke:#444,stroke-width:1px
 classDef box fill:#ffffff,stroke:#5a5a8a,stroke-width:1px
 classDef db fill:#ffffff,stroke:#a06a00,stroke-width:1px
-classDef ext fill:#ffffff,stroke:#1f7a3a,stroke-width:1px
+classDef ext fill:#1f7a3a,stroke:#1f7a3a,stroke-width:1px
 ```
 
 ---
@@ -780,6 +873,8 @@ classDef entity fill:#000000,stroke:#1f7a3a,stroke-width:1px;
 - **Backend API**: listo
 - **Cálculo de órdenes TIME / DRINKS**: listo
 - **Generación de PDF**: listo
+- **Listado de productos con categoría básica**: listo
+- **Seed demo de catálogo con Flyway**: listo
 - **Swagger / documentación API**: listo, en mejora continua
 - **Tests unitarios**: en progreso
 - **Perfil de testing con H2**: listo
