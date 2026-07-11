@@ -8,9 +8,6 @@ import type { Product } from "./product.types";
 import { ProductFilters } from "./components/ProductFilters";
 import { ProductTable } from "./components/ProductTable";
 
-function getCategoryName(product: Product) {
-  return product.category ?? product.categoryName ?? "";
-}
 
 export function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -70,13 +67,15 @@ export function ProductsPage() {
 
     return products.filter((product) => {
       const name = product.name.toLowerCase();
-      const category = getCategoryName(product);
+      const category = product.categoryName?.toLowerCase() ?? "";
       const unit = product.unit?.toLowerCase() ?? "";
+      const size = product.unitSize?.toString() ?? "";
 
       return (
         name.includes(normalizedSearch) ||
-        category ||
-        unit.includes(normalizedSearch)
+        category.includes(normalizedSearch) ||
+        unit.includes(normalizedSearch) ||
+        size.includes(normalizedSearch)
       );
     });
   }, [products, searchTerm]);
