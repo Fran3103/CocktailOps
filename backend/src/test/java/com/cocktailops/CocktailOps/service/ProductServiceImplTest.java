@@ -403,37 +403,29 @@ public class ProductServiceImplTest {
         category.setId(10L);
         category.setName("Alcohol");
 
-
-        Long productId = 1L;
         Product product = new Product();
-        product.setId(productId);
+        product.setId(1L);
         product.setName("Vodka");
         product.setCategory(category);
 
-        Long  productId2 = 2L;
         Product product2 = new Product();
-        product2.setId(productId2);
+        product2.setId(2L);
         product2.setName("Ron");
         product2.setCategory(category);
 
-        Long  productId3 = 3L;
         Product product3 = new Product();
-        product3.setId(productId3);
+        product3.setId(3L);
         product3.setName("Whisky");
         product3.setCategory(category);
 
-
         List<Product> products = new ArrayList<>();
-
         products.add(product);
         products.add(product2);
         products.add(product3);
 
-
         when(productRepository.findAllWithCategory()).thenReturn(products);
 
         List<ProductResponseDto> result = productServiceImpl.findAll();
-
 
         assertNotNull(result);
         assertEquals(3, result.size());
@@ -453,55 +445,46 @@ public class ProductServiceImplTest {
         assertEquals(10L, result.get(2).categoryId());
         assertEquals("Alcohol", result.get(2).categoryName());
 
-
-
-        verify(productRepository).findAll();
+        verify(productRepository).findAllWithCategory();
         verifyNoMoreInteractions(productRepository);
         verifyNoInteractions(categoryRepository);
-
-
-
-
     }
 
     @Test
     void findAll_whenProductsDoesNotExist_ReturnsEmptyList() {
 
-        when(productRepository.findAll()).thenReturn(Collections.emptyList());
+        when(productRepository.findAllWithCategory()).thenReturn(Collections.emptyList());
 
         List<ProductResponseDto> result = productServiceImpl.findAll();
 
         assertNotNull(result);
         assertTrue(result.isEmpty());
 
-        verify(productRepository).findAll();
+        verify(productRepository).findAllWithCategory();
         verifyNoMoreInteractions(productRepository);
         verifyNoInteractions(categoryRepository);
-
-
     }
 
 
     @Test
     void findByName_whenProductExists_returnsResponseProductDto() {
-
         String name = "Vodka";
 
-        ProductResponseDto productResponseDto  = new ProductResponseDto(
-                1L,
-                "Vodka",
-                10L,
-                "Alcohol",
-                "ml",
-                "Vodka Sernova",
-                "gogagagkakgakg",
-                true,
-                new BigDecimal("750")
-        );
+        Category category = new Category();
+        category.setId(10L);
+        category.setName("Alcohol");
 
+        Product product = new Product();
+        product.setId(1L);
+        product.setName("Vodka");
+        product.setCategory(category);
+        product.setUnit("ml");
+        product.setImageUrl("https://res.cloudinary.com/dzj8q4qeu/image/upload/v1700000000/products/vodka_sernova.png");
+        product.setImageAlt("Vodka Sernova");
+        product.setActive(true);
+        product.setUnitSize(new BigDecimal("750"));
 
-        when(productRepository.findByName(name)).thenReturn(productResponseDto);
-
+        when(productRepository.findByName(name)).thenReturn(Optional.of(product));
 
         ProductResponseDto result = productServiceImpl.findByName(name);
 
@@ -516,24 +499,23 @@ public class ProductServiceImplTest {
         assertTrue(result.active());
         assertEquals(new BigDecimal("750"), result.unitSize());
 
-
         verify(productRepository).findByName(name);
         verifyNoMoreInteractions(productRepository);
         verifyNoInteractions(categoryRepository);
-
     }
 
 
     @Test
     void findByName_whenProductDoesNotExist_throwsResourceNotFoundException() {
         String name = "Vodka";
-        when(productRepository.findByName(name)).thenReturn(null);
+
+        when(productRepository.findByName(name)).thenReturn(Optional.empty());
 
         ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> {
             productServiceImpl.findByName(name);
         });
 
-        assertEquals("Product with name " + name + " not found", exception.getMessage());
+        assertEquals("Product not found by name: " + name , exception.getMessage());
 
         verify(productRepository).findByName(name);
         verifyNoMoreInteractions(productRepository);
@@ -552,9 +534,8 @@ public class ProductServiceImplTest {
         Category sinAlcohol = new Category();
         sinAlcohol.setId(20L);
         sinAlcohol.setName("Sin Alcohol");
-        Product product = new Product();
 
-        product.setCategory(new Category());
+        Product product = new Product();
         product.setCategory(alcohol);
         product.setId(1L);
         product.setName("Vodka");
@@ -562,28 +543,21 @@ public class ProductServiceImplTest {
         product.setImageAlt("Vodka Sernova");
         product.setImageUrl("https://res.cloudinary.com/dzj8q4qeu/image/upload/v1700000000/products/vodka_sernova.png");
         product.setActive(true);
-        product.setUnitSize(new BigDecimal(750));
-
+        product.setUnitSize(new BigDecimal("750"));
 
         Product product2 = new Product();
-
-        product2.setCategory(new Category());
         product2.setCategory(sinAlcohol);
         product2.setId(2L);
-        product2.setName("jugo");
+        product2.setName("Jugo");
         product2.setUnit("ml");
         product2.setImageAlt("Jugo de Naranja");
         product2.setImageUrl("https://res.cloudinary.com/dzj8q4qeu/image/upload/v1700000000/products/jugo_naranja.png");
         product2.setActive(true);
-        product2.setUnitSize(new BigDecimal(250));
-
+        product2.setUnitSize(new BigDecimal("250"));
 
         List<Product> productList = List.of(product, product2);
 
-
-
-
-        when(productRepository.findAll()).thenReturn(productList);
+        when(productRepository.findAllWithCategory()).thenReturn(productList);
 
         List<ProductResponseDto> result = productServiceImpl.findByCategoryName(categoryName1);
 
@@ -599,15 +573,9 @@ public class ProductServiceImplTest {
         assertTrue(result.get(0).active());
         assertEquals(new BigDecimal("750"), result.get(0).unitSize());
 
-        verify(productRepository).findAll();
+        verify(productRepository).findAllWithCategory();
         verifyNoMoreInteractions(productRepository);
         verifyNoInteractions(categoryRepository);
-
-
-
-
-
-
     }
 
 
@@ -616,12 +584,12 @@ public class ProductServiceImplTest {
 
         String categoryName = "alcohol";
 
-        Category alcohol = new Category();
-        alcohol.setId(1L);
-        alcohol.setName("Sin Alcohol");
+        Category sinAlcohol = new Category();
+        sinAlcohol.setId(1L);
+        sinAlcohol.setName("Sin Alcohol");
 
         Product product = new Product();
-        product.setCategory(alcohol);
+        product.setCategory(sinAlcohol);
         product.setId(1L);
         product.setName("Vodka");
         product.setUnit("ml");
@@ -631,17 +599,16 @@ public class ProductServiceImplTest {
 
         List<Product> productList = List.of(product);
 
-        when(productRepository.findAll()).thenReturn(productList);
+        when(productRepository.findAllWithCategory()).thenReturn(productList);
 
         List<ProductResponseDto> result = productServiceImpl.findByCategoryName(categoryName);
 
         assertNotNull(result);
         assertTrue(result.isEmpty());
 
-        verify(productRepository).findAll();
+        verify(productRepository).findAllWithCategory();
         verifyNoMoreInteractions(productRepository);
         verifyNoInteractions(categoryRepository);
-
     }
 
     @Test
@@ -649,14 +616,14 @@ public class ProductServiceImplTest {
 
         String categoryName = "alcohol";
 
-        when(productRepository.findAll()).thenReturn(Collections.emptyList());
+        when(productRepository.findAllWithCategory()).thenReturn(Collections.emptyList());
 
         List<ProductResponseDto> result = productServiceImpl.findByCategoryName(categoryName);
 
         assertNotNull(result);
         assertTrue(result.isEmpty());
 
-        verify(productRepository).findAll();
+        verify(productRepository).findAllWithCategory();
         verifyNoMoreInteractions(productRepository);
         verifyNoInteractions(categoryRepository);
     }
