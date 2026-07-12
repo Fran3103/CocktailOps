@@ -19,7 +19,13 @@ async function createDrinksOrder(
   return response.data;
 }
 
+async function getOrderById(orderId: number): Promise<OrderResponse> {
+  const response = await apiClient.get<OrderResponse>(`/orders/${orderId}`);
+  return response.data;
+}
+
 export const orderService = {
   createTimeOrder,
   createDrinksOrder,
+  getOrderById,
 };

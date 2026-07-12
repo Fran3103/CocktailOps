@@ -1,4 +1,6 @@
-import { CheckCircle2, PlusCircle } from "lucide-react";
+import { CheckCircle2, Eye, PlusCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../../../shared/constants/routes";
 
 import { Button } from "../../../shared/components/ui/Button";
 import { Card } from "../../../shared/components/ui/Card";
@@ -19,8 +21,15 @@ export function CreatedOrderSummary({
   const totalDrinks =
     order.cocktail?.reduce(
       (total, cocktail) => total + (cocktail.quantity ?? 0),
-      0
+      0,
     ) ?? 0;
+  const navigate = useNavigate();
+
+  function handleViewDetail() {
+    navigate(ROUTES.orderDetails.replace(":id", String(order.id)), {
+      state: { order },
+    });
+  }
 
   return (
     <Card className="overflow-hidden border-success/60 bg-[linear-gradient(135deg,rgba(181,204,192,0.16),rgba(26,46,38,0.96))] shadow-xl shadow-black/30 ring-1 ring-success/30">
@@ -60,12 +69,21 @@ export function CreatedOrderSummary({
           </div>
         </div>
 
-        <Button type="button" variant="secondary" onClick={onCreateNewOrder}>
-          <span className="flex items-center justify-center gap-2">
-            <PlusCircle size={16} />
-            Crear nueva orden
-          </span>
-        </Button>
+        <div className="flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">
+          <Button type="button" variant="primary" onClick={handleViewDetail}>
+            <span className="flex items-center justify-center gap-2">
+              <Eye size={16} />
+              Ver detalle
+            </span>
+          </Button>
+
+          <Button type="button" variant="secondary" onClick={onCreateNewOrder}>
+            <span className="flex items-center justify-center gap-2">
+              <PlusCircle size={16} />
+              Crear nueva orden
+            </span>
+          </Button>
+        </div>
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-3 text-sm sm:grid-cols-4">
@@ -76,9 +94,7 @@ export function CreatedOrderSummary({
 
         <div className="rounded-control border border-success/20 bg-background/70 p-3">
           <p className="text-text-muted">Estado</p>
-          <p className="text-lg font-semibold text-text-main">
-            {order.status}
-          </p>
+          <p className="text-lg font-semibold text-text-main">{order.status}</p>
         </div>
 
         <div className="rounded-control border border-success/20 bg-background/70 p-3">
