@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-
+import { useEffect, useMemo, useState, useRef } from "react";
+import { SuccessToast } from "../../shared/components/feedback/SuccessToast";
 import { Button } from "../../shared/components/ui/Button";
 import { Card } from "../../shared/components/ui/Card";
 import { PageHeader } from "../../shared/components/ui/PageHeader";
@@ -8,13 +8,17 @@ import { cocktailService } from "../cocktails/cocktailService";
 import type { Cocktail } from "../cocktails/cocktail.types";
 import { CocktailSelector } from "./components/CocktailSelector";
 import { CreatedOrderSummary } from "./components/CreatedOrderSummary";
+import { DrinksDetailsForm } from "./components/DrinksDetailsForm";
 import { EventDetailsForm } from "./components/EventDetailsForm";
 import { GuestModeNotice } from "./components/GuestModeNotice";
+import { OrderModeSelector } from "./components/OrderModeSelector";
 import { OrderSummaryPanel } from "./components/OrderSummaryPanel";
 import { SelectedCocktailsList } from "./components/SelectedCocktailsList";
 import { orderService } from "./orderService";
 import type {
+  CreateDrinksOrderRequest,
   CreateTimeOrderRequest,
+  OrderMode,
   OrderResponse,
   SelectedOrderCocktail,
 } from "./order.types";
@@ -22,8 +26,12 @@ import type {
 export function CreateOrderPage() {
   const { isAuthenticated } = useAuth();
 
+  const [orderMode, setOrderMode] = useState<OrderMode>("TIME");
+  const createdOrderRef = useRef<HTMLDivElement | null>(null);
+
   const [guests, setGuests] = useState("");
   const [durationHours, setDurationHours] = useState("");
+  const [totalDrinks, setTotalDrinks] = useState("");
 
   const [cocktails, setCocktails] = useState<Cocktail[]>([]);
   const [selectedCocktails, setSelectedCocktails] = useState<
@@ -36,6 +44,7 @@ export function CreateOrderPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [createdOrder, setCreatedOrder] = useState<OrderResponse | null>(null);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -66,6 +75,39 @@ export function CreateOrderPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (createdOrder) {
+      createdOrderRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  }, [createdOrder]);
+
+  useEffect(() => {
+    if (!showSuccessToast) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setShowSuccessToast(false);
+    }, 3000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [showSuccessToast]);
+
+  function clearResultState() {
+    setCreatedOrder(null);
+    setSubmitError(null);
+  }
+
+  function handleOrderModeChange(mode: OrderMode) {
+    setOrderMode(mode);
+    clearResultState();
+  }
+
   function handleAddCocktail(cocktail: Cocktail) {
     const cocktailId = cocktail.id;
 
@@ -83,11 +125,11 @@ export function CreateOrderPage() {
         cocktailId,
         cocktailName: cocktail.name,
         weight: 1,
+        quantity: 1,
       },
     ]);
 
-    setCreatedOrder(null);
-    setSubmitError(null);
+    clearResultState();
   }
 
   function handleWeightChange(cocktailId: number, weight: number) {
@@ -101,8 +143,21 @@ export function CreateOrderPage() {
       ),
     );
 
-    setCreatedOrder(null);
-    setSubmitError(null);
+    clearResultState();
+  }
+
+  function handleQuantityChange(cocktailId: number, quantity: number) {
+    const safeQuantity = Number.isNaN(quantity) || quantity < 1 ? 1 : quantity;
+
+    setSelectedCocktails((currentCocktails) =>
+      currentCocktails.map((cocktail) =>
+        cocktail.cocktailId === cocktailId
+          ? { ...cocktail, quantity: safeQuantity }
+          : cocktail,
+      ),
+    );
+
+    clearResultState();
   }
 
   function handleRemoveCocktail(cocktailId: number) {
@@ -110,11 +165,52 @@ export function CreateOrderPage() {
       currentCocktails.filter((cocktail) => cocktail.cocktailId !== cocktailId),
     );
 
-    setCreatedOrder(null);
-    setSubmitError(null);
+    clearResultState();
   }
 
-  const payload = useMemo<CreateTimeOrderRequest | null>(() => {
+  const assignedDrinks = useMemo(() => {
+    return selectedCocktails.reduce(
+      (total, cocktail) => total + cocktail.quantity,
+      0,
+    );
+  }, [selectedCocktails]);
+
+  function handleDistributeEqually() {
+    const numericTotalDrinks = Number(totalDrinks);
+
+    if (numericTotalDrinks <= 0) {
+      setSubmitError("Indicá una cantidad total de tragos mayor a 0.");
+      return;
+    }
+
+    if (selectedCocktails.length === 0) {
+      setSubmitError("Seleccioná al menos un cóctel para dividir la cantidad.");
+      return;
+    }
+
+    if (numericTotalDrinks < selectedCocktails.length) {
+      setSubmitError(
+        "El total de tragos debe ser mayor o igual a la cantidad de cócteles seleccionados.",
+      );
+      return;
+    }
+
+    const baseQuantity = Math.floor(
+      numericTotalDrinks / selectedCocktails.length,
+    );
+    const remainder = numericTotalDrinks % selectedCocktails.length;
+
+    setSelectedCocktails((currentCocktails) =>
+      currentCocktails.map((cocktail, index) => ({
+        ...cocktail,
+        quantity: index < remainder ? baseQuantity + 1 : baseQuantity,
+      })),
+    );
+
+    clearResultState();
+  }
+
+  const timePayload = useMemo<CreateTimeOrderRequest | null>(() => {
     const numericGuests = Number(guests);
     const numericDurationHours = Number(durationHours);
 
@@ -136,25 +232,80 @@ export function CreateOrderPage() {
     };
   }, [guests, durationHours, selectedCocktails]);
 
+  const drinksPayload = useMemo<CreateDrinksOrderRequest | null>(() => {
+    const numericTotalDrinks = Number(totalDrinks);
+
+    if (
+      numericTotalDrinks <= 0 ||
+      selectedCocktails.length === 0 ||
+      assignedDrinks !== numericTotalDrinks
+    ) {
+      return null;
+    }
+
+    return {
+      totalDrinks: numericTotalDrinks,
+      cocktails: selectedCocktails.map((cocktail) => ({
+        cocktailId: cocktail.cocktailId,
+        quantity: cocktail.quantity,
+      })),
+    };
+  }, [totalDrinks, selectedCocktails, assignedDrinks]);
+
+  const currentPayload = orderMode === "TIME" ? timePayload : drinksPayload;
+
   async function handleCreateOrder() {
-    if (!payload) {
-      setSubmitError(
-        "Completá invitados, duración y al menos un cóctel para crear la orden.",
-      );
+    setSubmitError(null);
+    setCreatedOrder(null);
+
+    if (orderMode === "TIME") {
+      if (!timePayload) {
+        setSubmitError(
+          "Completá invitados, duración y al menos un cóctel para crear la orden.",
+        );
+        return;
+      }
+
+      setIsSubmitting(true);
+
+      try {
+        const order = await orderService.createTimeOrder(timePayload);
+        setCreatedOrder(order);
+        setShowSuccessToast(true);
+      } catch {
+        setSubmitError(
+          "No se pudo crear la orden. Revisá los datos o intentá nuevamente.",
+        );
+      } finally {
+        setIsSubmitting(false);
+      }
+
+      return;
+    }
+
+    if (!drinksPayload) {
+      const numericTotalDrinks = Number(totalDrinks);
+
+      if (numericTotalDrinks <= 0) {
+        setSubmitError("Indicá una cantidad total de tragos mayor a 0.");
+      } else if (selectedCocktails.length === 0) {
+        setSubmitError("Seleccioná al menos un cóctel para crear la orden.");
+      } else {
+        setSubmitError(
+          `El total asignado debe ser igual al total de tragos. Actualmente asignaste ${assignedDrinks} de ${numericTotalDrinks}.`,
+        );
+      }
+
       return;
     }
 
     setIsSubmitting(true);
-    setSubmitError(null);
-    setCreatedOrder(null);
 
     try {
-      const order = await orderService.createTimeOrder(payload);
-      console.log("Orden creada:", order);
+      const order = await orderService.createDrinksOrder(drinksPayload);
       setCreatedOrder(order);
-    } catch (error) {
-      console.error("Error al crear la orden:", error);
-      console.log("Payload enviado:", payload);
+      setShowSuccessToast(true);
+    } catch {
       setSubmitError(
         "No se pudo crear la orden. Revisá los datos o intentá nuevamente.",
       );
@@ -163,42 +314,93 @@ export function CreateOrderPage() {
     }
   }
 
+  function handleCreateNewOrder() {
+    setGuests("");
+    setDurationHours("");
+    setTotalDrinks("");
+    setSelectedCocktails([]);
+    setSubmitError(null);
+    setCreatedOrder(null);
+    setShowSuccessToast(false);
+  }
+
   return (
     <section className="space-y-6">
+      {showSuccessToast && createdOrder && (
+        <SuccessToast
+          title="Orden creada"
+          message={`La orden #${createdOrder.id} se generó correctamente.`}
+          onClose={() => setShowSuccessToast(false)}
+        />
+      )}
       <PageHeader
         title="Nueva orden"
-        description="Armá una orden por invitados, duración del evento y cócteles seleccionados."
+        description="Armá una orden por evento o por cantidad total de tragos."
       />
 
       {!isAuthenticated && <GuestModeNotice />}
 
-      {createdOrder && <CreatedOrderSummary order={createdOrder} />}
+      {createdOrder && (
+        <div ref={createdOrderRef}>
+          <CreatedOrderSummary
+            order={createdOrder}
+            onCreateNewOrder={handleCreateNewOrder}
+          />
+        </div>
+      )}
 
       <Card className="space-y-4">
         <div>
           <h2 className="font-heading text-xl font-semibold text-text-main">
-            Datos del evento
+            Modo de cálculo
           </h2>
 
           <p className="mt-1 text-sm text-text-muted">
-            Esta primera versión usa el modo TIME del backend.
+            Elegí cómo querés calcular la orden.
           </p>
         </div>
 
-        <EventDetailsForm
-          guests={guests}
-          durationHours={durationHours}
-          onGuestsChange={(value) => {
-            setGuests(value);
-            setCreatedOrder(null);
-            setSubmitError(null);
-          }}
-          onDurationHoursChange={(value) => {
-            setDurationHours(value);
-            setCreatedOrder(null);
-            setSubmitError(null);
-          }}
-        />
+        <OrderModeSelector value={orderMode} onChange={handleOrderModeChange} />
+      </Card>
+
+      <Card className="space-y-4">
+        <div>
+          <h2 className="font-heading text-xl font-semibold text-text-main">
+            {orderMode === "TIME" ? "Datos del evento" : "Cantidad de tragos"}
+          </h2>
+
+          <p className="mt-1 text-sm text-text-muted">
+            {orderMode === "TIME"
+              ? "Calcula la orden según invitados, duración y peso de cada cóctel."
+              : "Calcula la orden según la cantidad total de tragos y la cantidad elegida por cóctel."}
+          </p>
+        </div>
+
+        {orderMode === "TIME" ? (
+          <EventDetailsForm
+            guests={guests}
+            durationHours={durationHours}
+            onGuestsChange={(value) => {
+              setGuests(value);
+              clearResultState();
+            }}
+            onDurationHoursChange={(value) => {
+              setDurationHours(value);
+              clearResultState();
+            }}
+          />
+        ) : (
+          <DrinksDetailsForm
+            totalDrinks={totalDrinks}
+            assignedDrinks={assignedDrinks}
+            selectedCocktailsCount={selectedCocktails.length}
+            onTotalDrinksChange={(value) => {
+              setTotalDrinks(value);
+              clearResultState();
+            }}
+            onDistributeEqually={handleDistributeEqually}
+          />
+        )}
       </Card>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_380px]">
@@ -210,13 +412,17 @@ export function CreateOrderPage() {
               </h2>
 
               <p className="mt-1 text-sm text-text-muted">
-                El peso define la importancia relativa de cada cóctel.
+                {orderMode === "TIME"
+                  ? "El peso define la importancia relativa de cada cóctel."
+                  : "La cantidad define cuántos tragos de cada cóctel se calcularán."}
               </p>
             </div>
 
             <SelectedCocktailsList
+              orderMode={orderMode}
               selectedCocktails={selectedCocktails}
               onWeightChange={handleWeightChange}
+              onQuantityChange={handleQuantityChange}
               onRemoveCocktail={handleRemoveCocktail}
             />
           </Card>
@@ -256,10 +462,13 @@ export function CreateOrderPage() {
 
         <div className="xl:sticky xl:top-8 xl:self-start">
           <OrderSummaryPanel
+            orderMode={orderMode}
             guests={guests}
             durationHours={durationHours}
+            totalDrinks={totalDrinks}
+            assignedDrinks={assignedDrinks}
             selectedCocktails={selectedCocktails}
-            payload={payload}
+            payload={currentPayload}
           />
 
           {submitError && (

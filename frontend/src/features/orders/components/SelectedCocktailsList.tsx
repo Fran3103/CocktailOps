@@ -1,17 +1,21 @@
 import { Trash2 } from "lucide-react";
 
 import { Input } from "../../../shared/components/ui/Input";
-import type { SelectedOrderCocktail } from "../order.types";
+import type { OrderMode, SelectedOrderCocktail } from "../order.types";
 
 type SelectedCocktailsListProps = {
+  orderMode: OrderMode;
   selectedCocktails: SelectedOrderCocktail[];
   onWeightChange: (cocktailId: number, weight: number) => void;
+  onQuantityChange: (cocktailId: number, quantity: number) => void;
   onRemoveCocktail: (cocktailId: number) => void;
 };
 
 export function SelectedCocktailsList({
+  orderMode,
   selectedCocktails,
   onWeightChange,
+  onQuantityChange,
   onRemoveCocktail,
 }: SelectedCocktailsListProps) {
   if (selectedCocktails.length === 0) {
@@ -21,6 +25,8 @@ export function SelectedCocktailsList({
       </p>
     );
   }
+
+  const isTimeMode = orderMode === "TIME";
 
   return (
     <div className="space-y-3">
@@ -35,23 +41,28 @@ export function SelectedCocktailsList({
             </p>
 
             <p className="text-sm text-text-muted">
-              Peso: {cocktail.weight}
+              {isTimeMode
+                ? `Peso: ${cocktail.weight}`
+                : `Cantidad: ${cocktail.quantity}`}
             </p>
           </div>
 
           <div className="flex items-end gap-3">
-            <div className="w-28">
+            <div className="w-32">
               <Input
-                label="Peso"
+                label={isTimeMode ? "Peso" : "Cantidad"}
                 type="number"
                 min="1"
-                value={cocktail.weight}
-                onChange={(event) =>
-                  onWeightChange(
-                    cocktail.cocktailId,
-                    Number(event.target.value)
-                  )
-                }
+                value={isTimeMode ? cocktail.weight : cocktail.quantity}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+
+                  if (isTimeMode) {
+                    onWeightChange(cocktail.cocktailId, value);
+                  } else {
+                    onQuantityChange(cocktail.cocktailId, value);
+                  }
+                }}
               />
             </div>
 

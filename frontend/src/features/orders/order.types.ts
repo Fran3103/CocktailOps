@@ -1,3 +1,5 @@
+export type OrderMode = "TIME" | "DRINKS";
+
 export type CreateTimeOrderCocktail = {
   cocktailId: number;
   weight: number;
@@ -9,10 +11,21 @@ export type CreateTimeOrderRequest = {
   cocktails: CreateTimeOrderCocktail[];
 };
 
+export type CreateDrinksOrderCocktail = {
+  cocktailId: number;
+  quantity: number;
+};
+
+export type CreateDrinksOrderRequest = {
+  totalDrinks: number;
+  cocktails: CreateDrinksOrderCocktail[];
+};
+
 export type SelectedOrderCocktail = {
   cocktailId: number;
   cocktailName: string;
   weight: number;
+  quantity: number;
 };
 
 export type OrderCocktailResponse = {
@@ -31,7 +44,7 @@ export type OrderItemResponse = {
 
 export type OrderResponse = {
   id: number;
-  mode: "TIME" | "DRINKS";
+  mode: OrderMode;
   createdAt: string;
   guests: number | null;
   drinksPerPerson: number | null;
