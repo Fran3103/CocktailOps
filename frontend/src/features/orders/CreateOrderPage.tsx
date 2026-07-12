@@ -3,18 +3,25 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "../../shared/components/ui/Button";
 import { Card } from "../../shared/components/ui/Card";
 import { PageHeader } from "../../shared/components/ui/PageHeader";
+import { useAuth } from "../auth/useAuth";
 import { cocktailService } from "../cocktails/cocktailService";
 import type { Cocktail } from "../cocktails/cocktail.types";
 import { CocktailSelector } from "./components/CocktailSelector";
+import { CreatedOrderSummary } from "./components/CreatedOrderSummary";
 import { EventDetailsForm } from "./components/EventDetailsForm";
+import { GuestModeNotice } from "./components/GuestModeNotice";
 import { OrderSummaryPanel } from "./components/OrderSummaryPanel";
 import { SelectedCocktailsList } from "./components/SelectedCocktailsList";
+import { orderService } from "./orderService";
 import type {
   CreateTimeOrderRequest,
+  OrderResponse,
   SelectedOrderCocktail,
 } from "./order.types";
 
 export function CreateOrderPage() {
+  const { isAuthenticated } = useAuth();
+
   const [guests, setGuests] = useState("");
   const [durationHours, setDurationHours] = useState("");
 
@@ -24,7 +31,11 @@ export function CreateOrderPage() {
   >([]);
 
   const [isLoadingCocktails, setIsLoadingCocktails] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [cocktailsError, setCocktailsError] = useState<string | null>(null);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [createdOrder, setCreatedOrder] = useState<OrderResponse | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -35,11 +46,11 @@ export function CreateOrderPage() {
 
         if (!ignore) {
           setCocktails(data);
-          setError(null);
+          setCocktailsError(null);
         }
       } catch {
         if (!ignore) {
-          setError("No se pudieron cargar los cócteles.");
+          setCocktailsError("No se pudieron cargar los cócteles.");
         }
       } finally {
         if (!ignore) {
@@ -74,6 +85,9 @@ export function CreateOrderPage() {
         weight: 1,
       },
     ]);
+
+    setCreatedOrder(null);
+    setSubmitError(null);
   }
 
   function handleWeightChange(cocktailId: number, weight: number) {
@@ -86,12 +100,18 @@ export function CreateOrderPage() {
           : cocktail
       )
     );
+
+    setCreatedOrder(null);
+    setSubmitError(null);
   }
 
   function handleRemoveCocktail(cocktailId: number) {
     setSelectedCocktails((currentCocktails) =>
       currentCocktails.filter((cocktail) => cocktail.cocktailId !== cocktailId)
     );
+
+    setCreatedOrder(null);
+    setSubmitError(null);
   }
 
   const payload = useMemo<CreateTimeOrderRequest | null>(() => {
@@ -116,16 +136,36 @@ export function CreateOrderPage() {
     };
   }, [guests, durationHours, selectedCocktails]);
 
-  function handleCreateOrderPreview() {
+  async function handleCreateOrder() {
     if (!payload) {
-      setError(
+      setSubmitError(
         "Completá invitados, duración y al menos un cóctel para crear la orden."
       );
       return;
     }
 
-    setError(null);
-    console.log("Create order payload:", payload);
+    if (!isAuthenticated) {
+      setSubmitError("Necesitás iniciar sesión para crear y guardar la orden.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+    setCreatedOrder(null);
+
+    try {
+      const order = await orderService.createTimeOrder(payload);
+      console.log("Orden creada:", order);
+      setCreatedOrder(order);
+    } catch(error) {
+      console.error("Error al crear la orden:", error);
+      console.log("Payload enviado:", payload);
+      setSubmitError(
+        "No se pudo crear la orden. Revisá los datos o intentá nuevamente."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -134,6 +174,10 @@ export function CreateOrderPage() {
         title="Nueva orden"
         description="Armá una orden por invitados, duración del evento y cócteles seleccionados."
       />
+
+      {!isAuthenticated && <GuestModeNotice />}
+
+      {createdOrder && <CreatedOrderSummary order={createdOrder} />}
 
       <Card className="space-y-4">
         <div>
@@ -149,8 +193,16 @@ export function CreateOrderPage() {
         <EventDetailsForm
           guests={guests}
           durationHours={durationHours}
-          onGuestsChange={setGuests}
-          onDurationHoursChange={setDurationHours}
+          onGuestsChange={(value) => {
+            setGuests(value);
+            setCreatedOrder(null);
+            setSubmitError(null);
+          }}
+          onDurationHoursChange={(value) => {
+            setDurationHours(value);
+            setCreatedOrder(null);
+            setSubmitError(null);
+          }}
         />
       </Card>
 
@@ -191,13 +243,13 @@ export function CreateOrderPage() {
               </Card>
             )}
 
-            {!isLoadingCocktails && error && (
+            {!isLoadingCocktails && cocktailsError && (
               <Card>
-                <p className="text-danger">{error}</p>
+                <p className="text-danger">{cocktailsError}</p>
               </Card>
             )}
 
-            {!isLoadingCocktails && !error && (
+            {!isLoadingCocktails && !cocktailsError && (
               <CocktailSelector
                 cocktails={cocktails}
                 selectedCocktails={selectedCocktails}
@@ -215,13 +267,20 @@ export function CreateOrderPage() {
             payload={payload}
           />
 
+          {submitError && (
+            <Card className="mt-4 border-danger/40">
+              <p className="text-sm text-danger">{submitError}</p>
+            </Card>
+          )}
+
           <Button
             type="button"
             fullWidth
             className="mt-4"
-            onClick={handleCreateOrderPreview}
+            onClick={handleCreateOrder}
+            disabled={isSubmitting}
           >
-            Crear orden
+            {isSubmitting ? "Creando orden..." : "Crear orden"}
           </Button>
         </div>
       </div>
