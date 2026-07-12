@@ -34,7 +34,11 @@ A partir de una selección de cócteles, cantidad de invitados, duración del ev
 - detalle de cócteles incluidos
 - PDF con lista de compra
 
-También incorpora autenticación y autorización para que cada usuario pueda crear y consultar sus propias órdenes.
+La funcionalidad principal de cálculo de órdenes puede ser utilizada por visitantes sin iniciar sesión.
+
+Si el usuario no está autenticado, puede crear/calcular una orden y recibir el resultado, pero la orden queda sin usuario asociado (`userId: null`) y no aparece en ningún historial personal.
+
+Si el usuario está autenticado, la orden se guarda asociada a su cuenta, aparece en su historial y puede acceder a recursos protegidos como el detalle propio y el PDF según las reglas de ownership.
 
 ---
 
@@ -72,6 +76,23 @@ Motivos:
 - devolver responses útiles para el frontend sin exponer relaciones internas del modelo
 
 Por ejemplo, `GET /products` devuelve datos básicos de la categoría (`categoryId` y `categoryName`) para que el frontend pueda mostrar la categoría del producto sin hacer requests adicionales por cada producto.
+
+---
+
+### Creación pública de órdenes con usuario opcional
+
+La creación de órdenes está pensada como funcionalidad principal del producto.
+
+Por eso:
+
+- `POST /orders` es público.
+- `POST /orders/by-drinks` es público.
+- Si no hay usuario autenticado, la orden se calcula y se devuelve con `userId: null`.
+- Si hay un JWT válido en el request, la orden se asocia automáticamente al usuario autenticado.
+- `GET /orders/my-orders` sigue protegido y solo devuelve órdenes del usuario autenticado.
+- `GET /orders/{id}/pdf` sigue protegido por ownership o rol `ADMIN`.
+
+Esta decisión permite que cualquier visitante pueda probar CocktailOps sin registrarse, mientras que el login agrega valor mediante historial, persistencia asociada al usuario y acceso protegido a recursos propios.
 
 ---
 
@@ -141,12 +162,13 @@ Se agregaron logs en servicios principales para registrar flujos importantes:
 - Gestión de categorías
 - Gestión de cócteles
 - Gestión de tiendas
-- Creación de órdenes modo TIME
-- Creación de órdenes modo DRINKS
+- Creación pública de órdenes modo TIME
+- Creación pública de órdenes modo DRINKS
+- Asociación opcional de órdenes al usuario autenticado
 - Cálculo automático de ingredientes
 - Cálculo de packs a comprar
 - Generación de PDF
-- Historial de órdenes por usuario
+- Historial de órdenes por usuario autenticado
 - Protección de PDFs por ownership
 - Endpoints administrativos protegidos
 - Seed demo de catálogo con Flyway
@@ -193,8 +215,10 @@ El flujo actual permite:
 - enviar el token en requests protegidas
 - validar usuarios mediante filtro JWT
 - proteger endpoints por rol
-- asociar órdenes al usuario autenticado
-- proteger PDFs por dueño de la orden o rol ADMIN
+- crear órdenes de forma pública
+- asociar órdenes al usuario autenticado si el request incluye un JWT válido
+- proteger historial de órdenes por usuario
+- proteger PDFs por dueño de la orden o rol `ADMIN`
 
 ---
 
@@ -275,6 +299,12 @@ GET /orders/my-orders
 Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 ```
 
+En endpoints públicos de creación de órdenes, el token es opcional.
+
+Si se envía un JWT válido, la orden se asocia al usuario autenticado.
+
+Si no se envía token, la orden se crea/calcula sin usuario asociado.
+
 ---
 
 ### Reglas actuales de acceso
@@ -286,8 +316,8 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 | GET catálogo | Público |
 | POST / PUT / PATCH / DELETE catálogo | ADMIN |
 | `/user/**` | ADMIN |
-| `POST /orders` | Usuario autenticado |
-| `POST /orders/by-drinks` | Usuario autenticado |
+| `POST /orders` | Público. Si hay JWT válido, asocia usuario |
+| `POST /orders/by-drinks` | Público. Si hay JWT válido, asocia usuario |
 | `GET /orders/my-orders` | Usuario autenticado |
 | `GET /orders` | ADMIN |
 | `GET /orders/{id}` | ADMIN |
@@ -304,6 +334,8 @@ Authorization: Bearer <token>
 
 Este endpoint devuelve únicamente las órdenes asociadas al usuario autenticado.
 
+Las órdenes creadas sin login quedan con `userId: null` y no aparecen en ningún historial de usuario.
+
 ---
 
 ### Descarga de PDF
@@ -318,6 +350,7 @@ Reglas:
 - `USER` puede descargar PDFs de sus propias órdenes.
 - `USER` no puede descargar PDFs de órdenes ajenas.
 - `ADMIN` puede descargar PDFs de cualquier orden.
+- Las órdenes anónimas no tienen dueño, por lo que no quedan asociadas a un historial de usuario.
 
 ---
 
@@ -546,7 +579,47 @@ Notas:
 
 ---
 
-### Crear orden modo TIME
+### Crear orden modo TIME sin login
+
+```http
+POST /orders
+```
+
+Body:
+
+```json
+{
+  "guests": 100,
+  "durationHours": 5,
+  "cocktails": [
+    { "cocktailId": 1, "weight": 5 },
+    { "cocktailId": 2, "weight": 4 }
+  ]
+}
+```
+
+Respuesta esperada:
+
+```json
+{
+  "id": 1,
+  "mode": "TIME",
+  "createdAt": "2026-07-10T16:00:00Z",
+  "guests": 100,
+  "drinksPerPerson": 2,
+  "durationHours": 5,
+  "status": "Draft",
+  "items": [],
+  "cocktail": [],
+  "userId": null
+}
+```
+
+En este caso, la orden se calcula sin usuario asociado y no aparece en `/orders/my-orders`.
+
+---
+
+### Crear orden modo TIME con usuario autenticado
 
 ```http
 POST /orders
@@ -566,9 +639,67 @@ Body:
 }
 ```
 
+Respuesta esperada:
+
+```json
+{
+  "id": 2,
+  "mode": "TIME",
+  "createdAt": "2026-07-10T16:10:00Z",
+  "guests": 100,
+  "drinksPerPerson": 2,
+  "durationHours": 5,
+  "status": "Draft",
+  "items": [],
+  "cocktail": [],
+  "userId": 1
+}
+```
+
+En este caso, la orden queda asociada al usuario autenticado y aparece en `/orders/my-orders`.
+
 ---
 
-### Crear orden modo DRINKS
+### Crear orden modo DRINKS sin login
+
+```http
+POST /orders/by-drinks
+```
+
+Body:
+
+```json
+{
+  "totalDrinks": 100,
+  "cocktails": [
+    { "cocktailId": 1, "quantity": 25 },
+    { "cocktailId": 12, "quantity": 25 },
+    { "cocktailId": 13, "quantity": 25 },
+    { "cocktailId": 5, "quantity": 25 }
+  ]
+}
+```
+
+Respuesta esperada:
+
+```json
+{
+  "id": 3,
+  "mode": "DRINKS",
+  "createdAt": "2026-07-10T16:20:00Z",
+  "guests": null,
+  "drinksPerPerson": null,
+  "durationHours": null,
+  "status": "Draft",
+  "items": [],
+  "cocktail": [],
+  "userId": null
+}
+```
+
+---
+
+### Crear orden modo DRINKS con usuario autenticado
 
 ```http
 POST /orders/by-drinks
@@ -589,6 +720,8 @@ Body:
 }
 ```
 
+Si el JWT es válido, la respuesta incluye el `userId` del usuario autenticado.
+
 ---
 
 ### Consultar historial propio
@@ -598,6 +731,8 @@ GET /orders/my-orders
 Authorization: Bearer <token>
 ```
 
+Devuelve únicamente las órdenes asociadas al usuario autenticado.
+
 ---
 
 ### Descargar PDF
@@ -606,6 +741,8 @@ Authorization: Bearer <token>
 GET /orders/{id}/pdf
 Authorization: Bearer <token>
 ```
+
+El PDF sigue protegido por ownership o rol `ADMIN`.
 
 ---
 
@@ -635,6 +772,7 @@ Cobertura parcial en progreso:
 - búsqueda por ID
 - listado general
 - validaciones iniciales de creación de órdenes
+- creación de órdenes con usuario opcional
 
 Objetivos de testing:
 
@@ -643,6 +781,7 @@ Objetivos de testing:
 - probar excepciones controladas
 - evitar dependencia de base de datos real
 - asegurar reglas de negocio principales
+- verificar creación de órdenes anónimas y autenticadas
 
 ---
 
@@ -766,6 +905,7 @@ flowchart LR
 U[Usuario final]
 A[Admin]
 S[Dueño de tienda]
+V[Visitante anónimo]
 
 subgraph SYS[App: CocktailOps]
   FE[Web App React]
@@ -778,7 +918,8 @@ subgraph EXT[Integraciones opcional]
   SHOPAPI[API Tienda Shopify / WooCommerce / MercadoLibre]
 end
 
-U -->|Crea orden TIME o DRINKS| FE
+V -->|Crea orden pública TIME o DRINKS| FE
+U -->|Crea orden con historial| FE
 A -->|Gestiona catálogo, cócteles, órdenes| FE
 S -->|Carga links/precios por tienda| FE
 
@@ -787,7 +928,7 @@ BE --> DB
 BE --> PDF
 BE -->|Sync opcional| SHOPAPI
 
-class U,A,S actor
+class U,A,S,V actor
 class FE,BE,PDF box
 class DB db
 class SHOPAPI ext
@@ -795,7 +936,7 @@ class SHOPAPI ext
 classDef actor fill:#ffffff,stroke:#444,stroke-width:1px
 classDef box fill:#ffffff,stroke:#5a5a8a,stroke-width:1px
 classDef db fill:#ffffff,stroke:#a06a00,stroke-width:1px
-classDef ext fill:#1f7a3a,stroke:#1f7a3a,stroke-width:1px
+classDef ext fill:#ffffff,stroke:#1f7a3a,stroke-width:1px
 ```
 
 ---
@@ -817,9 +958,10 @@ subgraph APP["Application/Service Layer"]
     S2["ProductService"]:::box
     S7["CategoryService"]:::box
     S3["CocktailService"]:::box
-    S4["OrderService<br/>calcula packs + distribuye tragos"]:::box
+    S4["OrderService<br/>calcula packs + usuario opcional"]:::box
     S5["PdfService<br/>genera PDF"]:::box
     S6["ShopService"]:::box
+    S8["CurrentUserService<br/>usuario obligatorio u opcional"]:::box
 end
 
 subgraph DOMAIN["Domain Model"]
@@ -855,8 +997,11 @@ S1 --> R1
 S2 --> R1
 S7 --> R1
 S3 --> R1
+S4 --> S8
 S4 --> R1
+S5 --> S8
 S6 --> R1
+S8 --> R1
 
 R1 --> DB
 FLY --> DB
@@ -872,6 +1017,8 @@ classDef entity fill:#000000,stroke:#1f7a3a,stroke-width:1px;
 
 - **Backend API**: listo
 - **Cálculo de órdenes TIME / DRINKS**: listo
+- **Creación pública de órdenes**: listo
+- **Asociación opcional de órdenes al usuario autenticado**: listo
 - **Generación de PDF**: listo
 - **Listado de productos con categoría básica**: listo
 - **Seed demo de catálogo con Flyway**: listo
@@ -895,7 +1042,7 @@ classDef entity fill:#000000,stroke:#1f7a3a,stroke-width:1px;
 - Agregar tests específicos para endpoints protegidos
 - Aumentar cobertura de tests en services y controllers
 - Mejorar manejo de respuestas 401/403
-- Evaluar endpoint público de preview para usuarios anónimos sin guardar historial
+- Evaluar limpieza, expiración o manejo específico de órdenes anónimas
 - Revisar permisos finos si se agregan nuevos roles
 - Dockerizar también la aplicación Spring Boot
 - Mejorar documentación Swagger/Postman del flujo completo
