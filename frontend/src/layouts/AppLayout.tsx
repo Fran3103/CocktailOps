@@ -45,11 +45,11 @@ export function AppLayout() {
               aria-label="Cerrar menú"
             />
 
-            <div className="relative h-full w-72 max-w-[85vw] bg-surface">
+            <div className="relative h-full w-78 max-w-[85vw] bg-surface">
               <button
                 type="button"
                 onClick={closeMobileSidebar}
-                className="absolute right-4 top-4 rounded-control border border-border-soft p-2 text-text-main"
+                className="absolute right-3 top-4 rounded-control border border-border-soft p-2 text-text-main"
                 aria-label="Cerrar menú"
               >
                 <X size={18} />
