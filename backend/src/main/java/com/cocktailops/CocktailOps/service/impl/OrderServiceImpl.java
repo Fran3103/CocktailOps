@@ -98,8 +98,7 @@ public class OrderServiceImpl implements IOrderService {
 try {
     // ----- Crear Order -----
     Order order = new Order();
-    User currentUser = currentUserService.getCurrentUser();
-    order.setUser(currentUser);
+    currentUserService.getCurrentUserOptional().ifPresent(order::setUser);
     order.setGuests(dto.guests());
     order.setDrinksPerPerson(drinksPerPerson);
     order.setDurationHours(dto.durationHours());
@@ -239,9 +238,7 @@ try {
 
 
             Order order = new Order();
-            User currentUser = currentUserService.getCurrentUser();
-            order.setUser(currentUser);
-
+            currentUserService.getCurrentUserOptional().ifPresent(order::setUser);
             order.setMode(OrderMode.DRINKS);
             order.setTotalDrinks(dto.totalDrinks());
             order.setStatus("Draft");
@@ -357,9 +354,9 @@ try {
 
 
     public List<OrderResponseDto> getMyOrders() {
-        User currentUser = currentUserService.getCurrentUser();
+        User currentUser = currentUserService.getCurrentUserOptional().orElse(null);
 
-        return orderRepository.findByUserId(currentUser.getId())
+        return orderRepository.findByUserId(currentUser != null ? currentUser.getId() : null)
                 .stream()
                 .map(this::toResponse)
                 .toList();

@@ -9,25 +9,27 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 public class CurrentUserService {
 
     private final IUserRepository repository;
 
-    public User getCurrentUser(){
+    public Optional<User> getCurrentUserOptional(){
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken){
 
-            throw new AccessDeniedException("User is not authenticated");
+            return Optional.empty();
         }
 
         String email = authentication.getName();
 
-        return repository.findByEmail(email)
-                .orElseThrow(()-> new AccessDeniedException("Authenticated user not found"));
+        return repository.findByEmail(email);
+
     }
 
 }

@@ -67,6 +67,10 @@ public class SecurityConfig {
             "/orders/**"
     };
 
+    private static final String[] PUBLIC_ORDER_CREATE_ENDPOINTS = {
+            "/orders",
+            "/orders/by-drinks"
+    };
 
     private static final String[] USER_ORDER_PDF_ENDPOINTS = {
             "/orders/*/pdf"
@@ -88,7 +92,7 @@ public class SecurityConfig {
                         .requestMatchers(AUTH_ENDPOINTS).permitAll()
 
                         .requestMatchers(HttpMethod.GET, PUBLIC_CATALOG_ENDPOINTS).permitAll()
-
+                        .requestMatchers(HttpMethod.POST, PUBLIC_ORDER_CREATE_ENDPOINTS).permitAll()
                         .requestMatchers(ADMIN_ENDPOINTS).hasRole("ADMIN")
 
                         .requestMatchers(HttpMethod.POST, ADMIN_CATALOG_ENDPOINTS).hasRole("ADMIN")
@@ -98,7 +102,7 @@ public class SecurityConfig {
 
                         .requestMatchers(HttpMethod.GET, USER_ORDER_ENDPOINTS).authenticated()
                         .requestMatchers(HttpMethod.GET, USER_ORDER_PDF_ENDPOINTS).authenticated()
-                        .requestMatchers(HttpMethod.POST, ORDER_ENDPOINTS).authenticated()
+
 
                         .requestMatchers(HttpMethod.GET, ORDER_ENDPOINTS).hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, ORDER_ENDPOINTS).hasRole("ADMIN")

@@ -134,11 +134,11 @@ public class OrderPdfServiceImpl implements IOrderPdfService {
     }
 
     private void validatePdfAccess(OrderResponseDto order) {
-        User currentUser = currentUserService.getCurrentUser();
+        User currentUser = currentUserService.getCurrentUserOptional().orElse(null);
 
-        boolean isAdmin = currentUser.getRole() == Role.ADMIN;
+        boolean isAdmin = currentUser != null && currentUser.getRole() == Role.ADMIN;
 
-        boolean isOwner = order.userId() != null
+        boolean isOwner = currentUser != null && order.userId() != null
                 && order.userId().equals(currentUser.getId());
 
         if (!isAdmin && !isOwner) {
