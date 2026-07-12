@@ -16,8 +16,9 @@ export function GuestModeNotice() {
           </h2>
 
           <p className="mt-1 text-sm text-text-muted">
-            Podés armar la orden, pero para guardarla y generar el cálculo real
-            necesitás iniciar sesión.
+           Podés generar la orden y consultar el resultado. Iniciá sesión para
+            asociar tus próximas órdenes a tu cuenta y acceder a ellas desde el
+            historial.
           </p>
         </div>
 

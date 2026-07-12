@@ -12,7 +12,7 @@ export function CreatedOrderSummary({ order }: CreatedOrderSummaryProps) {
   const totalDrinks =
     order.cocktail?.reduce(
       (total, cocktail) => total + (cocktail.quantity ?? 0),
-      0
+      0,
     ) ?? 0;
 
   return (
@@ -21,10 +21,17 @@ export function CreatedOrderSummary({ order }: CreatedOrderSummaryProps) {
         Orden creada correctamente
       </h2>
 
-      <p className="mt-1 text-sm text-text-muted">
-        El backend calculó los cócteles y los productos necesarios para la
-        orden.
-      </p>
+      {order.userId ? (
+        <p className="mt-3 text-sm text-success">
+          La orden quedó asociada a tu cuenta y estará disponible en tu
+          historial.
+        </p>
+      ) : (
+        <p className="mt-3 text-sm text-primary-soft">
+          La orden fue generada como invitado y no estará disponible en un
+          historial personal.
+        </p>
+      )}
 
       <div className="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-4">
         <div className="rounded-control bg-background p-3">
@@ -34,9 +41,7 @@ export function CreatedOrderSummary({ order }: CreatedOrderSummaryProps) {
 
         <div className="rounded-control bg-background p-3">
           <p className="text-text-muted">Estado</p>
-          <p className="text-lg font-semibold text-text-main">
-            {order.status}
-          </p>
+          <p className="text-lg font-semibold text-text-main">{order.status}</p>
         </div>
 
         <div className="rounded-control bg-background p-3">

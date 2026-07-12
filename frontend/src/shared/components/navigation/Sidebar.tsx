@@ -16,8 +16,7 @@ import { Button } from "../ui/Button";
 type SidebarProps = {
   onNavigate?: () => void;
 };
-
-const navItems = [
+const publicNavItems = [
   {
     label: "Dashboard",
     path: ROUTES.dashboard,
@@ -38,6 +37,9 @@ const navItems = [
     path: ROUTES.createOrder,
     icon: ClipboardList,
   },
+];
+
+const authenticatedNavItems = [
   {
     label: "Historial",
     path: ROUTES.orders,
@@ -53,6 +55,10 @@ const navItems = [
 export function Sidebar({ onNavigate }: SidebarProps) {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
+
+  const visibleNavItems = isAuthenticated
+  ? [...publicNavItems, ...authenticatedNavItems]
+  : publicNavItems;
 
   function handleLogout() {
     logout();
@@ -78,7 +84,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       </div>
 
       <nav className="space-y-2">
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const Icon = item.icon;
 
           return (

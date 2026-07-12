@@ -70,7 +70,7 @@ export function CreateOrderPage() {
     const cocktailId = cocktail.id;
 
     const alreadySelected = selectedCocktails.some(
-      (selectedCocktail) => selectedCocktail.cocktailId === cocktailId
+      (selectedCocktail) => selectedCocktail.cocktailId === cocktailId,
     );
 
     if (alreadySelected) {
@@ -97,8 +97,8 @@ export function CreateOrderPage() {
       currentCocktails.map((cocktail) =>
         cocktail.cocktailId === cocktailId
           ? { ...cocktail, weight: safeWeight }
-          : cocktail
-      )
+          : cocktail,
+      ),
     );
 
     setCreatedOrder(null);
@@ -107,7 +107,7 @@ export function CreateOrderPage() {
 
   function handleRemoveCocktail(cocktailId: number) {
     setSelectedCocktails((currentCocktails) =>
-      currentCocktails.filter((cocktail) => cocktail.cocktailId !== cocktailId)
+      currentCocktails.filter((cocktail) => cocktail.cocktailId !== cocktailId),
     );
 
     setCreatedOrder(null);
@@ -139,13 +139,8 @@ export function CreateOrderPage() {
   async function handleCreateOrder() {
     if (!payload) {
       setSubmitError(
-        "Completá invitados, duración y al menos un cóctel para crear la orden."
+        "Completá invitados, duración y al menos un cóctel para crear la orden.",
       );
-      return;
-    }
-
-    if (!isAuthenticated) {
-      setSubmitError("Necesitás iniciar sesión para crear y guardar la orden.");
       return;
     }
 
@@ -157,11 +152,11 @@ export function CreateOrderPage() {
       const order = await orderService.createTimeOrder(payload);
       console.log("Orden creada:", order);
       setCreatedOrder(order);
-    } catch(error) {
+    } catch (error) {
       console.error("Error al crear la orden:", error);
       console.log("Payload enviado:", payload);
       setSubmitError(
-        "No se pudo crear la orden. Revisá los datos o intentá nuevamente."
+        "No se pudo crear la orden. Revisá los datos o intentá nuevamente.",
       );
     } finally {
       setIsSubmitting(false);
@@ -280,7 +275,11 @@ export function CreateOrderPage() {
             onClick={handleCreateOrder}
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Creando orden..." : "Crear orden"}
+            {isSubmitting
+              ? "Generando orden..."
+              : isAuthenticated
+                ? "Crear y guardar orden"
+                : "Generar orden"}
           </Button>
         </div>
       </div>
