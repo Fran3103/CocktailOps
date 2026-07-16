@@ -24,8 +24,14 @@ async function getOrderById(orderId: number): Promise<OrderResponse> {
   return response.data;
 }
 
+async function getMyOrders(): Promise<OrderResponse[]> {
+  const response = await apiClient.get<OrderResponse[]>("/orders/my-orders");
+  return response.data;
+}
+
 export const orderService = {
   createTimeOrder,
   createDrinksOrder,
   getOrderById,
+    getMyOrders,
 };
