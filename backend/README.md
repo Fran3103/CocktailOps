@@ -36,9 +36,9 @@ A partir de una selección de cócteles, cantidad de invitados, duración del ev
 
 La funcionalidad principal de cálculo de órdenes puede ser utilizada por visitantes sin iniciar sesión.
 
-Si el usuario no está autenticado, puede crear/calcular una orden y recibir el resultado, pero la orden queda sin usuario asociado (`userId: null`) y no aparece en ningún historial personal.
+Si el usuario no está autenticado, puede crear/calcular una orden, recibir el resultado y generar un PDF de preview desde el body de la solicitud. En ese caso, la orden queda sin usuario asociado (`userId: null`) y no aparece en ningún historial personal.
 
-Si el usuario está autenticado, la orden se guarda asociada a su cuenta, aparece en su historial y puede acceder a recursos protegidos como el detalle propio y el PDF según las reglas de ownership.
+Si el usuario está autenticado, la orden se guarda asociada a su cuenta, aparece en su historial y puede acceder a recursos protegidos como el detalle propio y el PDF por ID según las reglas de ownership.
 
 ---
 
@@ -93,6 +93,33 @@ Por eso:
 - `GET /orders/{id}/pdf` sigue protegido por ownership o rol `ADMIN`.
 
 Esta decisión permite que cualquier visitante pueda probar CocktailOps sin registrarse, mientras que el login agrega valor mediante historial, persistencia asociada al usuario y acceso protegido a recursos propios.
+
+---
+
+### PDF público de preview
+
+Para permitir que visitantes anónimos también puedan descargar una lista de compra en PDF, se agregaron endpoints públicos de preview:
+
+- `POST /orders/preview/pdf`
+- `POST /orders/by-drinks/preview/pdf`
+
+Estos endpoints reciben el mismo body que la creación de órdenes y devuelven directamente un archivo PDF.
+
+La decisión importante es que el PDF anónimo **no se descarga por ID**. Esto evita exponer públicamente endpoints como:
+
+```txt
+GET /orders/{id}/pdf
+```
+
+Ese endpoint se mantiene protegido por ownership o rol `ADMIN`.
+
+De esta forma:
+
+- un visitante puede calcular una orden y descargar su PDF de preview
+- un usuario autenticado puede crear órdenes asociadas a su cuenta
+- el historial sigue protegido
+- los PDFs por ID siguen protegidos
+- no se abre acceso público a órdenes ajenas
 
 ---
 
@@ -167,7 +194,8 @@ Se agregaron logs en servicios principales para registrar flujos importantes:
 - Asociación opcional de órdenes al usuario autenticado
 - Cálculo automático de ingredientes
 - Cálculo de packs a comprar
-- Generación de PDF
+- Generación de PDF protegido por ID
+- Generación pública de PDF preview desde el body
 - Historial de órdenes por usuario autenticado
 - Protección de PDFs por ownership
 - Endpoints administrativos protegidos
@@ -217,8 +245,9 @@ El flujo actual permite:
 - proteger endpoints por rol
 - crear órdenes de forma pública
 - asociar órdenes al usuario autenticado si el request incluye un JWT válido
+- generar PDFs públicos de preview desde el body de una orden
 - proteger historial de órdenes por usuario
-- proteger PDFs por dueño de la orden o rol `ADMIN`
+- proteger PDFs por ID según dueño de la orden o rol `ADMIN`
 
 ---
 
@@ -318,6 +347,8 @@ Si no se envía token, la orden se crea/calcula sin usuario asociado.
 | `/user/**` | ADMIN |
 | `POST /orders` | Público. Si hay JWT válido, asocia usuario |
 | `POST /orders/by-drinks` | Público. Si hay JWT válido, asocia usuario |
+| `POST /orders/preview/pdf` | Público |
+| `POST /orders/by-drinks/preview/pdf` | Público |
 | `GET /orders/my-orders` | Usuario autenticado |
 | `GET /orders` | ADMIN |
 | `GET /orders/{id}` | ADMIN |
@@ -338,7 +369,7 @@ Las órdenes creadas sin login quedan con `userId: null` y no aparecen en ningú
 
 ---
 
-### Descarga de PDF
+### Descarga de PDF protegido por ID
 
 ```http
 GET /orders/{id}/pdf
@@ -350,7 +381,25 @@ Reglas:
 - `USER` puede descargar PDFs de sus propias órdenes.
 - `USER` no puede descargar PDFs de órdenes ajenas.
 - `ADMIN` puede descargar PDFs de cualquier orden.
-- Las órdenes anónimas no tienen dueño, por lo que no quedan asociadas a un historial de usuario.
+- Las órdenes anónimas no tienen dueño, por lo que no se descargan mediante este endpoint.
+
+---
+
+### Descarga de PDF público de preview
+
+```http
+POST /orders/preview/pdf
+```
+
+o:
+
+```http
+POST /orders/by-drinks/preview/pdf
+```
+
+Estos endpoints son públicos y generan un PDF a partir del body enviado.
+
+No requieren login porque no acceden a una orden existente por ID.
 
 ---
 
@@ -660,6 +709,36 @@ En este caso, la orden queda asociada al usuario autenticado y aparece en `/orde
 
 ---
 
+### Generar PDF preview modo TIME sin login
+
+```http
+POST /orders/preview/pdf
+```
+
+Body:
+
+```json
+{
+  "guests": 100,
+  "durationHours": 5,
+  "cocktails": [
+    { "cocktailId": 1, "weight": 5 },
+    { "cocktailId": 2, "weight": 4 }
+  ]
+}
+```
+
+Respuesta esperada:
+
+```txt
+200 OK
+Content-Type: application/pdf
+```
+
+Este endpoint permite generar un PDF sin estar autenticado y sin usar un ID de orden en la URL.
+
+---
+
 ### Crear orden modo DRINKS sin login
 
 ```http
@@ -724,6 +803,37 @@ Si el JWT es válido, la respuesta incluye el `userId` del usuario autenticado.
 
 ---
 
+### Generar PDF preview modo DRINKS sin login
+
+```http
+POST /orders/by-drinks/preview/pdf
+```
+
+Body:
+
+```json
+{
+  "totalDrinks": 100,
+  "cocktails": [
+    { "cocktailId": 1, "quantity": 25 },
+    { "cocktailId": 12, "quantity": 25 },
+    { "cocktailId": 13, "quantity": 25 },
+    { "cocktailId": 5, "quantity": 25 }
+  ]
+}
+```
+
+Respuesta esperada:
+
+```txt
+200 OK
+Content-Type: application/pdf
+```
+
+Este endpoint permite generar un PDF de una orden por cantidad total de bebidas sin estar autenticado y sin acceder a un PDF por ID.
+
+---
+
 ### Consultar historial propio
 
 ```http
@@ -735,14 +845,14 @@ Devuelve únicamente las órdenes asociadas al usuario autenticado.
 
 ---
 
-### Descargar PDF
+### Descargar PDF protegido por ID
 
 ```http
 GET /orders/{id}/pdf
 Authorization: Bearer <token>
 ```
 
-El PDF sigue protegido por ownership o rol `ADMIN`.
+El PDF por ID sigue protegido por ownership o rol `ADMIN`.
 
 ---
 
@@ -774,6 +884,16 @@ Cobertura parcial en progreso:
 - validaciones iniciales de creación de órdenes
 - creación de órdenes con usuario opcional
 
+### OrderPdfServiceImpl
+
+Cobertura pendiente/recomendada:
+
+- generación de PDF protegido por ID
+- validación de ownership
+- generación de PDF preview modo TIME
+- generación de PDF preview modo DRINKS
+- error controlado ante fallos de renderizado PDF
+
 Objetivos de testing:
 
 - validar caminos felices
@@ -782,6 +902,7 @@ Objetivos de testing:
 - evitar dependencia de base de datos real
 - asegurar reglas de negocio principales
 - verificar creación de órdenes anónimas y autenticadas
+- verificar generación de PDF preview pública
 
 ---
 
@@ -911,7 +1032,7 @@ subgraph SYS[App: CocktailOps]
   FE[Web App React]
   BE[Backend API Spring Boot]
   DB[(PostgreSQL)]
-  PDF[PDF Generator Thymeleaf + OpenHTMLtoPDF]
+  PDF[PDF Generator Thymeleaf + OpenHTMLToPDF]
 end
 
 subgraph EXT[Integraciones opcional]
@@ -919,7 +1040,9 @@ subgraph EXT[Integraciones opcional]
 end
 
 V -->|Crea orden pública TIME o DRINKS| FE
+V -->|Genera PDF preview público| FE
 U -->|Crea orden con historial| FE
+U -->|Descarga PDF protegido por ID| FE
 A -->|Gestiona catálogo, cócteles, órdenes| FE
 S -->|Carga links/precios por tienda| FE
 
@@ -949,7 +1072,7 @@ subgraph API["API Layer"]
     C1["AuthController"]:::box
     C2["CatalogController<br/>(products + categories)"]:::box
     C3["CocktailController<br/>(cocktails + ingredients)"]:::box
-    C4["OrderController<br/>(orders + pdf)"]:::box
+    C4["OrderController<br/>(orders + pdf preview)"]:::box
     C5["ShopController<br/>(shops, shop_products)"]:::box
 end
 
@@ -959,7 +1082,7 @@ subgraph APP["Application/Service Layer"]
     S7["CategoryService"]:::box
     S3["CocktailService"]:::box
     S4["OrderService<br/>calcula packs + usuario opcional"]:::box
-    S5["PdfService<br/>genera PDF"]:::box
+    S5["PdfService<br/>PDF protegido + preview público"]:::box
     S6["ShopService"]:::box
     S8["CurrentUserService<br/>usuario obligatorio u opcional"]:::box
 end
@@ -999,6 +1122,7 @@ S7 --> R1
 S3 --> R1
 S4 --> S8
 S4 --> R1
+S5 --> S4
 S5 --> S8
 S6 --> R1
 S8 --> R1
@@ -1019,7 +1143,8 @@ classDef entity fill:#000000,stroke:#1f7a3a,stroke-width:1px;
 - **Cálculo de órdenes TIME / DRINKS**: listo
 - **Creación pública de órdenes**: listo
 - **Asociación opcional de órdenes al usuario autenticado**: listo
-- **Generación de PDF**: listo
+- **Generación de PDF protegido por ID**: listo
+- **Generación pública de PDF preview**: listo
 - **Listado de productos con categoría básica**: listo
 - **Seed demo de catálogo con Flyway**: listo
 - **Swagger / documentación API**: listo, en mejora continua
@@ -1040,6 +1165,7 @@ classDef entity fill:#000000,stroke:#1f7a3a,stroke-width:1px;
 ## Próximos pasos backend
 
 - Agregar tests específicos para endpoints protegidos
+- Agregar tests para endpoints públicos de PDF preview
 - Aumentar cobertura de tests en services y controllers
 - Mejorar manejo de respuestas 401/403
 - Evaluar limpieza, expiración o manejo específico de órdenes anónimas

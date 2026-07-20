@@ -4,16 +4,24 @@ import { ROUTES } from "../../../shared/constants/routes";
 
 import { Button } from "../../../shared/components/ui/Button";
 import { Card } from "../../../shared/components/ui/Card";
-import type { OrderResponse } from "../order.types";
+import type {
+  CreateDrinksOrderRequest,
+  CreateTimeOrderRequest,
+  OrderResponse,
+} from "../order.types";
 
 type CreatedOrderSummaryProps = {
   order: OrderResponse;
   onCreateNewOrder: () => void;
+  timePreviewPayload?: CreateTimeOrderRequest | null;
+  drinksPreviewPayload?: CreateDrinksOrderRequest | null;
 };
 
 export function CreatedOrderSummary({
   order,
   onCreateNewOrder,
+  timePreviewPayload,
+  drinksPreviewPayload,
 }: CreatedOrderSummaryProps) {
   const cocktailCount = order.cocktail?.length ?? 0;
   const itemCount = order.items?.length ?? 0;
@@ -27,7 +35,11 @@ export function CreatedOrderSummary({
 
   function handleViewDetail() {
     navigate(ROUTES.orderDetails.replace(":id", String(order.id)), {
-      state: { order },
+       state: {
+      order,
+      timePreviewPayload,
+      drinksPreviewPayload,
+    },
     });
   }
 

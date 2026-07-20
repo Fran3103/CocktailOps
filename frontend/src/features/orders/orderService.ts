@@ -29,9 +29,44 @@ async function getMyOrders(): Promise<OrderResponse[]> {
   return response.data;
 }
 
+async function downloadPdf(orderId: number): Promise<Blob> {
+  const response = await apiClient.get<Blob>(`/orders/${orderId}/pdf`, {
+    responseType: "blob",
+  });
+
+  return response.data;
+}
+
+async function downloadTimePreviewPdf(
+  data: CreateTimeOrderRequest
+): Promise<Blob> {
+  const response = await apiClient.post<Blob>("/orders/preview/pdf", data, {
+    responseType: "blob",
+  });
+
+  return response.data;
+}
+
+async function downloadDrinksPreviewPdf(
+  data: CreateDrinksOrderRequest
+): Promise<Blob> {
+  const response = await apiClient.post<Blob>(
+    "/orders/by-drinks/preview/pdf",
+    data,
+    {
+      responseType: "blob",
+    }
+  );
+
+  return response.data;
+}
+
 export const orderService = {
   createTimeOrder,
   createDrinksOrder,
   getOrderById,
     getMyOrders,
+    downloadPdf,
+    downloadTimePreviewPdf,
+    downloadDrinksPreviewPdf,
 };

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+
 import { SuccessToast } from "../../shared/components/feedback/SuccessToast";
 import { Button } from "../../shared/components/ui/Button";
 import { Card } from "../../shared/components/ui/Card";
@@ -26,8 +27,9 @@ import type {
 export function CreateOrderPage() {
   const { isAuthenticated } = useAuth();
 
-  const [orderMode, setOrderMode] = useState<OrderMode>("TIME");
   const createdOrderRef = useRef<HTMLDivElement | null>(null);
+
+  const [orderMode, setOrderMode] = useState<OrderMode>("TIME");
 
   const [guests, setGuests] = useState("");
   const [durationHours, setDurationHours] = useState("");
@@ -43,8 +45,15 @@ export function CreateOrderPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
   const [createdOrder, setCreatedOrder] = useState<OrderResponse | null>(null);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+
+  const [createdOrderTimePayload, setCreatedOrderTimePayload] =
+    useState<CreateTimeOrderRequest | null>(null);
+
+  const [createdOrderDrinksPayload, setCreatedOrderDrinksPayload] =
+    useState<CreateDrinksOrderRequest | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -100,6 +109,8 @@ export function CreateOrderPage() {
 
   function clearResultState() {
     setCreatedOrder(null);
+    setCreatedOrderTimePayload(null);
+    setCreatedOrderDrinksPayload(null);
     setSubmitError(null);
   }
 
@@ -198,6 +209,7 @@ export function CreateOrderPage() {
     const baseQuantity = Math.floor(
       numericTotalDrinks / selectedCocktails.length,
     );
+
     const remainder = numericTotalDrinks % selectedCocktails.length;
 
     setSelectedCocktails((currentCocktails) =>
@@ -257,6 +269,8 @@ export function CreateOrderPage() {
   async function handleCreateOrder() {
     setSubmitError(null);
     setCreatedOrder(null);
+    setCreatedOrderTimePayload(null);
+    setCreatedOrderDrinksPayload(null);
 
     if (orderMode === "TIME") {
       if (!timePayload) {
@@ -270,7 +284,10 @@ export function CreateOrderPage() {
 
       try {
         const order = await orderService.createTimeOrder(timePayload);
+
         setCreatedOrder(order);
+        setCreatedOrderTimePayload(timePayload);
+        setCreatedOrderDrinksPayload(null);
         setShowSuccessToast(true);
       } catch {
         setSubmitError(
@@ -303,7 +320,10 @@ export function CreateOrderPage() {
 
     try {
       const order = await orderService.createDrinksOrder(drinksPayload);
+
       setCreatedOrder(order);
+      setCreatedOrderTimePayload(null);
+      setCreatedOrderDrinksPayload(drinksPayload);
       setShowSuccessToast(true);
     } catch {
       setSubmitError(
@@ -315,12 +335,15 @@ export function CreateOrderPage() {
   }
 
   function handleCreateNewOrder() {
+    setOrderMode("TIME");
     setGuests("");
     setDurationHours("");
     setTotalDrinks("");
     setSelectedCocktails([]);
     setSubmitError(null);
     setCreatedOrder(null);
+    setCreatedOrderTimePayload(null);
+    setCreatedOrderDrinksPayload(null);
     setShowSuccessToast(false);
   }
 
@@ -333,6 +356,7 @@ export function CreateOrderPage() {
           onClose={() => setShowSuccessToast(false)}
         />
       )}
+
       <PageHeader
         title="Nueva orden"
         description="Armá una orden por evento o por cantidad total de tragos."
@@ -345,6 +369,12 @@ export function CreateOrderPage() {
           <CreatedOrderSummary
             order={createdOrder}
             onCreateNewOrder={handleCreateNewOrder}
+            timePreviewPayload={
+              createdOrder.userId == null ? createdOrderTimePayload : null
+            }
+            drinksPreviewPayload={
+              createdOrder.userId == null ? createdOrderDrinksPayload : null
+            }
           />
         </div>
       )}

@@ -50,7 +50,6 @@ public class OrderController {
     }
 
 
-
     @GetMapping("/my-orders")
     public ResponseEntity<List<OrderResponseDto>> getMyOrders() {
         List<OrderResponseDto> ordes = orderService.getMyOrders();
@@ -71,6 +70,7 @@ public class OrderController {
     public ResponseEntity<OrderResponseDto> getById(@PathVariable Long id) {
         return ResponseEntity.ok(orderService.getOrderById(id));
     }
+
     @Operation(
             summary = "Traer todas las ordenes")
     @ApiResponses({
@@ -100,7 +100,7 @@ public class OrderController {
         headers.setContentType(MediaType.APPLICATION_PDF);
         headers.setContentDisposition(
                 ContentDisposition.inline()
-                        .filename("order"+ id + ".pdf")
+                        .filename("order" + id + ".pdf")
                         .build()
         );
 
@@ -125,5 +125,23 @@ public class OrderController {
         return ResponseEntity.status(HttpStatus.CREATED).body(orderService.createOrderByDrinks(dto));
     }
 
+    @PostMapping("/preview/pdf")
+    public ResponseEntity<byte[]> generatePreviewPdf(@Valid @RequestBody OrderRequestDto orderRequestDto) throws BadRequestException {
+        byte[] pdf = orderPdfService.generateOrderPreviewPdf(orderRequestDto);
 
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=order-preview.pdf")
+                .body(pdf);
+    }
+
+    @PostMapping("/by-drinks/preview/pdf")
+    public ResponseEntity<byte[]> generateByDrinksPreviewPdf(@Valid @RequestBody OrderByDrinksRequestDto orderByDrinksRequestDto) throws BadRequestException {
+        byte[] pdf = orderPdfService.generateOrderByDrinksPreviewPdf(orderByDrinksRequestDto);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=order-preview.pdf")
+                .body(pdf);
+    }
 }

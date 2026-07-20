@@ -1,15 +1,11 @@
 package com.cocktailops.CocktailOps.service.impl;
 
-import com.cocktailops.CocktailOps.dto.orderDto.OrderCocktailPdfDto;
-import com.cocktailops.CocktailOps.dto.orderDto.OrderItemsPdfDto;
-import com.cocktailops.CocktailOps.dto.orderDto.OrderPdfDto;
-import com.cocktailops.CocktailOps.dto.orderDto.OrderResponseDto;
+import com.cocktailops.CocktailOps.dto.orderDto.*;
 import com.cocktailops.CocktailOps.entitie.Role;
 import com.cocktailops.CocktailOps.entitie.User;
 import com.cocktailops.CocktailOps.security.CurrentUserService;
 import com.cocktailops.CocktailOps.service.IOrderService;
 import com.cocktailops.CocktailOps.service.IOrderPdfService;
-import com.cocktailops.CocktailOps.service.IProductService;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,8 +17,6 @@ import org.thymeleaf.context.Context;
 
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Slf4j
@@ -42,34 +36,29 @@ public class OrderPdfServiceImpl implements IOrderPdfService {
 
         log.info("Generating PDF for order with id: {}", orderId);
 
-        // Obtener los datos del pedido
         OrderResponseDto responseDto = orderService.getOrderById(orderId);
 
         validatePdfAccess(responseDto);
-        // Transformar los datos a un formato adecuado para el PDF
-        OrderPdfDto orderPdfDto = toPdfDto(responseDto);
-        // Renderizar el PDF usando Thymeleaf y OpenHTMLToPDF
-        Context context = new Context();
-        // Agregar los datos del pedido al contexto de Thymeleaf
-        context.setVariable("order", orderPdfDto);
 
-        // Renderizar la plantilla Thymeleaf con los datos del pedido
-        String html = templateEngine.process("order-pdf", context);
+        byte[] pdf = buildPdf(responseDto);
 
-        // Generar el PDF a partir del HTML renderizado
-        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            PdfRendererBuilder builder = new PdfRendererBuilder();
+        log.info("PDF generated successfully for order with id: {}", orderId);
 
-            builder.withHtmlContent(html, null);
-            builder.toStream(outputStream);
-            builder.useFastMode();
-            builder.run();
-            log.info("PDF generated successfully for order with id: {}", orderId);
-            return outputStream.toByteArray();
-        } catch (Exception e) {
-                log.error("Error generating PDF for order with id: {}", orderId, e);
-            throw new BadRequestException("Error generating PDF", e);
-        }
+        return pdf;
+    }
+
+    @Override
+    public byte[] generateOrderPreviewPdf(OrderRequestDto orderRequestDto) throws BadRequestException {
+        OrderResponseDto responseDto = orderService.createOrder(orderRequestDto);
+
+        return buildPdf(responseDto);
+    }
+
+    @Override
+    public byte[] generateOrderByDrinksPreviewPdf(OrderByDrinksRequestDto orderByDrinksRequestDto) throws BadRequestException {
+        OrderResponseDto responseDto = orderService.createOrderByDrinks(orderByDrinksRequestDto);
+
+        return buildPdf(responseDto);
     }
 
     private OrderPdfDto toPdfDto(OrderResponseDto o) {
@@ -143,6 +132,31 @@ public class OrderPdfServiceImpl implements IOrderPdfService {
 
         if (!isAdmin && !isOwner) {
             throw new AccessDeniedException("You do not have permission to access this order PDF");
+        }
+    }
+
+    private byte[] buildPdf(OrderResponseDto responseDto) throws BadRequestException {
+
+        OrderPdfDto orderPdfDto = toPdfDto(responseDto);
+
+        Context context = new Context();
+        context.setVariable("order", orderPdfDto);
+
+        String html = templateEngine.process("order-pdf", context);
+
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            PdfRendererBuilder builder = new PdfRendererBuilder();
+
+            builder.withHtmlContent(html, null);
+            builder.toStream(outputStream);
+            builder.useFastMode();
+            builder.run();
+
+            return outputStream.toByteArray();
+
+        } catch (Exception e) {
+            log.error("Error generating PDF", e);
+            throw new BadRequestException("Error generating PDF", e);
         }
     }
 }

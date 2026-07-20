@@ -76,6 +76,14 @@ public class SecurityConfig {
             "/orders/*/pdf"
     };
 
+    private static final String[] PDF_ORDER = {
+            "/orders/preview/pdf"
+    };
+
+    private static final String[] PDF_ORDER_BY_DRINKS = {
+            "/orders/by-drinks/preview/pdf"
+    };
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
@@ -94,7 +102,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, PUBLIC_CATALOG_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.POST, PUBLIC_ORDER_CREATE_ENDPOINTS).permitAll()
                         .requestMatchers(ADMIN_ENDPOINTS).hasRole("ADMIN")
-
+                        .requestMatchers(HttpMethod.POST, PDF_ORDER).permitAll()
+                        .requestMatchers(HttpMethod.POST, PDF_ORDER_BY_DRINKS).permitAll()
                         .requestMatchers(HttpMethod.POST, ADMIN_CATALOG_ENDPOINTS).hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, ADMIN_CATALOG_ENDPOINTS).hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, ADMIN_CATALOG_ENDPOINTS).hasRole("ADMIN")

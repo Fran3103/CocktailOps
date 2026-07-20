@@ -9,10 +9,18 @@ import { ROUTES } from "../../shared/constants/routes";
 import { OrderCocktailsTable } from "./components/OrderCocktailsTable";
 import { OrderItemsTable } from "./components/OrderItemsTable";
 import { orderService } from "./orderService";
-import type { OrderResponse } from "./order.types";
+
+import { OrderPdfDownloadButton } from "./components/OrderPdfDownloadButton";
+import type {
+  CreateDrinksOrderRequest,
+  CreateTimeOrderRequest,
+  OrderResponse,
+} from "./order.types";
 
 type OrderDetailLocationState = {
   order?: OrderResponse;
+  timePreviewPayload?: CreateTimeOrderRequest | null;
+  drinksPreviewPayload?: CreateDrinksOrderRequest | null;
 };
 
 function formatDate(value: string | null | undefined) {
@@ -30,7 +38,7 @@ function getTotalDrinks(order: OrderResponse) {
   return (
     order.cocktail?.reduce(
       (total, cocktail) => total + (cocktail.quantity ?? 0),
-      0
+      0,
     ) ?? 0
   );
 }
@@ -42,6 +50,8 @@ export function OrderDetailPage() {
 
   const locationState = location.state as OrderDetailLocationState | null;
   const initialOrder = locationState?.order ?? null;
+  const timePreviewPayload = locationState?.timePreviewPayload ?? null;
+  const drinksPreviewPayload = locationState?.drinksPreviewPayload ?? null;
 
   const orderId = useMemo(() => {
     const numericId = Number(id);
@@ -57,9 +67,7 @@ export function OrderDetailPage() {
       return;
     }
 
-    const validOrderId = orderId
-
-
+    const validOrderId = orderId;
 
     if (initialOrder?.id === validOrderId) {
       return;
@@ -168,6 +176,13 @@ export function OrderDetailPage() {
         />
 
         <div className="flex flex-col gap-3 sm:flex-row">
+          <OrderPdfDownloadButton
+            orderId={order.id}
+            isGuestOrder={order.userId == null}
+            timePreviewPayload={timePreviewPayload}
+            drinksPreviewPayload={drinksPreviewPayload}
+          />
+
           <Button
             type="button"
             variant="secondary"
@@ -176,11 +191,7 @@ export function OrderDetailPage() {
             Crear nueva orden
           </Button>
 
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => navigate(-1)}
-          >
+          <Button type="button" variant="ghost" onClick={() => navigate(-1)}>
             <span className="flex items-center justify-center gap-2">
               <ArrowLeft size={16} />
               Volver
