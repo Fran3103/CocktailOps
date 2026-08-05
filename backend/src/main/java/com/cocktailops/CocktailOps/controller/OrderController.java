@@ -13,7 +13,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.BadRequestException;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
@@ -92,7 +91,7 @@ public class OrderController {
             @ApiResponse(responseCode = "409", description = "Conflicto de datos")
     })
     @GetMapping("/{id}/pdf")
-    public ResponseEntity<byte[]> getPdf(@PathVariable Long id) throws BadRequestException {
+    public ResponseEntity<byte[]> getPdf(@PathVariable Long id) {
 
         byte[] pdf = orderPdfService.generateOrderPdf(id);
 
@@ -126,7 +125,7 @@ public class OrderController {
     }
 
     @PostMapping("/preview/pdf")
-    public ResponseEntity<byte[]> generatePreviewPdf(@Valid @RequestBody OrderRequestDto orderRequestDto) throws BadRequestException {
+    public ResponseEntity<byte[]> generatePreviewPdf(@Valid @RequestBody OrderRequestDto orderRequestDto) {
         byte[] pdf = orderPdfService.generateOrderPreviewPdf(orderRequestDto);
 
         return ResponseEntity.ok()
@@ -136,7 +135,7 @@ public class OrderController {
     }
 
     @PostMapping("/by-drinks/preview/pdf")
-    public ResponseEntity<byte[]> generateByDrinksPreviewPdf(@Valid @RequestBody OrderByDrinksRequestDto orderByDrinksRequestDto) throws BadRequestException {
+    public ResponseEntity<byte[]> generateByDrinksPreviewPdf(@Valid @RequestBody OrderByDrinksRequestDto orderByDrinksRequestDto) {
         byte[] pdf = orderPdfService.generateOrderByDrinksPreviewPdf(orderByDrinksRequestDto);
 
         return ResponseEntity.ok()

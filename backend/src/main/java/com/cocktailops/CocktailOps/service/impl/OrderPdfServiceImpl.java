@@ -9,7 +9,7 @@ import com.cocktailops.CocktailOps.service.IOrderPdfService;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.coyote.BadRequestException;
+import com.cocktailops.CocktailOps.exception.PdfGenerationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
@@ -32,7 +32,7 @@ public class OrderPdfServiceImpl implements IOrderPdfService {
 
 
     @Override
-    public byte[] generateOrderPdf(Long orderId) throws BadRequestException {
+    public byte[] generateOrderPdf(Long orderId){
 
         log.info("Generating PDF for order with id: {}", orderId);
 
@@ -48,14 +48,14 @@ public class OrderPdfServiceImpl implements IOrderPdfService {
     }
 
     @Override
-    public byte[] generateOrderPreviewPdf(OrderRequestDto orderRequestDto) throws BadRequestException {
+    public byte[] generateOrderPreviewPdf(OrderRequestDto orderRequestDto) {
         OrderResponseDto responseDto = orderService.previewOrder(orderRequestDto);
 
         return buildPdf(responseDto);
     }
 
     @Override
-    public byte[] generateOrderByDrinksPreviewPdf(OrderByDrinksRequestDto orderByDrinksRequestDto) throws BadRequestException {
+    public byte[] generateOrderByDrinksPreviewPdf(OrderByDrinksRequestDto orderByDrinksRequestDto)  {
         OrderResponseDto responseDto = orderService.previewOrderByDrinks(orderByDrinksRequestDto);
 
         return buildPdf(responseDto);
@@ -135,7 +135,7 @@ public class OrderPdfServiceImpl implements IOrderPdfService {
         }
     }
 
-    private byte[] buildPdf(OrderResponseDto responseDto) throws BadRequestException {
+    private byte[] buildPdf(OrderResponseDto responseDto){
 
         OrderPdfDto orderPdfDto = toPdfDto(responseDto);
 
@@ -156,7 +156,7 @@ public class OrderPdfServiceImpl implements IOrderPdfService {
 
         } catch (Exception e) {
             log.error("Error generating PDF", e);
-            throw new BadRequestException("Error generating PDF", e);
+            throw new   PdfGenerationException("Error generating PDF", e);
         }
     }
 }
