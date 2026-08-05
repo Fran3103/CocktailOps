@@ -6,11 +6,14 @@ import com.cocktailops.CocktailOps.dto.orderDto.OrderRequestDto;
 import com.cocktailops.CocktailOps.dto.orderDto.OrderResponseDto;
 import com.cocktailops.CocktailOps.entitie.Order;
 import com.cocktailops.CocktailOps.entitie.OrderMode;
+import com.cocktailops.CocktailOps.entitie.Role;
+import com.cocktailops.CocktailOps.entitie.User;
 import com.cocktailops.CocktailOps.exception.BadRequestException;
 import com.cocktailops.CocktailOps.exception.ResourceNotFoundException;
 import com.cocktailops.CocktailOps.repository.ICocktailRepository;
 import com.cocktailops.CocktailOps.repository.IOrderRepository;
 import com.cocktailops.CocktailOps.repository.IProductRepository;
+import com.cocktailops.CocktailOps.security.CurrentUserService;
 import com.cocktailops.CocktailOps.service.impl.OrderServiceImpl;
 import com.fasterxml.jackson.databind.introspect.TypeResolutionContext;
 import org.hamcrest.text.IsEmptyString;
@@ -42,6 +45,9 @@ public class OrderServiceImplTest {
     @Mock
     private ICocktailRepository cocktailRepository;
 
+    @Mock
+    private CurrentUserService currentUserService;
+
     @InjectMocks
     private OrderServiceImpl orderServiceImpl;
 
@@ -62,6 +68,13 @@ public class OrderServiceImplTest {
         order.setOrderItems(new ArrayList<>());
         order.setCocktails(new ArrayList<>());
 
+        User user = new User();
+        user.setId(1L);
+        user.setRole(Role.USER);
+
+        order.setUser(user);
+
+        when(currentUserService.getCurrentUserOptional()).thenReturn(Optional.of(user));
 
 
 

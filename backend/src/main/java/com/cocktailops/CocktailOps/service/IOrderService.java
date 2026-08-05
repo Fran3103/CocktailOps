@@ -18,4 +18,8 @@ public interface IOrderService {
 
     List<OrderResponseDto> getMyOrders();
 
+    OrderResponseDto previewOrder(OrderRequestDto dto);
+
+    OrderResponseDto previewOrderByDrinks(OrderByDrinksRequestDto dto);
+
 }

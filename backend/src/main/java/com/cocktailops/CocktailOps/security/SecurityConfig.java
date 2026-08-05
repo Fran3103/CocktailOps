@@ -62,9 +62,8 @@ public class SecurityConfig {
             "/orders/my-orders/**"
     };
 
-    private static final String[] ORDER_ENDPOINTS = {
-            "/orders",
-            "/orders/**"
+    private static final String[] ORDER_DETAILS_ENDPOINTS = {
+            "/orders/*"
     };
 
     private static final String[] PUBLIC_ORDER_CREATE_ENDPOINTS = {
@@ -111,12 +110,14 @@ public class SecurityConfig {
 
                         .requestMatchers(HttpMethod.GET, USER_ORDER_ENDPOINTS).authenticated()
                         .requestMatchers(HttpMethod.GET, USER_ORDER_PDF_ENDPOINTS).authenticated()
+                        .requestMatchers(HttpMethod.GET, ORDER_DETAILS_ENDPOINTS).authenticated()
 
 
-                        .requestMatchers(HttpMethod.GET, ORDER_ENDPOINTS).hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, ORDER_ENDPOINTS).hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, ORDER_ENDPOINTS).hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, ORDER_ENDPOINTS).hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/orders").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.PUT, "/orders/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/orders/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/orders/**").hasRole("ADMIN")
 
                         .anyRequest().authenticated()
                 )

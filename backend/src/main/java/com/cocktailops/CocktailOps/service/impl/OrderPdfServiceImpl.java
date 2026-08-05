@@ -49,14 +49,14 @@ public class OrderPdfServiceImpl implements IOrderPdfService {
 
     @Override
     public byte[] generateOrderPreviewPdf(OrderRequestDto orderRequestDto) throws BadRequestException {
-        OrderResponseDto responseDto = orderService.createOrder(orderRequestDto);
+        OrderResponseDto responseDto = orderService.previewOrder(orderRequestDto);
 
         return buildPdf(responseDto);
     }
 
     @Override
     public byte[] generateOrderByDrinksPreviewPdf(OrderByDrinksRequestDto orderByDrinksRequestDto) throws BadRequestException {
-        OrderResponseDto responseDto = orderService.createOrderByDrinks(orderByDrinksRequestDto);
+        OrderResponseDto responseDto = orderService.previewOrderByDrinks(orderByDrinksRequestDto);
 
         return buildPdf(responseDto);
     }
