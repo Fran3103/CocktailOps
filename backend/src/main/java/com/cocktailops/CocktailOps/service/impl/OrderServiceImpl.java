@@ -19,60 +19,123 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
+/**
+ * -Servicio principal de órdenes.
+ * Este archivo concentra el cálculo más importante de CocktailOps:
+ * 1. Recibe una orden por tiempo/personas o por cantidad fija de tragos.
+ * 2. Calcula cuántos tragos corresponden a cada cóctel.
+ * 3. Busca las recetas de los cócteles.
+ * 4. Suma los ingredientes por producto.
+ * 5. Convierte unidades cuando hace falta.
+ * 6. Calcula cuántas botellas/paquetes/unidades comprar.
+ * 7. Devuelve una respuesta lista para frontend/PDF.
+
+ * Importante:
+ * - Los métodos créate... guardan en base de datos.
+ * - Los métodos preview... calculan, pero NO guardan.
+ * - Estar logueado NO es lo que decide si se guarda o no.
+ * - Estar logueado solo permite asociar la orden a un usuario.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl implements IOrderService {
 
     private final IOrderRepository orderRepository;
-
     private final IProductRepository productRepository;
-
     private final ICocktailRepository cocktailRepository;
-
     private final CurrentUserService currentUserService;
 
+    // Factores de conversión usados cuando la receta está cargada en onzas.
     private static final BigDecimal OZ_TO_ML = new BigDecimal("29.5735");
+    private static final BigDecimal OZ_TO_G = new BigDecimal("28.3495");
 
-    private static final BigDecimal OZ_TO_G  = new BigDecimal("28.3495");
+    /**
+     * Cantidad estimada de tragos por persona por hora.
 
+     * Se puede configurar en application-local.properties:
+     * order.drinksPerPersonPerHour=1
+
+     * Si no existe la propiedad, el valor por defecto será 1.
+     */
     @Value("${order.drinksPerPersonPerHour:1}")
     private int defaultDrinksPerPersonPerHour;
+
+    /**
+     * Busca una orden por ID.
+
+     * Regla de seguridad:
+     * - ADMIN puede ver cualquier orden.
+     * - USER solo puede ver sus propias órdenes.
+     */
     @Override
     public OrderResponseDto getOrderById(Long id) {
-        Optional<Order> order = orderRepository.findById(id);
-        if (order.isEmpty()) {
-                log.warn("Order with id {} not found", id);
-                throw new ResourceNotFoundException("Order not found: " + id);
+        Optional<Order> optionalOrder = orderRepository.findById(id);
+
+        if (optionalOrder.isEmpty()) {
+            log.warn("Order with id {} not found", id);
+            throw new ResourceNotFoundException("Order not found: " + id);
         }
 
-        Order o = order.get();
-        log.debug("Order with id {} found: guests={}, durationHours={}, cocktails={}, items={}",
+        Order order = optionalOrder.get();
+
+        log.debug(
+                "Order with id {} found: guests={}, durationHours={}, cocktails={}, items={}",
                 id,
-                o.getGuests(),
-                o.getDurationHours(),
-                o.getCocktails() != null ? o.getCocktails().size() : 0,
-                o.getOrderItems() != null ? o.getOrderItems().size() : 0
-            );
-        validateOrderAccess(o);
-        return toResponse(o);
+                order.getGuests(),
+                order.getDurationHours(),
+                order.getCocktails() != null ? order.getCocktails().size() : 0,
+                order.getOrderItems() != null ? order.getOrderItems().size() : 0
+        );
+
+        validateOrderAccess(order);
+
+        return toResponse(order);
     }
 
+    /**
+     * Devuelve todas las órdenes.
+
+     * Este método debe estar protegido desde SecurityConfig para que solo lo use ADMIN.
+     */
     @Override
     public List<OrderResponseDto> getAllOrders() {
-        return orderRepository.findAll().stream()
-                .map(this::toResponse)
-                .toList();
+        List<Order> orders = orderRepository.findAll();
+        List<OrderResponseDto> response = new ArrayList<>();
+
+        for (Order order : orders) {
+            response.add(toResponse(order));
+        }
+
+        return response;
     }
 
+    /**
+     * Crea una orden por tiempo/personas y la guarda en base de datos.
 
+     * Ejemplo:
+     * guests = 100
+     * durationHours = 5
+     * drinksPerPersonPerHour = 1
+     * totalDrinks = 100 * 5 * 1 = 500
+
+     * Este método siempre intenta guardar porque llama a orderRepository.save(...).
+     * Si hay usuario logueado, la orden queda asociada a ese usuario.
+     * Si no hay usuario logueado y el endpoint lo permite, se guardaría como orden anónima.
+     */
     @Override
     @Transactional
     public OrderResponseDto createOrder(OrderRequestDto dto) {
         int cocktailsCount = dto.cocktails() != null ? dto.cocktails().size() : 0;
+
         log.info(
                 "createOrder started: guests={}, durationHours={}, cocktails={}",
                 dto.guests(),
@@ -81,11 +144,17 @@ public class OrderServiceImpl implements IOrderService {
         );
 
         Order order = buildTimeOrder(dto, true);
-
         Order savedOrder = orderRepository.save(order);
+
         return toResponse(savedOrder);
     }
 
+    /**
+     * Crea una orden por cantidad exacta de tragos y la guarda en base de datos.
+
+     * En este modo el cliente ya decide cuántos tragos quiere de cada cóctel.
+     * La suma de todos los cócteles debe coincidir con totalDrinks.
+     */
     @Override
     @Transactional
     public OrderResponseDto createOrderByDrinks(OrderByDrinksRequestDto dto) {
@@ -96,7 +165,6 @@ public class OrderServiceImpl implements IOrderService {
         );
 
         Order order = buildDrinksOrder(dto, true);
-
         Order savedOrder = orderRepository.save(order);
 
         log.info(
@@ -110,6 +178,11 @@ public class OrderServiceImpl implements IOrderService {
         return toResponse(savedOrder);
     }
 
+    /**
+     * Calcula una orden por tiempo/personas, pero NO la guarda.
+
+     * Este método sirve para preview/PDF de invitado o para calcular antes de confirmar.
+     */
     @Override
     @Transactional(readOnly = true)
     public OrderResponseDto previewOrder(OrderRequestDto dto) {
@@ -132,6 +205,9 @@ public class OrderServiceImpl implements IOrderService {
         return toResponse(order);
     }
 
+    /**
+     * Calcula una orden por cantidad exacta de tragos, pero NO la guarda.
+     */
     @Override
     @Transactional(readOnly = true)
     public OrderResponseDto previewOrderByDrinks(OrderByDrinksRequestDto dto) {
@@ -153,159 +229,34 @@ public class OrderServiceImpl implements IOrderService {
         return toResponse(order);
     }
 
-    private Map<Long, Integer> distributeByWeights(int totalDrinks, Map<Long, Integer> weightsById) {
-
-        int sumWeights = weightsById.values().stream().mapToInt(Integer::intValue).sum();
-        if (sumWeights <= 0) throw new BadRequestException("Sum of weights must be > 0");
-
-        record Remainder(Long id, BigDecimal frac) {}
-
-        Map<Long, Integer> drinks = new LinkedHashMap<>();
-        List<Remainder> remainders = new ArrayList<>();
-
-        int assigned = 0;
-
-        for (var e : weightsById.entrySet()) {
-            Long id = e.getKey();
-            int w = e.getValue();
-
-            BigDecimal exact = BigDecimal.valueOf(totalDrinks)
-                    .multiply(BigDecimal.valueOf(w))
-                    .divide(BigDecimal.valueOf(sumWeights), 12, RoundingMode.DOWN);
-
-            int base = exact.intValue();
-            drinks.put(id, base);
-            assigned += base;
-
-            remainders.add(new Remainder(id, exact.subtract(BigDecimal.valueOf(base))));
-        }
-
-        int remaining = totalDrinks - assigned;
-
-        remainders.sort(
-                Comparator.<Remainder, BigDecimal>comparing(Remainder::frac).reversed()
-                        .thenComparing(Remainder::id)
-        );
-
-        for (int i = 0; i < remaining; i++) {
-            Long id = remainders.get(i % remainders.size()).id();
-            drinks.merge(id, 1, Integer::sum);
-        }
-
-        return drinks;
-    }
-
-
-
+    /**
+     * Devuelve las órdenes del usuario logueado.
+     */
+    @Override
     public List<OrderResponseDto> getMyOrders() {
         User currentUser = currentUserService.getCurrentUserOptional().orElse(null);
+        List<Order> orders = orderRepository.findByUserId(currentUser != null ? currentUser.getId() : null);
+        List<OrderResponseDto> response = new ArrayList<>();
 
-        return orderRepository.findByUserId(currentUser != null ? currentUser.getId() : null)
-                .stream()
-                .map(this::toResponse)
-                .toList();
-    }
-
-
-// ---------- Utils ----------
-
-    private void validateOrderAccess(Order order) {
-        User currentUser = currentUserService.getCurrentUserOptional().orElse(null);
-
-        assert currentUser != null;
-        boolean isAdmin = currentUser.getRole() == Role.ADMIN;
-
-        boolean isOwner = order.getUser() != null
-                && order.getUser().getId().equals(currentUser.getId());
-
-        if (!isAdmin && !isOwner) {
-            throw new AccessDeniedException("You do not have permission to access this order");
-        }
-    }
-
-    private BigDecimal toProductUnit(BigDecimal amount, MeasureUnit ingUnit, String productUnit) {
-        MeasureUnit pu = switch (productUnit.toLowerCase()) {
-            case "ml" -> MeasureUnit.ML;
-            case "gr" -> MeasureUnit.GR;
-            case "unid" -> MeasureUnit.UNID;
-            default -> throw new BusinessRuleException("Unsupported product unit: " + productUnit);
-        };
-
-        if (ingUnit == pu) return amount;
-
-        if (ingUnit == MeasureUnit.OZ && pu == MeasureUnit.ML) return amount.multiply(OZ_TO_ML);
-        if (ingUnit == MeasureUnit.OZ && pu == MeasureUnit.GR) return amount.multiply(OZ_TO_G);
-
-        throw new BusinessRuleException("Cannot convert " + ingUnit + " to product unit " + pu);
-    }
-
-    private int packsToBuy(Product product, BigDecimal requiredAmount) {
-        if (product.getUnitSize() == null || product.getUnitSize().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BusinessRuleException("Product unitSize missing/invalid for product: " + product.getId());
+        for (Order order : orders) {
+            response.add(toResponse(order));
         }
 
-        return requiredAmount
-                .divide(product.getUnitSize(), 0, RoundingMode.CEILING)
-                .intValue();
+        return response;
     }
 
+    // --------------------------------------------------------------------------------------------
+    // CÁLCULO PRINCIPAL - MODO TIME
+    // --------------------------------------------------------------------------------------------
 
-// Convert Order entity to OrderResponseDto
-private OrderResponseDto toResponse(Order order) {
-    List<OrderCocktailResponseDto> cocktails = order.getCocktails().stream()
-            .map(oc -> new OrderCocktailResponseDto(
-                    oc.getCocktail().getId(),
-                    oc.getCocktail().getName(),
-                    oc.getDrinks()
-            ))
-            .toList();
+    /**
+     * Arma una orden por tiempo/personas.
 
-    List<OrderItemsResponseDto> items = order.getOrderItems().stream()
-            .map(oi -> new OrderItemsResponseDto(
-                    oi.getProduct().getId(),
-                    oi.getProduct().getName(),
-                    oi.getQuantity(),              // packsToBuy
-                    oi.getProduct().getUnitSize(),  // packSize
-                    oi.getProduct().getUnit()       // ml/gr/unid
-            ))
-            .toList();
-
-    Long userId = order.getUser() != null ? order.getUser().getId() : null;
-
-    return new OrderResponseDto(
-            order.getId(),
-            order.getMode().toString(),
-            order.getCreatedAt(),
-            order.getGuests(),
-            order.getDrinksPerPerson(),
-            order.getDurationHours(),
-            order.getStatus(),
-            items,
-            cocktails,
-            userId
-    );
-    }
-
+     * Este método NO guarda. Solo construye el objeto Order en memoria.
+     * El guardado ocurre solamente en createOrder(...).
+     */
     private Order buildTimeOrder(OrderRequestDto dto, boolean associateCurrentUser) {
-
-        if (dto.guests() == null || dto.guests() <= 0) {
-            throw new BadRequestException("Guests must be greater than 0");
-        }
-
-        if (dto.durationHours() == null || dto.durationHours() <= 0) {
-            throw new BadRequestException("Duration hours must be greater than 0");
-        }
-
-        if (dto.cocktails() == null || dto.cocktails().isEmpty()) {
-            throw new BadRequestException("At least one cocktail must be included in the order");
-        }
-
-        boolean invalidWeight = dto.cocktails().stream()
-                .anyMatch(c -> c.cocktailId() == null || (c.weight() != null && c.weight() <= 0));
-
-        if (invalidWeight) {
-            throw new BadRequestException("cocktailId is required and weight must be > 0");
-        }
+        validateTimeOrderRequest(dto);
 
         int drinksPerPerson = defaultDrinksPerPersonPerHour;
         int totalDrinks = dto.guests() * drinksPerPerson * dto.durationHours();
@@ -313,7 +264,7 @@ private OrderResponseDto toResponse(Order order) {
         Order order = new Order();
 
         if (associateCurrentUser) {
-            currentUserService.getCurrentUserOptional().ifPresent(order::setUser);
+            associateCurrentUserIfPresent(order);
         }
 
         order.setGuests(dto.guests());
@@ -328,56 +279,27 @@ private OrderResponseDto toResponse(Order order) {
         Map<Long, BigDecimal> requiredByProductId = new HashMap<>();
         Map<Long, Product> productCache = new HashMap<>();
 
-        Map<Long, Integer> weightsById = dto.cocktails().stream()
-                .collect(Collectors.toMap(
-                        OrderCocktailsWeightDto::cocktailId,
-                        c -> c.weight() == null ? 1 : c.weight(),
-                        Integer::sum,
-                        LinkedHashMap::new
-                ));
+        Map<Long, Integer> weightsByCocktailId = buildWeightsByCocktailId(dto.cocktails());
+        Map<Long, Integer> drinksByCocktailId = distributeByWeights(totalDrinks, weightsByCocktailId);
 
-        Map<Long, Integer> drinksById = distributeByWeights(totalDrinks, weightsById);
-
-        int assignedTotal = drinksById.values().stream()
-                .mapToInt(Integer::intValue)
-                .sum();
-
+        int assignedTotal = sumAssignedDrinks(drinksByCocktailId);
         order.setTotalDrinks(assignedTotal);
 
-        for (Map.Entry<Long, Integer> e : drinksById.entrySet()) {
-
-            Long cocktailId = e.getKey();
-            int drinksForThisCocktail = e.getValue();
+        for (Map.Entry<Long, Integer> entry : drinksByCocktailId.entrySet()) {
+            Long cocktailId = entry.getKey();
+            int drinksForThisCocktail = entry.getValue();
 
             if (drinksForThisCocktail <= 0) {
                 continue;
             }
 
-            Cocktail cocktail = cocktailRepository.findByWithIngredients(cocktailId)
-                    .orElseThrow(() -> new ResourceNotFoundException(
-                            "Cocktail with id " + cocktailId + " not found"
-                    ));
-
-            OrderCocktail orderCocktail = new OrderCocktail();
-            orderCocktail.setOrder(order);
-            orderCocktail.setCocktail(cocktail);
-            orderCocktail.setDrinks(drinksForThisCocktail);
-
-            order.getCocktails().add(orderCocktail);
-
-            for (CocktailIngredient ing : cocktail.getIngredients()) {
-
-                Product product = ing.getProduct();
-                productCache.putIfAbsent(product.getId(), product);
-
-                BigDecimal perDrinkInProductUnit =
-                        toProductUnit(ing.getAmount(), ing.getUnit(), product.getUnit());
-
-                BigDecimal totalRequired =
-                        perDrinkInProductUnit.multiply(BigDecimal.valueOf(drinksForThisCocktail));
-
-                requiredByProductId.merge(product.getId(), totalRequired, BigDecimal::add);
-            }
+            addCocktailAndIngredientsToOrder(
+                    order,
+                    cocktailId,
+                    drinksForThisCocktail,
+                    requiredByProductId,
+                    productCache
+            );
         }
 
         addOrderItems(order, requiredByProductId, productCache);
@@ -385,37 +307,135 @@ private OrderResponseDto toResponse(Order order) {
         return order;
     }
 
-    private Order buildDrinksOrder(OrderByDrinksRequestDto dto, boolean associateCurrentUser) {
+    /**
+     * Válida los datos mínimos para una orden por tiempo/personas.
+     */
+    private void validateTimeOrderRequest(OrderRequestDto dto) {
+        if (dto.guests() == null || dto.guests() <= 0) {
+            throw new BadRequestException("Guests must be greater than 0");
+        }
 
-        if (dto.totalDrinks() == null || dto.totalDrinks() <= 0) {
-            throw new BadRequestException("total drinks must be greater than 0");
+        if (dto.durationHours() == null || dto.durationHours() <= 0) {
+            throw new BadRequestException("Duration hours must be greater than 0");
         }
 
         if (dto.cocktails() == null || dto.cocktails().isEmpty()) {
-            throw new BadRequestException("cocktails must be greater than 0");
+            throw new BadRequestException("At least one cocktail must be included in the order");
         }
 
-        boolean invalid = dto.cocktails().stream()
-                .anyMatch(c -> c.cocktailId() == null || c.quantity() == null || c.quantity() <= 0);
+        for (OrderCocktailsWeightDto cocktail : dto.cocktails()) {
+            if (cocktail.cocktailId() == null) {
+                throw new BadRequestException("cocktailId is required and weight must be > 0");
+            }
 
-        if (invalid) {
-            throw new BadRequestException("cocktails must be greater than 0");
+            if (cocktail.weight() != null && cocktail.weight() <= 0) {
+                throw new BadRequestException("cocktailId is required and weight must be > 0");
+            }
+        }
+    }
+
+    /**
+     * Construye un mapa cocktailId -> weight.
+
+     * Si el usuario no manda weight, se usa 1.
+     * Si el mismo cocktailId aparece más de una vez, se suman los pesos.
+     */
+    private Map<Long, Integer> buildWeightsByCocktailId(List<OrderCocktailsWeightDto> cocktails) {
+        Map<Long, Integer> weightsByCocktailId = new LinkedHashMap<>();
+
+        for (OrderCocktailsWeightDto cocktail : cocktails) {
+            Long cocktailId = cocktail.cocktailId();
+            int weight = cocktail.weight() == null ? 1 : cocktail.weight();
+
+            // Si el mismo cóctel aparece más de una vez,
+            // acumulamos su peso en lugar de reemplazarlo.
+            weightsByCocktailId.merge(cocktailId, weight, Integer::sum);
         }
 
-        int sum = dto.cocktails().stream()
-                .mapToInt(OrderCocktailQuantityDto::quantity)
-                .sum();
+        return weightsByCocktailId;
+    }
 
-        if (sum != dto.totalDrinks()) {
-            throw new BadRequestException(
-                    "sum of cocktails quantity must equal total drinks (" + dto.totalDrinks() + ")"
-            );
+    /**
+     * Reparte el total de tragos entre los cócteles según su peso.
+
+     * Ejemplo:
+     * totalDrinks = 100
+     * Mojito weight = 1
+     * Daiquiri weight = 1
+     * Gin Tonic weight = 2
+
+     * Resultado:
+     * Mojito = 25
+     * Daiquiri = 25
+     * Gin Tonic = 50
+     */
+    private Map<Long, Integer> distributeByWeights(int totalDrinks, Map<Long, Integer> weightsById) {
+        int sumWeights = 0;
+
+        for (Integer weight : weightsById.values()) {
+            sumWeights += weight;
         }
+
+        if (sumWeights <= 0) {
+            throw new BadRequestException("Sum of weights must be > 0");
+        }
+
+        record Remainder(Long id, BigDecimal fraction) {}
+
+        Map<Long, Integer> drinksByCocktailId = new LinkedHashMap<>();
+        List<Remainder> remainders = new ArrayList<>();
+        int assignedDrinks = 0;
+
+        for (Map.Entry<Long, Integer> entry : weightsById.entrySet()) {
+            Long cocktailId = entry.getKey();
+            int weight = entry.getValue();
+
+            BigDecimal exactDrinks = BigDecimal.valueOf(totalDrinks)
+                    .multiply(BigDecimal.valueOf(weight))
+                    .divide(BigDecimal.valueOf(sumWeights), 12, RoundingMode.DOWN);
+
+            int baseDrinks = exactDrinks.intValue();
+
+            drinksByCocktailId.put(cocktailId, baseDrinks);
+            assignedDrinks += baseDrinks;
+
+            BigDecimal fraction = exactDrinks.subtract(BigDecimal.valueOf(baseDrinks));
+            remainders.add(new Remainder(cocktailId, fraction));
+        }
+
+        int remainingDrinks = totalDrinks - assignedDrinks;
+
+        remainders.sort(
+                Comparator.<Remainder, BigDecimal>comparing(Remainder::fraction).reversed()
+                        .thenComparing(Remainder::id)
+        );
+
+        for (int i = 0; i < remainingDrinks; i++) {
+            Long cocktailId = remainders.get(i % remainders.size()).id();
+            Integer currentDrinks = drinksByCocktailId.get(cocktailId);
+            drinksByCocktailId.put(cocktailId, currentDrinks + 1);
+        }
+
+        return drinksByCocktailId;
+    }
+
+    // --------------------------------------------------------------------------------------------
+    // CÁLCULO PRINCIPAL - MODO DRINKS
+    // --------------------------------------------------------------------------------------------
+
+    /**
+     * Arma una orden por cantidad exacta de tragos.
+
+     * Este método NO calcula el total a partir de invitados y horas.
+     * Usa directamente las cantidades indicadas por el cliente.
+     */
+    private Order buildDrinksOrder(OrderByDrinksRequestDto dto, boolean associateCurrentUser) {
+        validateDrinksOrderRequest(dto);
 
         Order order = new Order();
 
         if (associateCurrentUser) {
-            currentUserService.getCurrentUserOptional().ifPresent(order::setUser);
+            associateCurrentUserIfPresent(order);
         }
 
         order.setMode(OrderMode.DRINKS);
@@ -427,35 +447,14 @@ private OrderResponseDto toResponse(Order order) {
         Map<Long, BigDecimal> requiredByProductId = new HashMap<>();
         Map<Long, Product> productCache = new HashMap<>();
 
-        for (OrderCocktailQuantityDto cDto : dto.cocktails()) {
-
-            Cocktail cocktail = cocktailRepository.findByWithIngredients(cDto.cocktailId())
-                    .orElseThrow(() -> new ResourceNotFoundException(
-                            "Cocktail with id " + cDto.cocktailId() + " not found"
-                    ));
-
-            int drinksForThisCocktail = cDto.quantity();
-
-            OrderCocktail orderCocktail = new OrderCocktail();
-            orderCocktail.setOrder(order);
-            orderCocktail.setCocktail(cocktail);
-            orderCocktail.setDrinks(drinksForThisCocktail);
-
-            order.getCocktails().add(orderCocktail);
-
-            for (CocktailIngredient ing : cocktail.getIngredients()) {
-
-                Product product = ing.getProduct();
-                productCache.putIfAbsent(product.getId(), product);
-
-                BigDecimal perDrinkInProductUnit =
-                        toProductUnit(ing.getAmount(), ing.getUnit(), product.getUnit());
-
-                BigDecimal totalRequired =
-                        perDrinkInProductUnit.multiply(BigDecimal.valueOf(drinksForThisCocktail));
-
-                requiredByProductId.merge(product.getId(), totalRequired, BigDecimal::add);
-            }
+        for (OrderCocktailQuantityDto cocktailDto : dto.cocktails()) {
+            addCocktailAndIngredientsToOrder(
+                    order,
+                    cocktailDto.cocktailId(),
+                    cocktailDto.quantity(),
+                    requiredByProductId,
+                    productCache
+            );
         }
 
         addOrderItems(order, requiredByProductId, productCache);
@@ -463,13 +462,110 @@ private OrderResponseDto toResponse(Order order) {
         return order;
     }
 
+    /**
+     * Válida los datos mínimos para una orden por cantidad exacta de tragos.
+     */
+    private void validateDrinksOrderRequest(OrderByDrinksRequestDto dto) {
+        if (dto.totalDrinks() == null || dto.totalDrinks() <= 0) {
+            throw new BadRequestException("total drinks must be greater than 0");
+        }
+
+        if (dto.cocktails() == null || dto.cocktails().isEmpty()) {
+            throw new BadRequestException("cocktails must be greater than 0");
+        }
+
+        int sum = 0;
+
+        for (OrderCocktailQuantityDto cocktail : dto.cocktails()) {
+            if (cocktail.cocktailId() == null || cocktail.quantity() == null || cocktail.quantity() <= 0) {
+                throw new BadRequestException("cocktails must be greater than 0");
+            }
+
+            sum += cocktail.quantity();
+        }
+
+        if (sum != dto.totalDrinks()) {
+            throw new BadRequestException(
+                    "sum of cocktails quantity must equal total drinks (" + dto.totalDrinks() + ")"
+            );
+        }
+    }
+
+    // --------------------------------------------------------------------------------------------
+    // CÁLCULO COMPARTIDO ENTRE TIME Y DRINKS
+    // --------------------------------------------------------------------------------------------
+
+    /**
+     * Agrega un cóctel a la orden y acumula sus ingredientes en el mapa requiredByProductId.
+
+     * Este método es compartido por TIME y DRINKS.
+     */
+    private void addCocktailAndIngredientsToOrder(
+            Order order,
+            Long cocktailId,
+            int drinksForThisCocktail,
+            Map<Long, BigDecimal> requiredByProductId,
+            Map<Long, Product> productCache
+    ) {
+        Cocktail cocktail = cocktailRepository.findByWithIngredients(cocktailId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Cocktail with id " + cocktailId + " not found"
+                ));
+
+        OrderCocktail orderCocktail = new OrderCocktail();
+        orderCocktail.setOrder(order);
+        orderCocktail.setCocktail(cocktail);
+        orderCocktail.setDrinks(drinksForThisCocktail);
+
+        order.getCocktails().add(orderCocktail);
+
+        for (CocktailIngredient ingredient : cocktail.getIngredients()) {
+            Product product = ingredient.getProduct();
+            productCache.putIfAbsent(product.getId(), product);
+
+            BigDecimal amountPerDrink = toProductUnit(
+                    ingredient.getAmount(),
+                    ingredient.getUnit(),
+                    product.getUnit()
+            );
+
+            BigDecimal totalRequiredForThisCocktail = amountPerDrink
+                    .multiply(BigDecimal.valueOf(drinksForThisCocktail));
+
+            /*
+             * Esta es una de las líneas más importantes del proyecto.
+             *
+             * Si Mojito y Daiquiri usan Ron, ambos suman sobre el mismo productId.
+             * El sistema NO calcula botellas de ron por separado para cada cóctel.
+             * Primero acumula la cantidad total de ron y recién al final calcula botellas.
+             */
+            BigDecimal currentRequiredAmount = requiredByProductId.get(product.getId());
+
+            if (currentRequiredAmount == null) {
+                requiredByProductId.put(product.getId(), totalRequiredForThisCocktail);
+            } else {
+                requiredByProductId.put(
+                        product.getId(),
+                        currentRequiredAmount.add(totalRequiredForThisCocktail)
+                );
+            }
+        }
+    }
+
+    /**
+     * Convierte el mapa de cantidades requeridas por producto en OrderItems.
+
+     * Ejemplo:
+     * requiredByProductId dice: Ron -> 1600 ml.
+     * El producto Ron tiene unitSize 750 ml.
+     * packsToBuy calcula: 1600 / 750 = 2.13 -> 3 botellas.
+     */
     private void addOrderItems(
             Order order,
             Map<Long, BigDecimal> requiredByProductId,
             Map<Long, Product> productCache
     ) {
         for (Map.Entry<Long, BigDecimal> entry : requiredByProductId.entrySet()) {
-
             Long productId = entry.getKey();
             BigDecimal requiredAmountInProductUnit = entry.getValue();
 
@@ -493,4 +589,139 @@ private OrderResponseDto toResponse(Order order) {
             order.getOrderItems().add(orderItem);
         }
     }
+
+    /**
+     * Suma todos los tragos asignados a cócteles.
+     */
+    private int sumAssignedDrinks(Map<Long, Integer> drinksByCocktailId) {
+        int total = 0;
+
+        for (Integer drinks : drinksByCocktailId.values()) {
+            total += drinks;
+        }
+
+        return total;
     }
+
+    // --------------------------------------------------------------------------------------------
+    // Unidades, PACKS Y Respuestas
+    // --------------------------------------------------------------------------------------------
+
+    /**
+     * Convierte la unidad usada en la receta a la unidad de compra del producto.
+     */
+    private BigDecimal toProductUnit(BigDecimal amount, MeasureUnit ingredientUnit, String productUnit) {
+        MeasureUnit productMeasureUnit = convertProductUnit(productUnit);
+
+        if (ingredientUnit == productMeasureUnit) {
+            return amount;
+        }
+
+        if (ingredientUnit == MeasureUnit.OZ && productMeasureUnit == MeasureUnit.ML) {
+            return amount.multiply(OZ_TO_ML);
+        }
+
+        if (ingredientUnit == MeasureUnit.OZ && productMeasureUnit == MeasureUnit.GR) {
+            return amount.multiply(OZ_TO_G);
+        }
+
+        throw new BusinessRuleException("Cannot convert " + ingredientUnit + " to product unit " + productMeasureUnit);
+    }
+
+    /**
+     * Convierte el String guardado en Product.unit a un enum MeasureUnit.
+     */
+    private MeasureUnit convertProductUnit(String productUnit) {
+        return switch (productUnit.toLowerCase()) {
+            case "ml" -> MeasureUnit.ML;
+            case "gr" -> MeasureUnit.GR;
+            case "unid" -> MeasureUnit.UNID;
+            default -> throw new BusinessRuleException("Unsupported product unit: " + productUnit);
+        };
+    }
+
+    /**
+     * Calcula cuántas unidades de compra se necesitan.
+
+     * Usa RoundingMode. CEILING porque no se puede comprar media botella.
+     */
+    private int packsToBuy(Product product, BigDecimal requiredAmount) {
+        if (product.getUnitSize() == null || product.getUnitSize().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessRuleException("Product unitSize missing/invalid for product: " + product.getId());
+        }
+
+        return requiredAmount
+                .divide(product.getUnitSize(), 0, RoundingMode.CEILING)
+                .intValue();
+    }
+
+    /**
+     * Transforma la entidad Order en el DTO que consume el frontend/PDF.
+     */
+    private OrderResponseDto toResponse(Order order) {
+        List<OrderCocktailResponseDto> cocktails = new ArrayList<>();
+
+        for (OrderCocktail orderCocktail : order.getCocktails()) {
+            cocktails.add(new OrderCocktailResponseDto(
+                    orderCocktail.getCocktail().getId(),
+                    orderCocktail.getCocktail().getName(),
+                    orderCocktail.getDrinks()
+            ));
+        }
+
+        List<OrderItemsResponseDto> items = new ArrayList<>();
+
+        for (OrderItem orderItem : order.getOrderItems()) {
+            items.add(new OrderItemsResponseDto(
+                    orderItem.getProduct().getId(),
+                    orderItem.getProduct().getName(),
+                    orderItem.getQuantity(),
+                    orderItem.getProduct().getUnitSize(),
+                    orderItem.getProduct().getUnit()
+            ));
+        }
+
+        Long userId = null;
+
+        if (order.getUser() != null) {
+            userId = order.getUser().getId();
+        }
+
+        return new OrderResponseDto(
+                order.getId(),
+                order.getMode().toString(),
+                order.getCreatedAt(),
+                order.getGuests(),
+                order.getDrinksPerPerson(),
+                order.getDurationHours(),
+                order.getStatus(),
+                items,
+                cocktails,
+                userId
+        );
+    }
+
+    /**
+     * Válida si el usuario actual puede ver una orden.
+     */
+    private void validateOrderAccess(Order order) {
+        User currentUser = currentUserService.getCurrentUserOptional().orElse(null);
+
+        boolean isAdmin = currentUser != null && currentUser.getRole() == Role.ADMIN;
+
+        boolean isOwner = currentUser != null && order.getUser() != null
+                && order.getUser().getId().equals(currentUser.getId());
+
+        if (!isAdmin && !isOwner) {
+            throw new AccessDeniedException("You do not have permission to access this order");
+        }
+    }
+
+    /**
+     * Si hay usuario autenticado, lo asocia a la orden.
+     * Si no hay usuario, no rompe: la orden queda sin user.
+     */
+    private void associateCurrentUserIfPresent(Order order) {
+        currentUserService.getCurrentUserOptional().ifPresent(order::setUser);
+    }
+}
