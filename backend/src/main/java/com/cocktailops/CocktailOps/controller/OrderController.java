@@ -119,7 +119,7 @@ public class OrderController {
             @ApiResponse(responseCode = "409", description = "Conflicto de datos")
     })
     @PostMapping("/by-drinks")
-    public ResponseEntity<OrderResponseDto> createByDrinks(@RequestBody OrderByDrinksRequestDto dto) {
+    public ResponseEntity<OrderResponseDto> createByDrinks(@Valid @RequestBody OrderByDrinksRequestDto dto) {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(orderService.createOrderByDrinks(dto));
     }
