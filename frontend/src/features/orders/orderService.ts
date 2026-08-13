@@ -47,6 +47,21 @@ async function downloadTimePreviewPdf(
   return response.data;
 }
 
+
+async function createDrinksPreview(
+    data: CreateDrinksOrderRequest
+): Promise<OrderResponse> {
+    const response = await apiClient.post<OrderResponse>("/orders/by-drinks/preview", data);
+    return response.data;
+}
+
+async function createTimePreview(
+    data: CreateTimeOrderRequest
+): Promise<OrderResponse> {
+    const response = await apiClient.post<OrderResponse>("/orders/preview", data);
+    return response.data;
+}
+
 async function downloadDrinksPreviewPdf(
   data: CreateDrinksOrderRequest
 ): Promise<Blob> {
@@ -69,4 +84,6 @@ export const orderService = {
     downloadPdf,
     downloadTimePreviewPdf,
     downloadDrinksPreviewPdf,
+    createDrinksPreview,
+    createTimePreview,
 };

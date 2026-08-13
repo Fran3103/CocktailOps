@@ -71,8 +71,9 @@ export function OrderPdfDownloadButton({
         type="button"
         onClick={handleDownloadPdf}
         disabled={isDownloading}
+        className=" transition hover:-translate-y-0.9 hover:bg-primary-soft hover:shadow-primary/50 motion-safe:animate-download-nudge"
       >
-        <span className="flex items-center justify-center gap-2">
+        <span className="flex items-center justify-center gap-2 ">
           <Download size={16} />
           {isDownloading ? "Descargando..." : "Descargar PDF"}
         </span>

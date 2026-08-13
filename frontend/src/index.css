@@ -3,3 +3,42 @@
 @import "tailwindcss";
 @import "./styles/theme.css";
 @import "./styles/base.css";
+
+
+@theme {
+  --animate-download-nudge: download-nudge 1.4s ease-in-out infinite;
+  --animate-soft-glow: soft-glow 1.8s ease-in-out infinite;
+  --animate-card-arrive: card-arrive 350ms ease-out;
+
+  @keyframes download-nudge {
+    0%, 100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-4px);
+    }
+  }
+
+  @keyframes soft-glow {
+    0%, 100% {
+      box-shadow: 0 0 0 rgba(212, 169, 83, 0);
+    }
+
+    50% {
+      box-shadow: 0 0 28px rgba(212, 169, 83, 0.55);
+    }
+  }
+
+  @keyframes card-arrive {
+    0% {
+      opacity: 0;
+      transform: translateY(-10px) scale(0.98);
+    }
+
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+}

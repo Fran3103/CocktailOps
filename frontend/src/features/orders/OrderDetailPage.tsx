@@ -175,8 +175,10 @@ export function OrderDetailPage() {
           description="Detalle del cálculo generado por CocktailOps."
         />
 
-        <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex flex-col gap-3 sm:flex-row ">
+            
           <OrderPdfDownloadButton
+
             orderId={order.id}
             isGuestOrder={order.userId == null}
             timePreviewPayload={timePreviewPayload}

@@ -283,9 +283,13 @@ export function CreateOrderPage() {
       setIsSubmitting(true);
 
       try {
-        const order = await orderService.createTimeOrder(timePayload);
-
-        setCreatedOrder(order);
+        if (!isAuthenticated) {
+          const order = await orderService.createTimePreview(timePayload);
+          setCreatedOrder(order);
+        } else {
+          const order = await orderService.createTimeOrder(timePayload);
+          setCreatedOrder(order);
+        }
         setCreatedOrderTimePayload(timePayload);
         setCreatedOrderDrinksPayload(null);
         setShowSuccessToast(true);
@@ -319,7 +323,14 @@ export function CreateOrderPage() {
     setIsSubmitting(true);
 
     try {
-      const order = await orderService.createDrinksOrder(drinksPayload);
+
+    let order: OrderResponse;
+
+      if (!isAuthenticated) {
+        order = await orderService.createDrinksPreview(drinksPayload);
+      } else {
+        order = await orderService.createDrinksOrder(drinksPayload);
+      }
 
       setCreatedOrder(order);
       setCreatedOrderTimePayload(null);
@@ -352,7 +363,7 @@ export function CreateOrderPage() {
       {showSuccessToast && createdOrder && (
         <SuccessToast
           title="Orden creada"
-          message={`La orden #${createdOrder.id} se generó correctamente.`}
+          message={`La orden #${createdOrder?.id || "Temporal"} se generó correctamente.`}
           onClose={() => setShowSuccessToast(false)}
         />
       )}
