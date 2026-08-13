@@ -39,7 +39,7 @@ public class OrderServiceImpl implements IOrderService {
 
     private static final BigDecimal OZ_TO_G  = new BigDecimal("28.3495");
 
-    @Value("${order.drinksPerPersonPerHour:2}")
+    @Value("${order.drinksPerPersonPerHour:1}")
     private int defaultDrinksPerPersonPerHour;
     @Override
     public OrderResponseDto getOrderById(Long id) {

@@ -143,4 +143,20 @@ public class OrderController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=order-preview.pdf")
                 .body(pdf);
     }
+
+    @PostMapping("/preview")
+    public ResponseEntity<OrderResponseDto> previewOrder(
+            @Valid @RequestBody OrderRequestDto orderRequestDto
+    ) {
+        OrderResponseDto response = orderService.previewOrder(orderRequestDto);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/by-drinks/preview")
+    public ResponseEntity<OrderResponseDto> previewOrderByDrinks(
+            @Valid @RequestBody OrderByDrinksRequestDto orderByDrinksRequestDto
+    ) {
+        OrderResponseDto response = orderService.previewOrderByDrinks(orderByDrinksRequestDto);
+        return ResponseEntity.ok(response);
+    }
 }
