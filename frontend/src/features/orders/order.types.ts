@@ -43,9 +43,9 @@ export type OrderItemResponse = {
 };
 
 export type OrderResponse = {
-  id: number;
+  id: number | null;
   mode: OrderMode;
-  createdAt: string;
+  createdAt: string | null;
   guests: number | null;
   drinksPerPerson: number | null;
   durationHours: number | null;
@@ -54,3 +54,17 @@ export type OrderResponse = {
   cocktail: OrderCocktailResponse[];
   userId: number | null;
 };
+
+export type PdfSource =
+  | {
+      type: "SAVED_ORDER";
+      orderId: number;
+    }
+  | {
+      type: "TIME_PREVIEW";
+      payload: CreateTimeOrderRequest;
+    }
+  | {
+      type: "DRINKS_PREVIEW";
+      payload: CreateDrinksOrderRequest;
+    };

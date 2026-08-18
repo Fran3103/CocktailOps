@@ -11,16 +11,11 @@ import { OrderItemsTable } from "./components/OrderItemsTable";
 import { orderService } from "./orderService";
 
 import { OrderPdfDownloadButton } from "./components/OrderPdfDownloadButton";
-import type {
-  CreateDrinksOrderRequest,
-  CreateTimeOrderRequest,
-  OrderResponse,
-} from "./order.types";
+import type { OrderResponse } from "./order.types";
+import { useAuth } from "../auth/useAuth";
 
 type OrderDetailLocationState = {
   order?: OrderResponse;
-  timePreviewPayload?: CreateTimeOrderRequest | null;
-  drinksPreviewPayload?: CreateDrinksOrderRequest | null;
 };
 
 function formatDate(value: string | null | undefined) {
@@ -47,11 +42,10 @@ export function OrderDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams();
+  const { user } = useAuth();
 
   const locationState = location.state as OrderDetailLocationState | null;
   const initialOrder = locationState?.order ?? null;
-  const timePreviewPayload = locationState?.timePreviewPayload ?? null;
-  const drinksPreviewPayload = locationState?.drinksPreviewPayload ?? null;
 
   const orderId = useMemo(() => {
     const numericId = Number(id);
@@ -166,7 +160,32 @@ export function OrderDetailPage() {
 
   const totalDrinks = getTotalDrinks(order);
   const isTimeMode = order.mode === "TIME";
+  const orderOwerLabel = order.userId  == null ? "Orden temporal": user?.id === order.userId ? `Orden asociada a ${user.firstName}` : `Orden de usuario #${order.userId}`; 
 
+  if (order.id == null) {
+    return (
+      <section className="space-y-6">
+        <PageHeader
+          title="Detalle de orden"
+          description="Esta orden no tiene un identificador válido."
+        />
+
+        <Card>
+          <p className="text-danger">
+            Esta orden no puede recuperarse como orden guardada.
+          </p>
+
+          <Button
+            type="button"
+            className="mt-4"
+            onClick={() => navigate(ROUTES.createOrder)}
+          >
+            Crear una nueva orden
+          </Button>
+        </Card>
+      </section>
+    );
+  }
   return (
     <section className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -176,13 +195,8 @@ export function OrderDetailPage() {
         />
 
         <div className="flex flex-col gap-3 sm:flex-row ">
-            
           <OrderPdfDownloadButton
-
-            orderId={order.id}
-            isGuestOrder={order.userId == null}
-            timePreviewPayload={timePreviewPayload}
-            drinksPreviewPayload={drinksPreviewPayload}
+            source={{ type: "SAVED_ORDER", orderId: order.id }}
           />
 
           <Button
@@ -241,9 +255,7 @@ export function OrderDetailPage() {
 
           <span className="flex items-center gap-2">
             <ClipboardList size={16} />
-            {order.userId
-              ? `Asociada al usuario #${order.userId}`
-              : "Orden generada como invitado"}
+            {orderOwerLabel}
           </span>
         </div>
       </Card>

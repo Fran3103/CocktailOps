@@ -67,8 +67,8 @@ export function OrderHistoryPage() {
 
   const sortedOrders = useMemo(() => {
     return [...orders].sort((a, b) => {
-      const dateA = new Date(a.createdAt).getTime();
-      const dateB = new Date(b.createdAt).getTime();
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
 
       return dateB - dateA;
     });

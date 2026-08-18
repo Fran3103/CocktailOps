@@ -29,7 +29,7 @@ async function getMyOrders(): Promise<OrderResponse[]> {
   return response.data;
 }
 
-async function downloadPdf(orderId: number): Promise<Blob> {
+async function downloadPdf(orderId: number | null): Promise<Blob> {
   const response = await apiClient.get<Blob>(`/orders/${orderId}/pdf`, {
     responseType: "blob",
   });

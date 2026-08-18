@@ -32,12 +32,12 @@ export function AppRouter() {
           <Route path={ROUTES.cocktails} element={<CocktailsPage />} />
           <Route path={ROUTES.products} element={<ProductsPage />} />
           <Route path={ROUTES.createOrder} element={<CreateOrderPage />} />
-            <Route path={ROUTES.orderDetails} element={<OrderDetailPage />} />
           <Route path={ROUTES.unauthorized} element={<UnauthorizedPage/>} />
 
           <Route element={<ProtectedRoute />}>
             <Route path={ROUTES.orders} element={<OrderHistoryPage />} />
             <Route path={ROUTES.profile} element={<ProfilePage />} />
+            <Route path={ROUTES.orderDetails} element={<OrderDetailPage />} />
           </Route>
 
           <Route element={<AdminRoute />}>
