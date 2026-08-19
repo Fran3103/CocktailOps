@@ -29,6 +29,11 @@ async function getMyOrders(): Promise<OrderResponse[]> {
   return response.data;
 }
 
+async function getAllOrders(): Promise<OrderResponse[]> {
+  const response = await apiClient.get<OrderResponse[]>("/orders");
+  return response.data;
+}
+
 async function downloadPdf(orderId: number | null): Promise<Blob> {
   const response = await apiClient.get<Blob>(`/orders/${orderId}/pdf`, {
     responseType: "blob",
@@ -81,6 +86,7 @@ export const orderService = {
   createDrinksOrder,
   getOrderById,
     getMyOrders,
+    getAllOrders,
     downloadPdf,
     downloadTimePreviewPdf,
     downloadDrinksPreviewPdf,
