@@ -58,6 +58,9 @@ public class OrderServiceImpl implements IOrderService {
     private static final BigDecimal OZ_TO_ML = new BigDecimal("29.5735");
     private static final BigDecimal OZ_TO_G = new BigDecimal("28.3495");
 
+    private static final int LARGE_COCKTAIL_SELECTION_THRESHOLD = 8;
+    private static final int LARGE_SELECTION_DRINKS_PER_PERSON_PER_HOUR = 2;
+
     /**
      * Cantidad estimada de tragos por persona por hora.
 
@@ -258,7 +261,10 @@ public class OrderServiceImpl implements IOrderService {
     private Order buildTimeOrder(OrderRequestDto dto, boolean associateCurrentUser) {
         validateTimeOrderRequest(dto);
 
-        int drinksPerPerson = defaultDrinksPerPersonPerHour;
+        int selectedCocktailCount = dto.cocktails().size();
+
+        int drinksPerPerson = calculateDrinksPerPersonPerHour(selectedCocktailCount);
+
         int totalDrinks = dto.guests() * drinksPerPerson * dto.durationHours();
 
         Order order = new Order();
@@ -307,6 +313,17 @@ public class OrderServiceImpl implements IOrderService {
         return order;
     }
 
+
+    private int calculateDrinksPerPersonPerHour(int selectedCocktailCount) {
+        // Si el usuario ofrece muchas opciones de cócteles,
+        // estimamos mayor consumo para evitar quedarse corto.
+
+        if (selectedCocktailCount >= LARGE_COCKTAIL_SELECTION_THRESHOLD) {
+            return LARGE_SELECTION_DRINKS_PER_PERSON_PER_HOUR;
+        }
+
+        return defaultDrinksPerPersonPerHour;
+    }
     /**
      * Válida los datos mínimos para una orden por tiempo/personas.
      */
@@ -634,8 +651,8 @@ public class OrderServiceImpl implements IOrderService {
     private MeasureUnit convertProductUnit(String productUnit) {
         return switch (productUnit.toLowerCase()) {
             case "ml" -> MeasureUnit.ML;
-            case "gr" -> MeasureUnit.GR;
-            case "unid" -> MeasureUnit.UNID;
+            case "gr","g" ,"GR"-> MeasureUnit.GR;
+            case "unid","UNID", "unit", "UNIT" -> MeasureUnit.UNID;
             default -> throw new BusinessRuleException("Unsupported product unit: " + productUnit);
         };
     }
