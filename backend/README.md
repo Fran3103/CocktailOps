@@ -1,44 +1,131 @@
 # CocktailOps Backend
 
-Backend REST API para CocktailOps, desarrollado con Java y Spring Boot.
+Backend REST API de **CocktailOps**, desarrollado con **Java 17**, **Spring Boot**, **PostgreSQL** y **Flyway**.
 
-Este módulo contiene la lógica principal del sistema: gestión de productos, cócteles, órdenes, cálculo de ingredientes, generación de PDFs, autenticación JWT, autorización por roles y ownership de recursos.
+Este módulo contiene la lógica principal del sistema: autenticación JWT, autorización por roles, catálogo de productos/cócteles, cálculo de órdenes, generación de PDF, historial de usuario, ownership de recursos y endpoints públicos de preview para visitantes.
 
 ---
 
 ## Índice
 
 - [Descripción](#descripción)
+- [Estado actual](#estado-actual)
+- [Reglas principales del producto](#reglas-principales-del-producto)
 - [Decisiones técnicas](#decisiones-técnicas)
-- [Características principales](#características-principales)
 - [Tecnologías utilizadas](#tecnologías-utilizadas)
 - [Autenticación y seguridad](#autenticación-y-seguridad)
-- [Instalación y uso](#instalación-y-uso)
-- [API - Ejemplos principales](#api---ejemplos-principales)
-- [Testing unitario](#testing-unitario)
+- [Cálculo de órdenes](#cálculo-de-órdenes)
+- [PDF y lista de compra](#pdf-y-lista-de-compra)
+- [Catálogo demo y migraciones](#catálogo-demo-y-migraciones)
+- [Instalación y uso local](#instalación-y-uso-local)
+- [API - Endpoints principales](#api---endpoints-principales)
+- [Integración con frontend](#integración-con-frontend)
+- [Testing](#testing)
 - [Diagramas](#diagramas)
-- [Estado actual del backend](#estado-actual-del-backend)
-- [Próximos pasos backend](#próximos-pasos-backend)
+- [Próximos pasos](#próximos-pasos)
+- [Autor](#autor)
 
 ---
 
 ## Descripción
 
-CocktailOps Backend permite calcular pedidos de cócteles para eventos.
+CocktailOps Backend permite calcular insumos para eventos a partir de una selección de cócteles.
 
-A partir de una selección de cócteles, cantidad de invitados, duración del evento o cantidad total de bebidas, la API calcula:
+La API permite trabajar en dos modos:
 
-- cantidad necesaria de cada ingrediente
-- productos involucrados
-- packs sugeridos a comprar
-- detalle de cócteles incluidos
-- PDF con lista de compra
+```txt
+TIME   → cálculo por invitados + duración del evento + preferencia/peso de cócteles
+DRINKS → cálculo por cantidad total exacta de tragos + cantidad por cóctel
+```
 
-La funcionalidad principal de cálculo de órdenes puede ser utilizada por visitantes sin iniciar sesión.
+A partir de esos datos, el backend calcula:
 
-Si el usuario no está autenticado, puede crear/calcular una orden, recibir el resultado y generar un PDF de preview desde el body de la solicitud. En ese caso, la orden queda sin usuario asociado (`userId: null`) y no aparece en ningún historial personal.
+- cantidad total de tragos
+- distribución de tragos por cóctel
+- ingredientes requeridos
+- acumulación por producto
+- packs, botellas o unidades sugeridas a comprar
+- PDF con resumen del evento y lista de compra
 
-Si el usuario está autenticado, la orden se guarda asociada a su cuenta, aparece en su historial y puede acceder a recursos protegidos como el detalle propio y el PDF por ID según las reglas de ownership.
+El proyecto está pensado como una aplicación full stack de portfolio, mostrando un flujo completo entre frontend, backend, base de datos, seguridad, PDF, migraciones, Docker y CI.
+
+---
+
+## Estado actual
+
+| Módulo | Estado |
+|---|---|
+| API Spring Boot | Implementado |
+| PostgreSQL + Flyway | Implementado |
+| Seed demo de catálogo | Implementado |
+| Catálogo ampliado de cócteles | Implementado |
+| Normalización de unidades | Implementado |
+| Autenticación JWT | Implementado |
+| Roles USER / ADMIN | Implementado |
+| Endpoints públicos de catálogo | Implementado |
+| Preview público de órdenes | Implementado |
+| Creación persistente de órdenes autenticadas | Implementado |
+| Historial de usuario | Implementado |
+| Ownership sobre detalle y PDF | Implementado |
+| PDF protegido por ID | Implementado |
+| PDF preview desde body | Implementado |
+| Dashboard frontend por rol soportado por API | Implementado |
+| Tests unitarios backend | En progreso |
+| GitHub Actions CI | Implementado |
+| Deploy backend | Pendiente |
+
+---
+
+## Reglas principales del producto
+
+### Invitado
+
+Un visitante sin login puede:
+
+- consultar productos
+- consultar cócteles
+- generar una orden temporal por modo `TIME`
+- generar una orden temporal por modo `DRINKS`
+- ver el resultado inmediato en frontend
+- descargar un PDF de preview
+
+Un visitante no puede:
+
+- guardar órdenes en historial
+- acceder a `/orders/my-orders`
+- acceder a `/orders/{id}`
+- descargar PDFs mediante `/orders/{id}/pdf`
+
+Las órdenes de invitado son **temporales**:
+
+```txt
+No se persisten en base de datos.
+No tienen ID real.
+No quedan asociadas a usuario.
+No aparecen en historial.
+El PDF se genera desde el body enviado por el frontend.
+```
+
+### Usuario autenticado
+
+Un usuario con rol `USER` puede:
+
+- iniciar sesión
+- crear órdenes reales y guardadas
+- asociar órdenes a su cuenta
+- consultar su historial
+- ver detalle de sus órdenes
+- descargar PDF por ID de sus propias órdenes
+
+### Administrador
+
+Un usuario con rol `ADMIN` puede:
+
+- acceder a endpoints administrativos
+- listar órdenes del sistema
+- acceder al detalle de órdenes de cualquier usuario
+- descargar PDFs de cualquier orden
+- administrar catálogo mediante endpoints protegidos
 
 ---
 
@@ -46,7 +133,7 @@ Si el usuario está autenticado, la orden se guarda asociada a su cuenta, aparec
 
 ### Arquitectura por capas
 
-El backend está organizado con una arquitectura por capas:
+El backend sigue una arquitectura por capas:
 
 ```txt
 Controller → Service → Repository
@@ -54,156 +141,115 @@ Controller → Service → Repository
 
 Responsabilidades:
 
-- **Controller**: expone endpoints HTTP, maneja requests/responses y documentación Swagger.
-- **Service**: contiene reglas de negocio, validaciones, cálculos y orquestación.
-- **Repository**: accede a la base de datos mediante Spring Data JPA.
+- **Controller**: expone endpoints HTTP, recibe requests, devuelve responses y documenta con Swagger.
+- **Service**: contiene reglas de negocio, validaciones, cálculo de órdenes, ownership y generación de respuestas.
+- **Repository**: accede a base de datos mediante Spring Data JPA.
 
-Esta separación mejora la mantenibilidad, el testeo y la evolución del proyecto.
+Esta separación mejora la mantenibilidad, facilita el testing y evita mezclar reglas de negocio con detalles HTTP o persistencia.
 
----
+### DTOs en lugar de entidades
 
-### DTOs en lugar de exponer entidades
-
-El proyecto utiliza DTOs para requests y responses.
+La API trabaja con DTOs para requests y responses.
 
 Motivos:
 
 - evitar exponer entidades JPA directamente
-- mantener estable el contrato de la API
+- mantener estable el contrato de API
 - validar inputs con Bean Validation
-- controlar qué información se devuelve al cliente
-- mejorar la documentación Swagger
-- devolver responses útiles para el frontend sin exponer relaciones internas del modelo
+- controlar qué información se devuelve al frontend
+- evitar problemas de serialización con relaciones lazy
+- mejorar documentación Swagger/OpenAPI
 
-Por ejemplo, `GET /products` devuelve datos básicos de la categoría (`categoryId` y `categoryName`) para que el frontend pueda mostrar la categoría del producto sin hacer requests adicionales por cada producto.
-
----
-
-### Creación pública de órdenes con usuario opcional
-
-La creación de órdenes está pensada como funcionalidad principal del producto.
-
-Por eso:
-
-- `POST /orders` es público.
-- `POST /orders/by-drinks` es público.
-- Si no hay usuario autenticado, la orden se calcula y se devuelve con `userId: null`.
-- Si hay un JWT válido en el request, la orden se asocia automáticamente al usuario autenticado.
-- `GET /orders/my-orders` sigue protegido y solo devuelve órdenes del usuario autenticado.
-- `GET /orders/{id}/pdf` sigue protegido por ownership o rol `ADMIN`.
-
-Esta decisión permite que cualquier visitante pueda probar CocktailOps sin registrarse, mientras que el login agrega valor mediante historial, persistencia asociada al usuario y acceso protegido a recursos propios.
-
----
-
-### PDF público de preview
-
-Para permitir que visitantes anónimos también puedan descargar una lista de compra en PDF, se agregaron endpoints públicos de preview:
-
-- `POST /orders/preview/pdf`
-- `POST /orders/by-drinks/preview/pdf`
-
-Estos endpoints reciben el mismo body que la creación de órdenes y devuelven directamente un archivo PDF.
-
-La decisión importante es que el PDF anónimo **no se descarga por ID**. Esto evita exponer públicamente endpoints como:
+Ejemplo:
 
 ```txt
+GET /products devuelve categoryId y categoryName.
+```
+
+De esta forma el frontend puede mostrar la categoría del producto sin hacer una request adicional por cada producto.
+
+### Preview separado de creación persistente
+
+El backend separa claramente dos operaciones:
+
+```txt
+preview → calcula una orden pero no guarda
+create  → calcula una orden y guarda en base
+```
+
+Esto evita que un visitante genere registros persistidos solo por probar el sistema.
+
+Endpoints preview:
+
+```http
+POST /orders/preview
+POST /orders/by-drinks/preview
+POST /orders/preview/pdf
+POST /orders/by-drinks/preview/pdf
+```
+
+Endpoints persistentes:
+
+```http
+POST /orders
+POST /orders/by-drinks
+```
+
+Los endpoints persistentes requieren usuario autenticado.
+
+### Ownership de recursos
+
+El backend valida acceso a órdenes guardadas.
+
+Regla:
+
+```txt
+ADMIN → puede acceder a cualquier orden
+USER  → solo puede acceder a sus propias órdenes
+```
+
+Esto aplica especialmente a:
+
+```http
+GET /orders/{id}
 GET /orders/{id}/pdf
 ```
 
-Ese endpoint se mantiene protegido por ownership o rol `ADMIN`.
+### Flyway
 
-De esta forma:
-
-- un visitante puede calcular una orden y descargar su PDF de preview
-- un usuario autenticado puede crear órdenes asociadas a su cuenta
-- el historial sigue protegido
-- los PDFs por ID siguen protegidos
-- no se abre acceso público a órdenes ajenas
-
----
-
-### Flyway para migraciones
-
-Flyway se utiliza para versionar la base de datos mediante scripts SQL.
+Flyway versiona la base de datos con migraciones SQL.
 
 Ventajas:
 
-- base reproducible entre ambientes
-- cambios controlados
-- historial de migraciones
-- integración simple con Spring Boot
-- carga de datos demo para poder probar el flujo del frontend con catálogo inicial
-
----
-
-### JPA / Hibernate
-
-La persistencia se implementa con Spring Data JPA y Hibernate.
-
-Se usa para:
-
-- mapear entidades a tablas relacionales
-- definir relaciones
-- trabajar con repositorios
-- simplificar consultas frecuentes
-
-En relaciones como `Product → Category`, se mantiene `LAZY` en la entidad y se resuelve la información necesaria en el DTO de respuesta, evitando devolver entidades JPA directamente.
-
----
+- base reproducible
+- evolución controlada del esquema
+- seed demo versionado
+- trazabilidad de cambios
+- integración simple con CI y entornos locales
 
 ### Manejo global de errores
 
 El backend centraliza errores con `@RestControllerAdvice`.
 
-Esto permite devolver respuestas consistentes para casos como:
+Casos cubiertos:
 
+- validaciones inválidas
 - recursos no encontrados
-- credenciales inválidas
 - reglas de negocio incumplidas
-- errores de validación
+- credenciales inválidas
 - accesos prohibidos
 - errores inesperados
-
----
+- errores de generación de PDF
 
 ### Logging
 
-Se agregaron logs en servicios principales para registrar flujos importantes:
+Los servicios principales incluyen logs para seguir flujos importantes:
 
 - creación de órdenes
-- búsqueda de recursos
-- generación de PDFs
+- preview de órdenes
+- búsqueda por ID
+- generación de PDF
 - errores esperados e inesperados
-
----
-
-## Características principales
-
-- Gestión de usuarios
-- Registro e inicio de sesión
-- Autenticación con JWT
-- Roles `USER` y `ADMIN`
-- Gestión de productos
-- Listado de productos con información básica de su categoría (`categoryId` y `categoryName`)
-- Gestión de categorías
-- Gestión de cócteles
-- Gestión de tiendas
-- Creación pública de órdenes modo TIME
-- Creación pública de órdenes modo DRINKS
-- Asociación opcional de órdenes al usuario autenticado
-- Cálculo automático de ingredientes
-- Cálculo de packs a comprar
-- Generación de PDF protegido por ID
-- Generación pública de PDF preview desde el body
-- Historial de órdenes por usuario autenticado
-- Protección de PDFs por ownership
-- Endpoints administrativos protegidos
-- Seed demo de catálogo con Flyway
-- Documentación Swagger
-- Tests unitarios
-- Perfil de testing con H2
-- CI con GitHub Actions
 
 ---
 
@@ -223,35 +269,484 @@ Se agregaron logs en servicios principales para registrar flujos importantes:
 - OpenHTMLToPDF
 - JUnit 5
 - Mockito
-- H2
+- H2 para tests
 - Docker Compose
 - GitHub Actions CI
 - Lombok
-- MapStruct
 
 ---
 
 ## Autenticación y seguridad
 
-El backend utiliza Spring Security + JWT.
+El backend utiliza **Spring Security + JWT**.
 
-El flujo actual permite:
+Flujo:
 
-- registrar usuarios desde `/auth/register`
-- iniciar sesión desde `/auth/login`
-- recibir un token JWT
-- enviar el token en requests protegidas
-- validar usuarios mediante filtro JWT
-- proteger endpoints por rol
-- crear órdenes de forma pública
-- asociar órdenes al usuario autenticado si el request incluye un JWT válido
-- generar PDFs públicos de preview desde el body de una orden
-- proteger historial de órdenes por usuario
-- proteger PDFs por ID según dueño de la orden o rol `ADMIN`
+```txt
+POST /auth/register
+→ crea usuario USER
+→ devuelve token JWT
+
+POST /auth/login
+→ valida credenciales
+→ devuelve token JWT
+```
+
+Para requests protegidas:
+
+```http
+Authorization: Bearer <token>
+```
+
+### Reglas de acceso
+
+| Endpoint | Acceso |
+|---|---|
+| `POST /auth/register` | Público |
+| `POST /auth/login` | Público |
+| Swagger / OpenAPI | Público |
+| `GET /products` | Público |
+| `GET /cocktails` | Público |
+| `GET /categories` | Público |
+| `POST /orders/preview` | Público |
+| `POST /orders/by-drinks/preview` | Público |
+| `POST /orders/preview/pdf` | Público |
+| `POST /orders/by-drinks/preview/pdf` | Público |
+| `POST /orders` | Usuario autenticado |
+| `POST /orders/by-drinks` | Usuario autenticado |
+| `GET /orders/my-orders` | Usuario autenticado |
+| `GET /orders/{id}` | Dueño de la orden o ADMIN |
+| `GET /orders/{id}/pdf` | Dueño de la orden o ADMIN |
+| `GET /orders` | ADMIN |
+| Escritura de catálogo | ADMIN |
+| `/user/**` | ADMIN |
+| `/shop/**` | ADMIN |
 
 ---
 
-### Registro de usuario
+## Cálculo de órdenes
+
+### Modo TIME
+
+El modo `TIME` calcula la cantidad total de tragos a partir de:
+
+```txt
+invitados × duración × tragos por persona por hora
+```
+
+Ejemplo base:
+
+```txt
+60 invitados × 5 horas × 1 trago/persona/hora = 300 tragos
+```
+
+Además, el sistema aplica una estimación reforzada para eventos grandes con muchas opciones de cócteles:
+
+```txt
+Si invitados >= 60
+y cócteles seleccionados >= 8
+→ usa 2 tragos por persona por hora
+```
+
+Ejemplo:
+
+```txt
+60 invitados × 5 horas × 2 tragos/persona/hora = 600 tragos
+```
+
+Para eventos más chicos, aunque haya muchos cócteles, se mantiene la estimación conservadora:
+
+```txt
+40 invitados × 5 horas × 1 trago/persona/hora = 200 tragos
+```
+
+Esta regla evita inflar demasiado eventos pequeños y permite reforzar estimaciones para eventos grandes con mucha variedad.
+
+### Pesos por cóctel
+
+En modo `TIME`, cada cóctel puede recibir un `weight`.
+
+El peso indica preferencia relativa:
+
+```txt
+Más peso → más tragos asignados a ese cóctel.
+Menos peso → menos tragos asignados.
+```
+
+Ejemplo:
+
+```txt
+totalDrinks = 100
+
+Mojito weight = 1
+Daiquiri weight = 1
+Gin Tonic weight = 2
+
+Resultado:
+Mojito    = 25
+Daiquiri  = 25
+Gin Tonic = 50
+```
+
+### Modo DRINKS
+
+El modo `DRINKS` no estima por invitados ni duración.
+
+El usuario indica:
+
+- total exacto de tragos
+- cantidad de tragos por cóctel
+
+Regla:
+
+```txt
+La suma de cantidades por cóctel debe ser igual a totalDrinks.
+```
+
+Ejemplo:
+
+```json
+{
+  "totalDrinks": 100,
+  "cocktails": [
+    { "cocktailId": 1, "quantity": 25 },
+    { "cocktailId": 2, "quantity": 25 },
+    { "cocktailId": 3, "quantity": 25 },
+    { "cocktailId": 4, "quantity": 25 }
+  ]
+}
+```
+
+### Acumulación de ingredientes
+
+El sistema no calcula botellas por cóctel de forma separada.
+
+Primero acumula los ingredientes por producto y luego calcula la compra sugerida.
+
+Ejemplo:
+
+```txt
+Mojito usa Ron
+Daiquiri usa Ron
+
+El sistema suma todo el ron requerido.
+Después calcula cuántas botellas comprar.
+```
+
+Esto evita duplicar productos y genera una lista de compra más realista.
+
+### Unidades soportadas
+
+El sistema soporta y normaliza unidades de producto:
+
+```txt
+ML
+GR
+UNID
+```
+
+También acepta variantes en datos heredados/locales, como:
+
+```txt
+ml / ML
+g / G / gr / GR
+unid / UNID / unit / UNIT
+```
+
+Las recetas pueden usar onzas (`OZ`) y el backend convierte a la unidad del producto cuando corresponde:
+
+```txt
+OZ → ML
+OZ → GR
+```
+
+No se hacen conversiones ambiguas como:
+
+```txt
+UNID → GR
+UNID → ML
+```
+
+Cuando un producto se compra en gramos, la receta también debe estar expresada en gramos.
+
+---
+
+## PDF y lista de compra
+
+El backend genera PDFs con **Thymeleaf + OpenHTMLToPDF**.
+
+Tipos de PDF:
+
+| Caso | Endpoint |
+|---|---|
+| Orden guardada | `GET /orders/{id}/pdf` |
+| Preview TIME | `POST /orders/preview/pdf` |
+| Preview DRINKS | `POST /orders/by-drinks/preview/pdf` |
+
+### PDF protegido por ID
+
+```http
+GET /orders/{id}/pdf
+Authorization: Bearer <token>
+```
+
+Reglas:
+
+```txt
+USER  → solo PDF de órdenes propias
+ADMIN → cualquier PDF
+```
+
+### PDF preview público
+
+```http
+POST /orders/preview/pdf
+POST /orders/by-drinks/preview/pdf
+```
+
+Estos endpoints reciben el body de la orden y devuelven un PDF sin acceder a una orden persistida.
+
+Esto permite que un visitante descargue una lista de compra sin registrarse.
+
+### Interpretación de la compra sugerida
+
+La lista de compra no representa una compra “exacta” sin sobrantes.
+
+Representa la cantidad mínima de packs, botellas o unidades necesarias para poder preparar hasta la cantidad total de tragos estimada.
+
+Ejemplo:
+
+```txt
+Ron requerido: 1600 ML
+Botella: 750 ML
+
+1600 / 750 = 2.13
+Resultado: comprar 3 botellas
+```
+
+Por eso el PDF incluye una aclaración:
+
+```txt
+Las cantidades sugeridas están calculadas para poder preparar hasta la cantidad total de tragos estimada.
+Los productos se redondean hacia arriba según su formato de compra, por ejemplo botellas, packs o unidades, por lo que puede sobrar producto al finalizar el evento.
+```
+
+### Fecha del PDF
+
+Para órdenes temporales y guardadas, el backend asigna fecha de creación y el PDF la muestra en formato:
+
+```txt
+dd/MM/yyyy
+```
+
+Ejemplo:
+
+```txt
+21/08/2026
+```
+
+---
+
+## Catálogo demo y migraciones
+
+El catálogo demo se carga mediante Flyway.
+
+Incluye:
+
+- categorías
+- productos base
+- productos adicionales
+- cócteles clásicos
+- cócteles modernos
+- ingredientes por cóctel
+- normalización de unidades
+
+Migraciones destacadas:
+
+| Migración | Descripción |
+|---|---|
+| `V1__initial_schema.sql` | Esquema inicial |
+| `V6__add_user_id_to_orders.sql` | Asociación Order → User |
+| `V7__seed_demo_catalog_data.sql` | Catálogo demo inicial |
+| `V8__add_more_demo_cocktails.sql` | Ampliación del catálogo de cócteles |
+| `V9__fix_sugar_ingredient_units.sql` | Corrección de azúcar en recetas |
+| `V10__normalize_demo_catalog_units.sql` | Normalización de unidades y catálogo demo |
+
+### Cócteles demo
+
+El catálogo demo incluye aproximadamente 30 cócteles, entre ellos:
+
+- Mojito
+- Daiquiri
+- Gin Tonic
+- Margarita
+- Fernet Cola
+- Aperol Spritz
+- Cuba Libre
+- Negroni
+- Old Fashioned
+- Whisky Sour
+- Tom Collins
+- Dry Martini
+- Cosmopolitan
+- Moscow Mule
+- Paloma
+- Caipirinha
+- Caipiroska
+- Piña Colada
+- Sex on the Beach
+- Espresso Martini
+- Tequila Sunrise
+- Americano
+- Garibaldi
+- French 75
+- Bellini
+- Vodka Tonic
+- Campari Tonic
+- Gin Fizz
+- Vodka Collins
+- Caipirissima
+
+Este catálogo permite que el frontend ofrezca búsqueda manual y listas rápidas predefinidas.
+
+---
+
+## Instalación y uso local
+
+### Requisitos
+
+- Java 17
+- Maven
+- Docker Desktop
+- Docker Compose
+- PostgreSQL local solo si no se usa Docker
+
+### Clonar repositorio
+
+```bash
+git clone https://github.com/Fran3103/CocktailOps.git
+cd CocktailOps
+```
+
+### Levantar PostgreSQL con Docker Compose
+
+El `docker-compose.yml` está en la raíz del proyecto.
+
+```bash
+docker compose up -d
+```
+
+El contenedor expone PostgreSQL localmente en:
+
+```txt
+localhost:5434
+```
+
+Verificar contenedor:
+
+```bash
+docker compose ps
+```
+
+### Configuración local
+
+Crear el archivo:
+
+```txt
+backend/src/main/resources/application-local.properties
+```
+
+Tomar como base:
+
+```txt
+backend/src/main/resources/application-local.example.properties
+```
+
+Ejemplo recomendado para Docker local:
+
+```properties
+server.port=8081
+
+spring.datasource.url=jdbc:postgresql://127.0.0.1:5434/cocktailOps_db?sslmode=disable
+spring.datasource.username=postgres
+spring.datasource.password=admin
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+spring.flyway.enabled=true
+spring.flyway.locations=classpath:db/migration
+
+spring.jpa.hibernate.ddl-auto=validate
+spring.jpa.properties.hibernate.jdbc.time_zone=UTC
+
+spring.jackson.time-zone=UTC
+
+order.drinksPerPersonPerHour=1
+
+security.jwt.secret=local-dev-secret-key-32-characters-minimum-change-me-123456
+
+springdoc.swagger-ui.path=/swagger-ui.html
+springdoc.api-docs.path=/v3/api-docs
+```
+
+> `application-local.properties` no debe versionarse porque puede contener credenciales locales.
+
+### Ejecutar backend
+
+Desde `backend/`:
+
+```bash
+mvn spring-boot:run "-Dspring-boot.run.profiles=local"
+```
+
+O desde la raíz:
+
+```bash
+mvn -f backend/pom.xml spring-boot:run "-Dspring-boot.run.profiles=local"
+```
+
+### Ejecutar tests y build
+
+Desde `backend/`:
+
+```bash
+mvn clean install
+```
+
+Desde la raíz:
+
+```bash
+mvn -f backend/pom.xml clean install
+```
+
+### Swagger UI
+
+Con la aplicación corriendo:
+
+```txt
+http://localhost:8081/swagger-ui/index.html
+```
+
+### Apagar PostgreSQL
+
+```bash
+docker compose down
+```
+
+Para borrar también el volumen:
+
+```bash
+docker compose down -v
+```
+
+> Usar `docker compose down -v` solo si se quiere reconstruir completamente la base local.
+
+---
+
+## API - Endpoints principales
+
+### Auth
+
+#### Registro
 
 ```http
 POST /auth/register
@@ -268,22 +763,7 @@ Body:
 }
 ```
 
-Respuesta:
-
-```json
-{
-  "id": 1,
-  "email": "usuario@ejemplo.com",
-  "firstName": "Juan",
-  "lastName": "Pérez",
-  "role": "USER",
-  "token": "eyJhbGciOiJIUzI1NiJ9..."
-}
-```
-
----
-
-### Inicio de sesión
+#### Login
 
 ```http
 POST /auth/login
@@ -298,7 +778,7 @@ Body:
 }
 ```
 
-Respuesta:
+Respuesta esperada:
 
 ```json
 {
@@ -311,272 +791,15 @@ Respuesta:
 }
 ```
 
----
+### Catálogo
 
-### Uso del token
-
-Para acceder a endpoints protegidos:
-
-```http
-Authorization: Bearer <token>
-```
-
-Ejemplo:
-
-```http
-GET /orders/my-orders
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
-```
-
-En endpoints públicos de creación de órdenes, el token es opcional.
-
-Si se envía un JWT válido, la orden se asocia al usuario autenticado.
-
-Si no se envía token, la orden se crea/calcula sin usuario asociado.
-
----
-
-### Reglas actuales de acceso
-
-| Endpoint | Acceso |
-|---|---|
-| `/auth/**` | Público |
-| Swagger / OpenAPI | Público |
-| GET catálogo | Público |
-| POST / PUT / PATCH / DELETE catálogo | ADMIN |
-| `/user/**` | ADMIN |
-| `POST /orders` | Público. Si hay JWT válido, asocia usuario |
-| `POST /orders/by-drinks` | Público. Si hay JWT válido, asocia usuario |
-| `POST /orders/preview/pdf` | Público |
-| `POST /orders/by-drinks/preview/pdf` | Público |
-| `GET /orders/my-orders` | Usuario autenticado |
-| `GET /orders` | ADMIN |
-| `GET /orders/{id}` | ADMIN |
-| `GET /orders/{id}/pdf` | Dueño de la orden o ADMIN |
-
----
-
-### Historial de órdenes
-
-```http
-GET /orders/my-orders
-Authorization: Bearer <token>
-```
-
-Este endpoint devuelve únicamente las órdenes asociadas al usuario autenticado.
-
-Las órdenes creadas sin login quedan con `userId: null` y no aparecen en ningún historial de usuario.
-
----
-
-### Descarga de PDF protegido por ID
-
-```http
-GET /orders/{id}/pdf
-Authorization: Bearer <token>
-```
-
-Reglas:
-
-- `USER` puede descargar PDFs de sus propias órdenes.
-- `USER` no puede descargar PDFs de órdenes ajenas.
-- `ADMIN` puede descargar PDFs de cualquier orden.
-- Las órdenes anónimas no tienen dueño, por lo que no se descargan mediante este endpoint.
-
----
-
-### Descarga de PDF público de preview
-
-```http
-POST /orders/preview/pdf
-```
-
-o:
-
-```http
-POST /orders/by-drinks/preview/pdf
-```
-
-Estos endpoints son públicos y generan un PDF a partir del body enviado.
-
-No requieren login porque no acceden a una orden existente por ID.
-
----
-
-## Instalación y uso
-
-### Requisitos previos
-
-- Java 17 o superior
-- Maven 3.6.3 o superior
-- Docker Desktop
-- Docker Compose
-- PostgreSQL local, solo si no se usa Docker
-
----
-
-### Clonar repositorio
-
-Desde la carpeta donde quieras guardar el proyecto:
-
-```bash
-git clone https://github.com/Fran3103/CocktailOps.git
-cd CocktailOps
-```
-
----
-
-### Levantar PostgreSQL con Docker Compose
-
-El archivo `docker-compose.yml` está en la raíz del proyecto.
-
-Desde la raíz:
-
-```bash
-docker compose up -d
-```
-
-Verificar contenedor:
-
-```bash
-docker compose ps
-```
-
-El backend local espera PostgreSQL en:
-
-```txt
-localhost:5433
-```
-
----
-
-### Configuración local
-
-Crear el archivo:
-
-```txt
-backend/src/main/resources/application-local.properties
-```
-
-Tomar como base:
-
-```txt
-backend/src/main/resources/application-local.example.properties
-```
-
-Ejemplo:
-
-```properties
-server.port=8081
-
-spring.datasource.url=jdbc:postgresql://localhost:5433/cocktailOps_db?sslmode=disable
-spring.datasource.username=postgres
-spring.datasource.password=admin
-spring.datasource.driver-class-name=org.postgresql.Driver
-
-spring.flyway.enabled=true
-spring.flyway.locations=classpath:db/migration
-
-spring.jpa.hibernate.ddl-auto=validate
-spring.jpa.properties.hibernate.jdbc.time_zone=UTC
-
-spring.jackson.time-zone=UTC
-
-order.drinksPerPersonPerHour=2
-
-security.jwt.secret=local-dev-secret-key-32-characters-minimum-change-me-123456
-```
-
-> `application-local.properties` no debe versionarse porque puede contener credenciales locales.
-
----
-
-### Ejecutar backend
-
-Desde la raíz del repo:
-
-```bash
-cd backend
-mvn spring-boot:run "-Dspring-boot.run.profiles=local"
-```
-
-O también desde la raíz:
-
-```bash
-mvn -f backend/pom.xml spring-boot:run "-Dspring-boot.run.profiles=local"
-```
-
-Si se ejecuta desde IntelliJ, configurar:
-
-```txt
-Program arguments:
---spring.profiles.active=local
-```
-
-Opcionalmente, para forzar zona horaria UTC:
-
-```txt
-VM options:
--Duser.timezone=UTC
-```
-
----
-
-### Ejecutar tests y build
-
-Desde `backend/`:
-
-```bash
-mvn clean install
-```
-
-Desde la raíz:
-
-```bash
-mvn -f backend/pom.xml clean install
-```
-
----
-
-### Swagger UI
-
-Con la aplicación corriendo:
-
-```txt
-http://localhost:8081/swagger-ui/index.html
-```
-
----
-
-### Apagar PostgreSQL
-
-Desde la raíz:
-
-```bash
-docker compose down
-```
-
-Para borrar también el volumen de datos:
-
-```bash
-docker compose down -v
-```
-
-> Usar `docker compose down -v` solo si se quiere reiniciar completamente la base local.
-
----
-
-## API - Ejemplos principales
-
-### Listar productos
+#### Listar productos
 
 ```http
 GET /products
 ```
 
-Este endpoint devuelve los productos disponibles junto con información básica de su categoría, evitando que el frontend tenga que realizar una request adicional por cada producto.
-
-Ejemplo de respuesta:
+Respuesta simplificada:
 
 ```json
 [
@@ -594,81 +817,50 @@ Ejemplo de respuesta:
 ]
 ```
 
-Decisión técnica:
-
-```txt
-GET /products devuelve categoryId y categoryName para evitar requests adicionales desde el frontend y prevenir un problema N+1 del lado cliente.
-```
-
----
-
-### Crear categoría
+#### Listar cócteles
 
 ```http
-POST /categories
-Authorization: Bearer <token-admin>
+GET /cocktails
+```
+
+#### Listar categorías
+
+```http
+GET /categories
+```
+
+Las operaciones de escritura del catálogo requieren rol `ADMIN`.
+
+### Preview de orden TIME
+
+```http
+POST /orders/preview
 ```
 
 Body:
 
 ```json
 {
-  "name": "Destilados",
-  "shop": 1,
-  "slug": "destilados",
-  "active": true
-}
-```
-
-Notas:
-
-- El campo `shop` representa el ID del shop en el DTO de request.
-- En base de datos la columna se llama `shop_id`, pero en la API se envía como `shop`.
-- El `slug` no debería repetirse dentro del mismo shop.
-
----
-
-### Crear orden modo TIME sin login
-
-```http
-POST /orders
-```
-
-Body:
-
-```json
-{
-  "guests": 100,
+  "guests": 60,
   "durationHours": 5,
   "cocktails": [
-    { "cocktailId": 1, "weight": 5 },
-    { "cocktailId": 2, "weight": 4 }
+    { "cocktailId": 1, "weight": 3 },
+    { "cocktailId": 2, "weight": 2 },
+    { "cocktailId": 3, "weight": 1 }
   ]
 }
 ```
 
-Respuesta esperada:
+Características:
 
-```json
-{
-  "id": 1,
-  "mode": "TIME",
-  "createdAt": "2026-07-10T16:00:00Z",
-  "guests": 100,
-  "drinksPerPerson": 2,
-  "durationHours": 5,
-  "status": "Draft",
-  "items": [],
-  "cocktail": [],
-  "userId": null
-}
+```txt
+Público.
+No guarda en base.
+No devuelve ID persistente.
+Sirve para invitado.
 ```
 
-En este caso, la orden se calcula sin usuario asociado y no aparece en `/orders/my-orders`.
-
----
-
-### Crear orden modo TIME con usuario autenticado
+### Crear orden TIME guardada
 
 ```http
 POST /orders
@@ -679,70 +871,30 @@ Body:
 
 ```json
 {
-  "guests": 100,
+  "guests": 60,
   "durationHours": 5,
   "cocktails": [
-    { "cocktailId": 1, "weight": 5 },
-    { "cocktailId": 2, "weight": 4 }
+    { "cocktailId": 1, "weight": 3 },
+    { "cocktailId": 2, "weight": 2 },
+    { "cocktailId": 3, "weight": 1 }
   ]
 }
 ```
 
-Respuesta esperada:
-
-```json
-{
-  "id": 2,
-  "mode": "TIME",
-  "createdAt": "2026-07-10T16:10:00Z",
-  "guests": 100,
-  "drinksPerPerson": 2,
-  "durationHours": 5,
-  "status": "Draft",
-  "items": [],
-  "cocktail": [],
-  "userId": 1
-}
-```
-
-En este caso, la orden queda asociada al usuario autenticado y aparece en `/orders/my-orders`.
-
----
-
-### Generar PDF preview modo TIME sin login
-
-```http
-POST /orders/preview/pdf
-```
-
-Body:
-
-```json
-{
-  "guests": 100,
-  "durationHours": 5,
-  "cocktails": [
-    { "cocktailId": 1, "weight": 5 },
-    { "cocktailId": 2, "weight": 4 }
-  ]
-}
-```
-
-Respuesta esperada:
+Características:
 
 ```txt
-200 OK
-Content-Type: application/pdf
+Requiere usuario autenticado.
+Guarda en base.
+Asocia la orden al usuario.
+Aparece en historial.
+Permite detalle y PDF por ID.
 ```
 
-Este endpoint permite generar un PDF sin estar autenticado y sin usar un ID de orden en la URL.
-
----
-
-### Crear orden modo DRINKS sin login
+### Preview de orden DRINKS
 
 ```http
-POST /orders/by-drinks
+POST /orders/by-drinks/preview
 ```
 
 Body:
@@ -752,33 +904,22 @@ Body:
   "totalDrinks": 100,
   "cocktails": [
     { "cocktailId": 1, "quantity": 25 },
-    { "cocktailId": 12, "quantity": 25 },
-    { "cocktailId": 13, "quantity": 25 },
-    { "cocktailId": 5, "quantity": 25 }
+    { "cocktailId": 2, "quantity": 25 },
+    { "cocktailId": 3, "quantity": 25 },
+    { "cocktailId": 4, "quantity": 25 }
   ]
 }
 ```
 
-Respuesta esperada:
+Características:
 
-```json
-{
-  "id": 3,
-  "mode": "DRINKS",
-  "createdAt": "2026-07-10T16:20:00Z",
-  "guests": null,
-  "drinksPerPerson": null,
-  "durationHours": null,
-  "status": "Draft",
-  "items": [],
-  "cocktail": [],
-  "userId": null
-}
+```txt
+Público.
+No guarda en base.
+La suma de quantity debe ser igual a totalDrinks.
 ```
 
----
-
-### Crear orden modo DRINKS con usuario autenticado
+### Crear orden DRINKS guardada
 
 ```http
 POST /orders/by-drinks
@@ -792,383 +933,281 @@ Body:
   "totalDrinks": 100,
   "cocktails": [
     { "cocktailId": 1, "quantity": 25 },
-    { "cocktailId": 12, "quantity": 25 },
-    { "cocktailId": 13, "quantity": 25 },
-    { "cocktailId": 5, "quantity": 25 }
+    { "cocktailId": 2, "quantity": 25 },
+    { "cocktailId": 3, "quantity": 25 },
+    { "cocktailId": 4, "quantity": 25 }
   ]
 }
 ```
 
-Si el JWT es válido, la respuesta incluye el `userId` del usuario autenticado.
-
----
-
-### Generar PDF preview modo DRINKS sin login
-
-```http
-POST /orders/by-drinks/preview/pdf
-```
-
-Body:
-
-```json
-{
-  "totalDrinks": 100,
-  "cocktails": [
-    { "cocktailId": 1, "quantity": 25 },
-    { "cocktailId": 12, "quantity": 25 },
-    { "cocktailId": 13, "quantity": 25 },
-    { "cocktailId": 5, "quantity": 25 }
-  ]
-}
-```
-
-Respuesta esperada:
-
-```txt
-200 OK
-Content-Type: application/pdf
-```
-
-Este endpoint permite generar un PDF de una orden por cantidad total de bebidas sin estar autenticado y sin acceder a un PDF por ID.
-
----
-
-### Consultar historial propio
+### Historial propio
 
 ```http
 GET /orders/my-orders
 Authorization: Bearer <token>
 ```
 
-Devuelve únicamente las órdenes asociadas al usuario autenticado.
+Devuelve únicamente órdenes asociadas al usuario autenticado.
 
----
+### Detalle de orden
 
-### Descargar PDF protegido por ID
+```http
+GET /orders/{id}
+Authorization: Bearer <token>
+```
+
+Reglas:
+
+```txt
+USER  → solo órdenes propias
+ADMIN → cualquier orden
+```
+
+### Listado administrativo de órdenes
+
+```http
+GET /orders
+Authorization: Bearer <token-admin>
+```
+
+Devuelve las órdenes del sistema para el dashboard administrativo.
+
+### PDF de orden guardada
 
 ```http
 GET /orders/{id}/pdf
 Authorization: Bearer <token>
 ```
 
-El PDF por ID sigue protegido por ownership o rol `ADMIN`.
+Reglas:
+
+```txt
+USER  → solo PDF de órdenes propias
+ADMIN → cualquier PDF
+```
+
+### PDF preview TIME
+
+```http
+POST /orders/preview/pdf
+```
+
+Devuelve:
+
+```txt
+Content-Type: application/pdf
+filename: order-preview.pdf
+```
+
+### PDF preview DRINKS
+
+```http
+POST /orders/by-drinks/preview/pdf
+```
+
+Devuelve:
+
+```txt
+Content-Type: application/pdf
+filename: order-preview.pdf
+```
 
 ---
 
-## Testing unitario
+## Integración con frontend
 
-El backend incorpora tests unitarios en la capa service usando JUnit 5 y Mockito.
+El frontend consume este backend mediante Axios y una variable de entorno:
+
+```env
+VITE_API_BASE_URL=http://localhost:8081
+```
+
+Funcionalidades actualmente soportadas desde frontend:
+
+- login
+- registro
+- persistencia de sesión en `localStorage`
+- catálogo de productos
+- catálogo de cócteles
+- creación de orden temporal para invitado
+- creación de orden guardada para usuario autenticado
+- preview JSON para invitado
+- preview PDF para invitado
+- PDF por ID para orden guardada
+- historial de usuario
+- detalle de orden protegida
+- dashboard por tipo de usuario
+- dashboard administrativo con órdenes del sistema
+- listas rápidas de cócteles
+
+### Listas rápidas del frontend
+
+El frontend incluye presets de cócteles por caso de uso:
+
+- Clásicos simples
+- Clásicos completos
+- Boda / evento elegante
+- Modernos y fiesta
+- Verano / tropical
+- Aperitivos
+- Premium clásico
+- Popular y rápido
+
+Los presets seleccionan cócteles por nombre y asignan pesos iniciales.
+
+Después el usuario puede ajustar manualmente:
+
+```txt
+Modo TIME   → pesos/preferencias
+Modo DRINKS → cantidades por cóctel
+```
+
+### Explicación visual de cálculo
+
+El frontend muestra aclaraciones para que el usuario entienda:
+
+- cuándo una orden es temporal
+- cuándo se guarda en historial
+- qué significa el peso de un cóctel
+- qué significa la estimación de tragos
+- que la lista de compra se redondea por botella, pack o unidad
+
+---
+
+## Testing
+
+El backend incorpora tests con JUnit 5 y Mockito.
 
 Estado actual:
 
-### ProductServiceImpl
+| Área | Estado |
+|---|---|
+| ProductServiceImpl | Cobertura básica implementada |
+| OrderServiceImpl | Cobertura parcial |
+| Auth/Security | Pendiente de ampliar |
+| PDF preview | Pendiente de ampliar |
+| Ownership | Pendiente de ampliar |
+| Controller tests | Pendiente |
 
-Cobertura básica completada:
+Tests recomendados próximos:
 
-- búsqueda por ID
-- creación
-- actualización
-- eliminación
-- búsqueda por nombre
-- búsqueda por categoría
-- listado general
-- validaciones y excepciones principales
-
-### OrderServiceImpl
-
-Cobertura parcial en progreso:
-
-- búsqueda por ID
-- listado general
-- validaciones iniciales de creación de órdenes
-- creación de órdenes con usuario opcional
-
-### OrderPdfServiceImpl
-
-Cobertura pendiente/recomendada:
-
-- generación de PDF protegido por ID
-- validación de ownership
-- generación de PDF preview modo TIME
-- generación de PDF preview modo DRINKS
-- error controlado ante fallos de renderizado PDF
-
-Objetivos de testing:
-
-- validar caminos felices
-- validar caminos alternativos
-- probar excepciones controladas
-- evitar dependencia de base de datos real
-- asegurar reglas de negocio principales
-- verificar creación de órdenes anónimas y autenticadas
-- verificar generación de PDF preview pública
+- `previewOrder` no persiste
+- `previewOrderByDrinks` no persiste
+- `createOrder` persiste y asocia usuario
+- `createOrderByDrinks` persiste y asocia usuario
+- `getOrderById` permite dueño
+- `getOrderById` permite admin
+- `getOrderById` rechaza usuario no dueño
+- `generateOrderPreviewPdf` genera PDF sin ID
+- `generateOrderPdf` respeta ownership
 
 ---
 
 ## Diagramas
 
-### Diagrama de Entidad-Relación
-
-```mermaid
-erDiagram
-  SHOP {
-    bigint id PK
-    string name
-    string slug
-  }
-
-  USER {
-    bigint id PK
-    string email
-    string password_hash
-    string first_name
-    string last_name
-    string role
-    bigint shop_id FK
-  }
-
-  CATEGORY {
-    bigint id PK
-    bigint shop_id FK
-    string name
-    string slug
-    boolean active
-  }
-
-  PRODUCT {
-    bigint id PK
-    bigint category_id FK
-    string name
-    string unit
-    numeric unit_size
-    boolean active
-    string image_url
-    string image_alt
-  }
-
-  SHOP_PRODUCT {
-    bigint id PK
-    bigint shop_id FK
-    bigint product_id FK
-    string purchase_url
-    numeric price
-    string sku
-  }
-
-  COCKTAIL {
-    bigint id PK
-    string name
-    string description
-    string image_url
-    string image_alt
-  }
-
-  COCKTAIL_INGREDIENT {
-    bigint id PK
-    bigint cocktail_id FK
-    bigint product_id FK
-    numeric amount
-    string unit
-  }
-
-  ORDER {
-    bigint id PK
-    bigint user_id FK
-    timestamp created_at
-    int guests
-    int drinks_per_person
-    int duration_hours
-    string status
-  }
-
-  ORDER_COCKTAIL {
-    bigint order_id PK
-    bigint cocktail_id PK
-    int drinks
-    int weight
-  }
-
-  ORDER_ITEM {
-    bigint id PK
-    bigint order_id FK
-    bigint product_id FK
-    int packs_to_buy
-    string unit
-  }
-
-  SHOP ||--o{ USER : has
-  USER ||--o{ ORDER : creates
-
-  SHOP ||--o{ CATEGORY : defines
-  CATEGORY ||--o{ PRODUCT : contains
-
-  SHOP ||--o{ SHOP_PRODUCT : lists
-  PRODUCT ||--o{ SHOP_PRODUCT : sold_as
-
-  COCKTAIL ||--o{ COCKTAIL_INGREDIENT : has
-  PRODUCT  ||--o{ COCKTAIL_INGREDIENT : used_in
-
-  ORDER   ||--o{ ORDER_COCKTAIL : includes
-  COCKTAIL||--o{ ORDER_COCKTAIL : selected
-
-  ORDER   ||--o{ ORDER_ITEM : generates
-  PRODUCT ||--o{ ORDER_ITEM : included_in
-```
-
----
-
-### Diagrama de arquitectura
+### Arquitectura general
 
 ```mermaid
 flowchart LR
+    FE[Frontend React + TypeScript]
+    BE[Backend Spring Boot]
+    DB[(PostgreSQL)]
+    PDF[Thymeleaf + OpenHTMLToPDF]
+    FLY[Flyway]
 
-U[Usuario final]
-A[Admin]
-S[Dueño de tienda]
-V[Visitante anónimo]
-
-subgraph SYS[App: CocktailOps]
-  FE[Web App React]
-  BE[Backend API Spring Boot]
-  DB[(PostgreSQL)]
-  PDF[PDF Generator Thymeleaf + OpenHTMLToPDF]
-end
-
-subgraph EXT[Integraciones opcional]
-  SHOPAPI[API Tienda Shopify / WooCommerce / MercadoLibre]
-end
-
-V -->|Crea orden pública TIME o DRINKS| FE
-V -->|Genera PDF preview público| FE
-U -->|Crea orden con historial| FE
-U -->|Descarga PDF protegido por ID| FE
-A -->|Gestiona catálogo, cócteles, órdenes| FE
-S -->|Carga links/precios por tienda| FE
-
-FE -->|REST/JSON| BE
-BE --> DB
-BE --> PDF
-BE -->|Sync opcional| SHOPAPI
-
-class U,A,S,V actor
-class FE,BE,PDF box
-class DB db
-class SHOPAPI ext
-
-classDef actor fill:#ffffff,stroke:#444,stroke-width:1px
-classDef box fill:#ffffff,stroke:#5a5a8a,stroke-width:1px
-classDef db fill:#ffffff,stroke:#a06a00,stroke-width:1px
-classDef ext fill:#ffffff,stroke:#1f7a3a,stroke-width:1px
+    FE -->|REST / JSON| BE
+    BE --> DB
+    BE --> PDF
+    FLY --> DB
 ```
 
----
-
-### Diagrama de componentes
+### Flujo de invitado
 
 ```mermaid
-flowchart TB
-subgraph API["API Layer"]
-    C1["AuthController"]:::box
-    C2["CatalogController<br/>(products + categories)"]:::box
-    C3["CocktailController<br/>(cocktails + ingredients)"]:::box
-    C4["OrderController<br/>(orders + pdf preview)"]:::box
-    C5["ShopController<br/>(shops, shop_products)"]:::box
-end
+sequenceDiagram
+    participant V as Visitante
+    participant FE as Frontend
+    participant BE as Backend
+    participant PDF as PDF Service
 
-subgraph APP["Application/Service Layer"]
-    S1["AuthService<br/>JWT + roles"]:::box
-    S2["ProductService"]:::box
-    S7["CategoryService"]:::box
-    S3["CocktailService"]:::box
-    S4["OrderService<br/>calcula packs + usuario opcional"]:::box
-    S5["PdfService<br/>PDF protegido + preview público"]:::box
-    S6["ShopService"]:::box
-    S8["CurrentUserService<br/>usuario obligatorio u opcional"]:::box
-end
+    V->>FE: Selecciona cócteles y datos del evento
+    FE->>BE: POST /orders/preview
+    BE-->>FE: Orden temporal sin ID
+    V->>FE: Descargar PDF
+    FE->>BE: POST /orders/preview/pdf
+    BE->>PDF: Renderiza PDF desde body
+    PDF-->>BE: PDF bytes
+    BE-->>FE: order-preview.pdf
+```
 
-subgraph DOMAIN["Domain Model"]
-    D7["Shop"]:::entity
-    D6["User"]:::entity
-    D9["Category"]:::entity
-    D1["Product"]:::entity
-    D8["ShopProduct"]:::entity
+### Flujo de usuario autenticado
 
-    D2["Cocktail"]:::entity
-    D3["CocktailIngredient<br/>(amount + unit)"]:::entity
+```mermaid
+sequenceDiagram
+    participant U as USER
+    participant FE as Frontend
+    participant BE as Backend
+    participant DB as PostgreSQL
 
-    D4["Order"]:::entity
-    D10["OrderCocktail"]:::entity
-    D5["OrderItem"]:::entity
-end
-
-subgraph INFRA["Infrastructure"]
-    R1["Repositories (JPA)"]:::box
-    FLY["Flyway Migrations"]:::box
-    DB[("PostgreSQL")]:::db
-end
-
-C1 --> S1
-C2 --> S2
-C2 --> S7
-C3 --> S3
-C4 --> S4
-C4 --> S5
-C5 --> S6
-
-S1 --> R1
-S2 --> R1
-S7 --> R1
-S3 --> R1
-S4 --> S8
-S4 --> R1
-S5 --> S4
-S5 --> S8
-S6 --> R1
-S8 --> R1
-
-R1 --> DB
-FLY --> DB
-
-classDef box fill:#000000,stroke:#5a5a8a,stroke-width:1px;
-classDef db fill:#000000,stroke:#a06a00,stroke-width:1px;
-classDef entity fill:#000000,stroke:#1f7a3a,stroke-width:1px;
+    U->>FE: Login
+    FE->>BE: POST /auth/login
+    BE-->>FE: JWT
+    U->>FE: Crea orden
+    FE->>BE: POST /orders + Authorization
+    BE->>DB: Guarda orden asociada al usuario
+    BE-->>FE: Orden con ID
+    FE->>BE: GET /orders/my-orders
+    BE-->>FE: Historial propio
 ```
 
 ---
 
-## Estado actual del backend
+## Próximos pasos
 
-- **Backend API**: listo
-- **Cálculo de órdenes TIME / DRINKS**: listo
-- **Creación pública de órdenes**: listo
-- **Asociación opcional de órdenes al usuario autenticado**: listo
-- **Generación de PDF protegido por ID**: listo
-- **Generación pública de PDF preview**: listo
-- **Listado de productos con categoría básica**: listo
-- **Seed demo de catálogo con Flyway**: listo
-- **Swagger / documentación API**: listo, en mejora continua
-- **Tests unitarios**: en progreso
-- **Perfil de testing con H2**: listo
-- **Docker Compose para PostgreSQL local**: listo
-- **GitHub Actions CI**: listo
-- **Spring Security + JWT**: listo en versión inicial
-- **Autenticación de usuarios**: lista en versión inicial
-- **Roles USER / ADMIN**: definidos
-- **Autorización por roles**: lista en versión inicial
-- **Órdenes asociadas al usuario autenticado**: listo
-- **Historial de órdenes por usuario**: listo
-- **PDF protegido por ownership**: listo
+### Antes de deploy
+
+- Revisar variables de entorno productivas
+- Preparar `application-prod.properties`
+- Ajustar CORS para URL real del frontend
+- Verificar que no haya secretos en repositorio
+- Probar flujo completo local:
+  - invitado
+  - USER
+  - ADMIN
+  - PDF preview
+  - PDF por ID
+- Actualizar README raíz si corresponde
+- Preparar capturas para portfolio
+
+### Mejoras backend futuras
+
+- Rate limiting básico para endpoints públicos de preview
+- Verificación de email
+- Reset de contraseña
+- Más tests de seguridad y ownership
+- Más tests de PDF
+- Dockerfile para backend
+- Deploy del backend
+- Panel administrativo real para catálogo
+- Auditoría de órdenes
+- Mejoras Swagger en endpoints nuevos
+- Postman collection del flujo completo
 
 ---
 
-## Próximos pasos backend
+## Autor
 
-- Agregar tests específicos para endpoints protegidos
-- Agregar tests para endpoints públicos de PDF preview
-- Aumentar cobertura de tests en services y controllers
-- Mejorar manejo de respuestas 401/403
-- Evaluar limpieza, expiración o manejo específico de órdenes anónimas
-- Revisar permisos finos si se agregan nuevos roles
-- Dockerizar también la aplicación Spring Boot
-- Mejorar documentación Swagger/Postman del flujo completo
+Proyecto desarrollado por **Franco Aguirre** como parte de su portfolio profesional full stack.
+
+Stack trabajado:
+
+- Java
+- Spring Boot
+- PostgreSQL
+- Flyway
+- Spring Security
+- JWT
+- React
+- TypeScript
+- Testing
+- QA Manual
