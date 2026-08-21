@@ -13,8 +13,15 @@ import { DrinksDetailsForm } from "./components/DrinksDetailsForm";
 import { EventDetailsForm } from "./components/EventDetailsForm";
 import { GuestModeNotice } from "./components/GuestModeNotice";
 import { OrderModeSelector } from "./components/OrderModeSelector";
+import { OrderPresetSelector } from "./components/OrderPresetSelector";
 import { OrderSummaryPanel } from "./components/OrderSummaryPanel";
 import { SelectedCocktailsList } from "./components/SelectedCocktailsList";
+import { CalculationNotice } from "./components/CalculationNotice";
+import { orderPresets, type OrderPreset } from "./orderPresets";
+import {
+  buildSelectedCocktailsFromPreset,
+  distributeQuantitiesByWeight,
+} from "./orderPresetUtils";
 import { orderService } from "./orderService";
 import type {
   CreateDrinksOrderRequest,
@@ -39,6 +46,7 @@ export function CreateOrderPage() {
   const [selectedCocktails, setSelectedCocktails] = useState<
     SelectedOrderCocktail[]
   >([]);
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
 
   const [isLoadingCocktails, setIsLoadingCocktails] = useState(true);
   const [cocktailsError, setCocktailsError] = useState<string | null>(null);
@@ -119,6 +127,42 @@ export function CreateOrderPage() {
     clearResultState();
   }
 
+  function handleApplyPreset(preset: OrderPreset) {
+    clearResultState();
+
+    const { selectedCocktails: presetSelectedCocktails, missingCocktailNames } =
+      buildSelectedCocktailsFromPreset(preset, cocktails);
+
+    if (presetSelectedCocktails.length === 0) {
+      setSubmitError(
+        "No se pudo cargar la lista porque sus cócteles no están disponibles en el catálogo.",
+      );
+      return;
+    }
+
+    const numericTotalDrinks = Number(totalDrinks);
+
+    const shouldDistributeByTotalDrinks =
+      orderMode === "DRINKS" &&
+      numericTotalDrinks >= presetSelectedCocktails.length;
+
+    const nextSelectedCocktails = shouldDistributeByTotalDrinks
+      ? distributeQuantitiesByWeight(
+          presetSelectedCocktails,
+          numericTotalDrinks,
+        )
+      : presetSelectedCocktails;
+
+    setSelectedCocktails(nextSelectedCocktails);
+    setSelectedPresetId(preset.id);
+
+    if (missingCocktailNames.length > 0) {
+      setSubmitError(
+        `La lista se cargó parcialmente. Faltan en el catálogo: ${missingCocktailNames.join(", ")}.`,
+      );
+    }
+  }
+
   function handleAddCocktail(cocktail: Cocktail) {
     const cocktailId = cocktail.id;
 
@@ -140,6 +184,7 @@ export function CreateOrderPage() {
       },
     ]);
 
+    setSelectedPresetId(null);
     clearResultState();
   }
 
@@ -154,6 +199,7 @@ export function CreateOrderPage() {
       ),
     );
 
+    setSelectedPresetId(null);
     clearResultState();
   }
 
@@ -168,6 +214,7 @@ export function CreateOrderPage() {
       ),
     );
 
+    setSelectedPresetId(null);
     clearResultState();
   }
 
@@ -176,6 +223,7 @@ export function CreateOrderPage() {
       currentCocktails.filter((cocktail) => cocktail.cocktailId !== cocktailId),
     );
 
+    setSelectedPresetId(null);
     clearResultState();
   }
 
@@ -185,6 +233,25 @@ export function CreateOrderPage() {
       0,
     );
   }, [selectedCocktails]);
+
+  function handleTotalDrinksChange(value: string) {
+    setTotalDrinks(value);
+    clearResultState();
+
+    const numericTotalDrinks = Number(value);
+
+    if (
+      !selectedPresetId ||
+      orderMode !== "DRINKS" ||
+      numericTotalDrinks < selectedCocktails.length
+    ) {
+      return;
+    }
+
+    setSelectedCocktails((currentCocktails) =>
+      distributeQuantitiesByWeight(currentCocktails, numericTotalDrinks),
+    );
+  }
 
   function handleDistributeEqually() {
     const numericTotalDrinks = Number(totalDrinks);
@@ -219,6 +286,7 @@ export function CreateOrderPage() {
       })),
     );
 
+    setSelectedPresetId(null);
     clearResultState();
   }
 
@@ -290,6 +358,7 @@ export function CreateOrderPage() {
           const order = await orderService.createTimeOrder(timePayload);
           setCreatedOrder(order);
         }
+
         setCreatedOrderTimePayload(timePayload);
         setCreatedOrderDrinksPayload(null);
         setShowSuccessToast(true);
@@ -323,8 +392,7 @@ export function CreateOrderPage() {
     setIsSubmitting(true);
 
     try {
-
-    let order: OrderResponse;
+      let order: OrderResponse;
 
       if (!isAuthenticated) {
         order = await orderService.createDrinksPreview(drinksPayload);
@@ -351,6 +419,7 @@ export function CreateOrderPage() {
     setDurationHours("");
     setTotalDrinks("");
     setSelectedCocktails([]);
+    setSelectedPresetId(null);
     setSubmitError(null);
     setCreatedOrder(null);
     setCreatedOrderTimePayload(null);
@@ -363,7 +432,11 @@ export function CreateOrderPage() {
       {showSuccessToast && createdOrder && (
         <SuccessToast
           title="Orden creada"
-          message={`La orden #${createdOrder?.id || "Temporal"} se generó correctamente.`}
+          message={
+            createdOrder.id == null
+              ? "La orden temporal se generó correctamente."
+              : `La orden #${createdOrder.id} se generó correctamente.`
+          }
           onClose={() => setShowSuccessToast(false)}
         />
       )}
@@ -381,10 +454,10 @@ export function CreateOrderPage() {
             order={createdOrder}
             onCreateNewOrder={handleCreateNewOrder}
             timePreviewPayload={
-              createdOrder.userId == null ? createdOrderTimePayload : null
+              createdOrder.id == null ? createdOrderTimePayload : null
             }
             drinksPreviewPayload={
-              createdOrder.userId == null ? createdOrderDrinksPayload : null
+              createdOrder.id == null ? createdOrderDrinksPayload : null
             }
           />
         </div>
@@ -435,14 +508,19 @@ export function CreateOrderPage() {
             totalDrinks={totalDrinks}
             assignedDrinks={assignedDrinks}
             selectedCocktailsCount={selectedCocktails.length}
-            onTotalDrinksChange={(value) => {
-              setTotalDrinks(value);
-              clearResultState();
-            }}
+            onTotalDrinksChange={handleTotalDrinksChange}
             onDistributeEqually={handleDistributeEqually}
           />
         )}
       </Card>
+
+      {!isLoadingCocktails && !cocktailsError && (
+        <OrderPresetSelector
+          presets={orderPresets}
+          selectedPresetId={selectedPresetId}
+          onSelectPreset={handleApplyPreset}
+        />
+      )}
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_380px]">
         <div className="space-y-6">
@@ -500,8 +578,9 @@ export function CreateOrderPage() {
             )}
           </div>
         </div>
-
-        <div className="xl:sticky xl:top-8 xl:self-start">
+       
+        <div className="xl:sticky xl:top-8 xl:self-start gap-4 flex flex-col">
+            <CalculationNotice  />
           <OrderSummaryPanel
             orderMode={orderMode}
             guests={guests}
