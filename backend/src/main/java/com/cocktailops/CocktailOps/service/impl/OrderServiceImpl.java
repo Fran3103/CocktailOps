@@ -19,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -58,6 +60,7 @@ public class OrderServiceImpl implements IOrderService {
     private static final BigDecimal OZ_TO_ML = new BigDecimal("29.5735");
     private static final BigDecimal OZ_TO_G = new BigDecimal("28.3495");
 
+    private static final int LARGE_EVENT_GUEST_THRESHOLD = 60;
     private static final int LARGE_COCKTAIL_SELECTION_THRESHOLD = 8;
     private static final int LARGE_SELECTION_DRINKS_PER_PERSON_PER_HOUR = 2;
 
@@ -263,12 +266,15 @@ public class OrderServiceImpl implements IOrderService {
 
         int selectedCocktailCount = dto.cocktails().size();
 
-        int drinksPerPerson = calculateDrinksPerPersonPerHour(selectedCocktailCount);
+        int drinksPerPerson = calculateDrinksPerPersonPerHour(
+                dto.guests(),
+                selectedCocktailCount
+        );
 
         int totalDrinks = dto.guests() * drinksPerPerson * dto.durationHours();
 
         Order order = new Order();
-
+        order.setCreatedAt(Instant.now());
         if (associateCurrentUser) {
             associateCurrentUserIfPresent(order);
         }
@@ -314,11 +320,13 @@ public class OrderServiceImpl implements IOrderService {
     }
 
 
-    private int calculateDrinksPerPersonPerHour(int selectedCocktailCount) {
-        // Si el usuario ofrece muchas opciones de cócteles,
-        // estimamos mayor consumo para evitar quedarse corto.
+    private int calculateDrinksPerPersonPerHour(int guests, int selectedCocktailCount) {
+        boolean isLargeEvent = guests >= LARGE_EVENT_GUEST_THRESHOLD;
+        boolean hasLargeCocktailSelection = selectedCocktailCount >= LARGE_COCKTAIL_SELECTION_THRESHOLD;
 
-        if (selectedCocktailCount >= LARGE_COCKTAIL_SELECTION_THRESHOLD) {
+        // Solo usamos una estimación reforzada cuando el evento es grande
+        // y además el usuario seleccionó muchas opciones de cócteles.
+        if (isLargeEvent && hasLargeCocktailSelection) {
             return LARGE_SELECTION_DRINKS_PER_PERSON_PER_HOUR;
         }
 
@@ -450,7 +458,7 @@ public class OrderServiceImpl implements IOrderService {
         validateDrinksOrderRequest(dto);
 
         Order order = new Order();
-
+        order.setCreatedAt(Instant.now());
         if (associateCurrentUser) {
             associateCurrentUserIfPresent(order);
         }

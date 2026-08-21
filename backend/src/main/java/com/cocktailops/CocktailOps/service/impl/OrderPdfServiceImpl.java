@@ -17,6 +17,9 @@ import org.thymeleaf.context.Context;
 
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Slf4j
@@ -112,7 +115,7 @@ public class OrderPdfServiceImpl implements IOrderPdfService {
         return new OrderPdfDto(
                 o.id(),
                 mode,
-                o.createdAt() == null ? "" : o.createdAt().toString(),
+                formatPdfDate(o.createdAt()),
                 o.guests(),
                 o.drinksPerPerson(),
                 o.durationHours(),
@@ -133,6 +136,17 @@ public class OrderPdfServiceImpl implements IOrderPdfService {
         if (!isAdmin && !isOwner) {
             throw new AccessDeniedException("You do not have permission to access this order PDF");
         }
+    }
+
+    private String formatPdfDate(Instant createdAt) {
+        if (createdAt == null) {
+            return "Fecha no disponible";
+        }
+
+        return DateTimeFormatter
+                .ofPattern("dd/MM/yyyy")
+                .withZone(ZoneId.of("America/Argentina/Buenos_Aires"))
+                .format(createdAt);
     }
 
     private byte[] buildPdf(OrderResponseDto responseDto){
