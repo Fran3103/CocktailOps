@@ -82,6 +82,10 @@ public class SecurityConfig {
             "/orders/*/pdf"
     };
 
+    private static final String[] HEALTH_ENDPOINTS = {
+            "/healthz"
+    };
+
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -94,7 +98,7 @@ public class SecurityConfig {
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
                 .authorizeHttpRequests(auth -> auth
-
+                        .requestMatchers(HEALTH_ENDPOINTS).permitAll()
                         .requestMatchers(SWAGGER_ENDPOINTS).permitAll()
                         .requestMatchers(AUTH_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.GET, PUBLIC_CATALOG_ENDPOINTS).permitAll()
