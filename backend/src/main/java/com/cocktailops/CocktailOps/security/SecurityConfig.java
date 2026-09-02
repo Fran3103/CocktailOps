@@ -36,14 +36,6 @@ public class SecurityConfig {
             "/auth/**"
     };
 
-    private static final String[] PUBLIC_CATALOG_ENDPOINTS = {
-            "/products",
-            "/products/**",
-            "/cocktails",
-            "/cocktails/**",
-            "/categories",
-            "/categories/**"
-    };
 
     private static final String[] ADMIN_ENDPOINTS = {
             "/user",
@@ -101,7 +93,9 @@ public class SecurityConfig {
                         .requestMatchers(HEALTH_ENDPOINTS).permitAll()
                         .requestMatchers(SWAGGER_ENDPOINTS).permitAll()
                         .requestMatchers(AUTH_ENDPOINTS).permitAll()
-                        .requestMatchers(HttpMethod.GET, PUBLIC_CATALOG_ENDPOINTS).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/products", "/products/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/cocktails", "/cocktails/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/categories", "/categories/**").permitAll()
                         .requestMatchers(HttpMethod.POST, PUBLIC_ORDER_CREATE_ENDPOINTS).permitAll()
 
                         .requestMatchers(ADMIN_ENDPOINTS).hasRole("ADMIN")
