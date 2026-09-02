@@ -15,12 +15,16 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
+import java.util.Arrays;
 
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    @Value("${app.cors.allowed-origins:http://localhost:5173,http://127.0.0.1:5173}")
+    private String allowedOrigins;
 
     private static final String[] SWAGGER_ENDPOINTS = {
             "/swagger-ui.html",
@@ -78,13 +82,6 @@ public class SecurityConfig {
             "/orders/*/pdf"
     };
 
-    private static final String[] PDF_ORDER = {
-            "/orders/preview/pdf"
-    };
-
-    private static final String[] PDF_ORDER_BY_DRINKS = {
-            "/orders/by-drinks/preview/pdf"
-    };
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -102,21 +99,19 @@ public class SecurityConfig {
                         .requestMatchers(AUTH_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.GET, PUBLIC_CATALOG_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.POST, PUBLIC_ORDER_CREATE_ENDPOINTS).permitAll()
+
                         .requestMatchers(ADMIN_ENDPOINTS).hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, PDF_ORDER).permitAll()
-                        .requestMatchers(HttpMethod.POST, PDF_ORDER_BY_DRINKS).permitAll()
                         .requestMatchers(HttpMethod.POST, ADMIN_CATALOG_ENDPOINTS).hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, ADMIN_CATALOG_ENDPOINTS).hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, ADMIN_CATALOG_ENDPOINTS).hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, ADMIN_CATALOG_ENDPOINTS).hasRole("ADMIN")
 
+                        .requestMatchers(HttpMethod.GET, "/orders").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, USER_ORDER_ENDPOINTS).authenticated()
                         .requestMatchers(HttpMethod.GET, USER_ORDER_PDF_ENDPOINTS).authenticated()
                         .requestMatchers(HttpMethod.GET, ORDER_DETAILS_ENDPOINTS).authenticated()
+                        .requestMatchers(HttpMethod.GET, "/orders/*").authenticated()
                         .requestMatchers(HttpMethod.POST, ORDER_DETAILS_ENDPOINTS).authenticated()
-
-
-                        .requestMatchers(HttpMethod.GET, "/orders").hasRole("ADMIN")
 
                         .requestMatchers(HttpMethod.PUT, "/orders/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/orders/**").hasRole("ADMIN")
@@ -137,10 +132,12 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "http://127.0.0.1:5173"
-        ));
+        configuration.setAllowedOrigins(
+                Arrays.stream(allowedOrigins.split(","))
+                        .map(String::trim)
+                        .filter(origin -> !origin.isBlank())
+                        .toList()
+        );
 
         configuration.setAllowedMethods(List.of(
                 "GET",
