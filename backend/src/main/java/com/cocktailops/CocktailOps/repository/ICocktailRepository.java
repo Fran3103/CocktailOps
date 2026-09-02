@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.util.List;
 
 @Repository
 public interface ICocktailRepository extends JpaRepository<Cocktail, Long> {
@@ -24,4 +25,10 @@ public interface ICocktailRepository extends JpaRepository<Cocktail, Long> {
 """)
     Optional<Cocktail> findByWithIngredients(@Param("id") Long id);
 
+    @Query("""
+    select distinct c from Cocktail c
+    left join fetch c.ingredients i
+    left join fetch i.product
+""")
+    List<Cocktail> findAllWithIngredients();
 }

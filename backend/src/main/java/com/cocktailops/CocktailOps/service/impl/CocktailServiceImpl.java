@@ -179,9 +179,10 @@ public class CocktailServiceImpl implements ICocktailService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<CocktailResponseDto> findAll() {
 
-        List<Cocktail> cocktails = cocktailRepository.findAll();
+        List<Cocktail> cocktails = cocktailRepository.findAllWithIngredients();
         return cocktails.stream()
                 .map(cocktail -> new CocktailResponseDto(
                         cocktail.getId(),
