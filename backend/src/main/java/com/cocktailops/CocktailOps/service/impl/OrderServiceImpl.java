@@ -83,6 +83,7 @@ public class OrderServiceImpl implements IOrderService {
      * - USER solo puede ver sus propias órdenes.
      */
     @Override
+    @Transactional(readOnly = true)
     public OrderResponseDto getOrderById(Long id) {
         Optional<Order> optionalOrder = orderRepository.findById(id);
 
@@ -113,6 +114,7 @@ public class OrderServiceImpl implements IOrderService {
      * Este método debe estar protegido desde SecurityConfig para que solo lo use ADMIN.
      */
     @Override
+    @Transactional(readOnly = true)
     public List<OrderResponseDto> getAllOrders() {
         List<Order> orders = orderRepository.findAll();
         List<OrderResponseDto> response = new ArrayList<>();
@@ -239,6 +241,7 @@ public class OrderServiceImpl implements IOrderService {
      * Devuelve las órdenes del usuario logueado.
      */
     @Override
+    @Transactional(readOnly = true)
     public List<OrderResponseDto> getMyOrders() {
         User currentUser = currentUserService.getCurrentUserOptional().orElse(null);
         List<Order> orders = orderRepository.findByUserId(currentUser != null ? currentUser.getId() : null);
