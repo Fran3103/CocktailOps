@@ -53,25 +53,12 @@ public class SecurityConfig {
             "/categories/**"
     };
 
-    private static final String[] USER_ORDER_ENDPOINTS = {
-            "/orders/my-orders",
-            "/orders/my-orders/**"
-    };
-
-    private static final String[] ORDER_DETAILS_ENDPOINTS = {
-            "/orders",
-            "/orders/by-drinks"
-    };
 
     private static final String[] PUBLIC_ORDER_CREATE_ENDPOINTS = {
             "/orders/preview",
             "/orders/by-drinks/preview",
             "/orders/preview/pdf",
             "/orders/by-drinks/preview/pdf"
-    };
-
-    private static final String[] USER_ORDER_PDF_ENDPOINTS = {
-            "/orders/*/pdf"
     };
 
     private static final String[] HEALTH_ENDPOINTS = {
@@ -104,12 +91,16 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, ADMIN_CATALOG_ENDPOINTS).hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, ADMIN_CATALOG_ENDPOINTS).hasRole("ADMIN")
 
+                        .requestMatchers(HttpMethod.GET, "/orders/my-orders").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/orders/my-orders/**").authenticated()
+
                         .requestMatchers(HttpMethod.GET, "/orders").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, USER_ORDER_ENDPOINTS).authenticated()
-                        .requestMatchers(HttpMethod.GET, USER_ORDER_PDF_ENDPOINTS).authenticated()
-                        .requestMatchers(HttpMethod.GET, ORDER_DETAILS_ENDPOINTS).authenticated()
+
+                        .requestMatchers(HttpMethod.GET, "/orders/*/pdf").authenticated()
                         .requestMatchers(HttpMethod.GET, "/orders/*").authenticated()
-                        .requestMatchers(HttpMethod.POST, ORDER_DETAILS_ENDPOINTS).authenticated()
+
+                        .requestMatchers(HttpMethod.POST, "/orders").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/orders/by-drinks").authenticated()
 
                         .requestMatchers(HttpMethod.PUT, "/orders/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/orders/**").hasRole("ADMIN")
