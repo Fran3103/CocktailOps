@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.cocktailops</groupId>
 	<artifactId>CocktailOps</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
 	<name>CocktailOps</name>
 	<description>App generadora de lista de insumos para cocktails</description>
 	<url/>
