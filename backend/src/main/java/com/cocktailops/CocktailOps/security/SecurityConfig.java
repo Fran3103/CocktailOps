@@ -96,7 +96,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, ADMIN_CATALOG_ENDPOINTS).hasRole("ADMIN")
 
                         .requestMatchers(HttpMethod.GET, "/orders/my-orders").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/orders/my-orders/**").authenticated()
 
                         .requestMatchers(HttpMethod.GET, "/orders").hasRole("ADMIN")
 
