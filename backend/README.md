@@ -996,7 +996,7 @@ Body:
 }
 ```
 
-Al igual que `POST /orders`, este endpoint respeta el límite de **20 órdenes persistidas por usuario dentro de 24 horas**.
+Al igual que `POST /orders`, este endpoint respeta el límite de **25 órdenes persistidas por usuario dentro de 24 horas**.
 
 ### Historial propio
 
@@ -1433,7 +1433,7 @@ sequenceDiagram
   - ownership
   - PDF preview
   - PDF por ID
-  - límite de 20 órdenes / 24 h
+  - límite de 25 órdenes / 24 h
 - Revisar y restringir el acceso directo a `:8080` cuando la capa pública final esté definida
 - Incorporar rate limiting por IP para endpoints públicos sensibles en la capa de entrada
 - Actualizar README raíz con la arquitectura y URLs definitivas
