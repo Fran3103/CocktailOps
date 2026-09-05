@@ -1,4 +1,4 @@
-name: Java CI
+name: Java CI/CD
 
 on:
   push:
@@ -8,9 +8,12 @@ on:
     branches:
       - master
 
+permissions:
+  contents: read
+
 jobs:
   build:
-    name: Build and test
+    name: Build, test and deploy
     runs-on: ubuntu-latest
 
     steps:
@@ -27,3 +30,50 @@ jobs:
       - name: Build with Maven
         working-directory: backend
         run: mvn -B clean install
+
+      - name: Deploy to Oracle
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        env:
+          ORACLE_HOST: ${{ vars.ORACLE_HOST }}
+          ORACLE_USER: ${{ vars.ORACLE_USER }}
+        run: |
+          set -e
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          printf '%s\n' "${{ secrets.ORACLE_SSH_PRIVATE_KEY }}" > ~/.ssh/oracle_key
+          chmod 600 ~/.ssh/oracle_key
+
+          ssh-keyscan -H "$ORACLE_HOST" >> ~/.ssh/known_hosts
+
+          scp -i ~/.ssh/oracle_key \
+            backend/target/CocktailOps-0.0.1-SNAPSHOT.jar \
+            "$ORACLE_USER@$ORACLE_HOST:/tmp/cocktailops.jar"
+
+          ssh -i ~/.ssh/oracle_key "$ORACLE_USER@$ORACLE_HOST" '
+            set -e
+
+            sudo cp /opt/cocktailops/cocktailops.jar \
+                    /opt/cocktailops/cocktailops.jar.bak
+
+            sudo mv /tmp/cocktailops.jar \
+                    /opt/cocktailops/cocktailops.jar
+
+            sudo systemctl restart cocktailops.service
+
+            for i in $(seq 1 12); do
+              if curl -fsS http://localhost:8080/healthz > /dev/null; then
+                echo "CocktailOps deploy OK"
+                exit 0
+              fi
+
+              sleep 5
+            done
+
+            echo "Health check failed"
+            sudo systemctl status cocktailops.service --no-pager
+            exit 1
+          '
+
+          rm -f ~/.ssh/oracle_key
