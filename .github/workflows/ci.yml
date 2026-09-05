@@ -45,6 +45,8 @@ jobs:
           printf '%s\n' "${{ secrets.ORACLE_SSH_PRIVATE_KEY }}" > ~/.ssh/oracle_key
           chmod 600 ~/.ssh/oracle_key
 
+          trap 'rm -f ~/.ssh/oracle_key' EXIT
+
           ssh-keyscan -H "$ORACLE_HOST" >> ~/.ssh/known_hosts
 
           scp -i ~/.ssh/oracle_key \
@@ -71,9 +73,25 @@ jobs:
               sleep 5
             done
 
-            echo "Health check failed"
+            echo "Health check failed. Rolling back..."
+
+            sudo cp /opt/cocktailops/cocktailops.jar.bak \
+                    /opt/cocktailops/cocktailops.jar
+
+            sudo systemctl restart cocktailops.service
+
+            for i in $(seq 1 36); do
+              if curl -fsS http://localhost:8080/healthz > /dev/null; then
+                echo "Rollback successful"
+                exit 1
+              fi
+
+              sleep 5
+            done
+
+            echo "Rollback failed"
             sudo systemctl status cocktailops.service --no-pager
             exit 1
           '
 
-          rm -f ~/.ssh/oracle_key
+                    
