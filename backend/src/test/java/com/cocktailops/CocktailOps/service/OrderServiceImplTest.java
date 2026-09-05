@@ -15,8 +15,7 @@ import com.cocktailops.CocktailOps.repository.IOrderRepository;
 import com.cocktailops.CocktailOps.repository.IProductRepository;
 import com.cocktailops.CocktailOps.security.CurrentUserService;
 import com.cocktailops.CocktailOps.service.impl.OrderServiceImpl;
-import com.fasterxml.jackson.databind.introspect.TypeResolutionContext;
-import org.hamcrest.text.IsEmptyString;
+import com.cocktailops.CocktailOps.exception.RateLimitExceededException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -331,5 +330,44 @@ public class OrderServiceImplTest {
         verifyNoInteractions(orderRepository);
         verifyNoInteractions(productRepository);
         verifyNoInteractions(cocktailRepository);
+    }
+
+    @Test
+    void createOrder_whenLimitReached_fails() {
+
+        User user = new User();
+        user.setId(1L);
+        user.setRole(Role.USER);
+
+        OrderRequestDto dto = createOrderRequestDto(
+                50,
+                5,
+                createValidOrderCocktailsWeightList()
+        );
+
+        when(currentUserService.getCurrentUserOptional())
+                .thenReturn(Optional.of(user));
+
+        when(orderRepository.countByUserIdAndCreatedAtGreaterThanEqual(
+                eq(user.getId()),
+                any()
+        )).thenReturn(25L);
+
+        RateLimitExceededException exception = assertThrows(
+                RateLimitExceededException.class,
+                () -> orderServiceImpl.createOrder(dto)
+        );
+
+        assertEquals(
+                "You reached the limit of 25 saved orders within 24 hours.",
+                exception.getMessage()
+        );
+
+        verify(orderRepository).countByUserIdAndCreatedAtGreaterThanEqual(
+                eq(user.getId()),
+                any()
+        );
+
+        verify(orderRepository, never()).save(any());
     }
 }

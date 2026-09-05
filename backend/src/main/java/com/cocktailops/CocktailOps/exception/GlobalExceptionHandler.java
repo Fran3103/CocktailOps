@@ -45,7 +45,8 @@ public class GlobalExceptionHandler {
             BadRequestException.class,
             InvalidCredentialsException.class,
             ForbiddenException.class,
-            BusinessRuleException.class
+            BusinessRuleException.class,
+            RateLimitExceededException.class
     })
     public ResponseEntity<ApiError> handleCustom(RuntimeException ex, HttpServletRequest request) {
         HttpStatus status;
@@ -61,6 +62,8 @@ public class GlobalExceptionHandler {
             status = HttpStatus.FORBIDDEN;
         } else if (ex instanceof BusinessRuleException) {
             status = HttpStatus.UNPROCESSABLE_CONTENT; // o BAD_REQUEST
+        } else if (ex instanceof RateLimitExceededException) {
+            status = HttpStatus.TOO_MANY_REQUESTS;
         } else {
             status = HttpStatus.INTERNAL_SERVER_ERROR;
         }

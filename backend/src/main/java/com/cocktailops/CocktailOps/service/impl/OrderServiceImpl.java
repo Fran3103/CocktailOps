@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.cocktailops.CocktailOps.exception.RateLimitExceededException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -63,6 +64,8 @@ public class OrderServiceImpl implements IOrderService {
     private static final int LARGE_EVENT_GUEST_THRESHOLD = 60;
     private static final int LARGE_COCKTAIL_SELECTION_THRESHOLD = 8;
     private static final int LARGE_SELECTION_DRINKS_PER_PERSON_PER_HOUR = 2;
+
+    private static final int MAX_ORDERS_PER_24_HOURS = 25;
 
     /**
      * Cantidad estimada de tragos por persona por hora.
@@ -142,6 +145,8 @@ public class OrderServiceImpl implements IOrderService {
     @Override
     @Transactional
     public OrderResponseDto createOrder(OrderRequestDto dto) {
+        validateTimeOrderRequest(dto);
+        validateDailyOrderLimit();
         int cocktailsCount = dto.cocktails() != null ? dto.cocktails().size() : 0;
 
         log.info(
@@ -166,6 +171,8 @@ public class OrderServiceImpl implements IOrderService {
     @Override
     @Transactional
     public OrderResponseDto createOrderByDrinks(OrderByDrinksRequestDto dto) {
+        validateDrinksOrderRequest(dto);
+        validateDailyOrderLimit();
         log.info(
                 "createOrderByDrinks started: totalDrinks={}, cocktails={}",
                 dto.totalDrinks(),
@@ -751,5 +758,37 @@ public class OrderServiceImpl implements IOrderService {
      */
     private void associateCurrentUserIfPresent(Order order) {
         currentUserService.getCurrentUserOptional().ifPresent(order::setUser);
+    }
+
+    /**
+     * limite de ordenes por usuario, 25 ordenes cada 24 horas evitando el abuso de ordenes
+     */
+
+    private void validateDailyOrderLimit() {
+
+        User currentUser = currentUserService.getCurrentUserOptional()
+                .orElseThrow(() -> new IllegalStateException(
+                        "Authenticated user not found"
+                ));
+
+        Instant since = Instant.now().minusSeconds(24 * 60 * 60);
+
+        long ordersInLast24Hours =
+                orderRepository.countByUserIdAndCreatedAtGreaterThanEqual(
+                        currentUser.getId(),
+                        since
+                );
+
+        if (ordersInLast24Hours >= MAX_ORDERS_PER_24_HOURS) {
+            log.warn(
+                    "Order limit exceeded for userId={}: {} orders in last 24 hours",
+                    currentUser.getId(),
+                    ordersInLast24Hours
+            );
+
+            throw new RateLimitExceededException(
+                    "You reached the limit of 25 saved orders within 24 hours."
+            );
+        }
     }
 }
