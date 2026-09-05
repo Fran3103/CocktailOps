@@ -21,6 +21,7 @@ Este módulo contiene la lógica principal del sistema: autenticación JWT, auto
 - [API - Endpoints principales](#api---endpoints-principales)
 - [Integración con frontend](#integración-con-frontend)
 - [Testing](#testing)
+- [Deploy e infraestructura](#deploy-e-infraestructura)
 - [Diagramas](#diagramas)
 - [Próximos pasos](#próximos-pasos)
 - [Autor](#autor)
@@ -47,7 +48,7 @@ A partir de esos datos, el backend calcula:
 - packs, botellas o unidades sugeridas a comprar
 - PDF con resumen del evento y lista de compra
 
-El proyecto está pensado como una aplicación full stack de portfolio, mostrando un flujo completo entre frontend, backend, base de datos, seguridad, PDF, migraciones, Docker y CI.
+El proyecto está pensado como una aplicación full stack de portfolio, mostrando un flujo completo entre frontend, backend, base de datos, seguridad, PDF, migraciones, Docker, testing, CI/CD y despliegue cloud.
 
 ---
 
@@ -70,9 +71,16 @@ El proyecto está pensado como una aplicación full stack de portfolio, mostrand
 | PDF protegido por ID | Implementado |
 | PDF preview desde body | Implementado |
 | Dashboard frontend por rol soportado por API | Implementado |
-| Tests unitarios backend | En progreso |
-| GitHub Actions CI | Implementado |
-| Deploy backend | Pendiente |
+| Límite de órdenes persistidas por usuario | Implementado |
+| Tests unitarios backend | Implementado |
+| GitHub Actions CI/CD | Implementado |
+| PostgreSQL en Neon | Implementado |
+| Deploy backend en Oracle Cloud | Implementado |
+| Servicio systemd | Implementado |
+| Health check de deploy | Implementado |
+| Backup y rollback automático de JAR | Implementado |
+| Deploy frontend en Vercel | Pendiente |
+| Proxy/HTTPS público para frontend | Pendiente |
 
 ---
 
@@ -116,6 +124,15 @@ Un usuario con rol `USER` puede:
 - consultar su historial
 - ver detalle de sus órdenes
 - descargar PDF por ID de sus propias órdenes
+
+Para proteger la demo pública y limitar el crecimiento innecesario de la base, cada usuario autenticado puede guardar como máximo **20 órdenes dentro de una ventana móvil de 24 horas**.
+
+```txt
+Máximo: 20 órdenes persistidas por usuario / 24 h
+Al alcanzar el límite: HTTP 429 Too Many Requests
+```
+
+El límite se aplica únicamente a las órdenes persistentes. Los previews temporales no cuentan porque no se guardan en base de datos.
 
 ### Administrador
 
@@ -215,6 +232,24 @@ GET /orders/{id}
 GET /orders/{id}/pdf
 ```
 
+### Límite de órdenes persistidas
+
+La API limita la cantidad de órdenes que puede persistir un usuario autenticado:
+
+```txt
+20 órdenes guardadas como máximo dentro de las últimas 24 horas.
+```
+
+La validación se realiza antes de persistir una nueva orden, consultando cuántas órdenes creó el usuario desde `Instant.now() - 24 h`.
+
+Si el límite fue alcanzado, el backend responde:
+
+```http
+429 Too Many Requests
+```
+
+Esta regla protege la base de datos y los recursos de la demo sin impedir que un visitante utilice los endpoints de preview.
+
 ### Flyway
 
 Flyway versiona la base de datos con migraciones SQL.
@@ -238,6 +273,7 @@ Casos cubiertos:
 - reglas de negocio incumplidas
 - credenciales inválidas
 - accesos prohibidos
+- límite de uso alcanzado (`429 Too Many Requests`)
 - errores inesperados
 - errores de generación de PDF
 
@@ -271,7 +307,12 @@ Los servicios principales incluyen logs para seguir flujos importantes:
 - Mockito
 - H2 para tests
 - Docker Compose
-- GitHub Actions CI
+- GitHub Actions CI/CD
+- Oracle Cloud Infrastructure
+- Ubuntu 24.04
+- systemd
+- Neon PostgreSQL
+- SSH / SCP para despliegue
 - Lombok
 
 ---
@@ -321,6 +362,20 @@ Authorization: Bearer <token>
 | Escritura de catálogo | ADMIN |
 | `/user/**` | ADMIN |
 | `/shop/**` | ADMIN |
+
+### Protección de creación persistente
+
+Los endpoints que guardan órdenes requieren autenticación y respetan el límite de uso por usuario:
+
+```txt
+POST /orders
+POST /orders/by-drinks
+
+→ máximo 20 órdenes persistidas por usuario dentro de 24 horas
+→ exceso de límite: 429 Too Many Requests
+```
+
+Los endpoints públicos de preview permanecen separados y no generan registros persistidos.
 
 ---
 
@@ -889,6 +944,7 @@ Guarda en base.
 Asocia la orden al usuario.
 Aparece en historial.
 Permite detalle y PDF por ID.
+Respeta el límite de 20 órdenes persistidas por usuario dentro de 24 horas.
 ```
 
 ### Preview de orden DRINKS
@@ -939,6 +995,8 @@ Body:
   ]
 }
 ```
+
+Al igual que `POST /orders`, este endpoint respeta el límite de **20 órdenes persistidas por usuario dentro de 24 horas**.
 
 ### Historial propio
 
@@ -1022,6 +1080,8 @@ El frontend consume este backend mediante Axios y una variable de entorno:
 VITE_API_BASE_URL=http://localhost:8081
 ```
 
+Ese valor corresponde al entorno local. El frontend productivo todavía está pendiente de despliegue en Vercel. La integración pública final se configurará mediante una URL HTTPS del frontend y un proxy/rewrite hacia el backend desplegado en Oracle.
+
 Funcionalidades actualmente soportadas desde frontend:
 
 - login
@@ -1076,30 +1136,204 @@ El frontend muestra aclaraciones para que el usuario entienda:
 
 ## Testing
 
-El backend incorpora tests con JUnit 5 y Mockito.
+El backend incorpora tests con **JUnit 5**, **Mockito** y un perfil de test separado.
 
-Estado actual:
+La suite actual ejecutada tanto localmente como en GitHub Actions contiene **31 tests**:
 
-| Área | Estado |
+| Área | Estado actual |
 |---|---|
-| ProductServiceImpl | Cobertura básica implementada |
-| OrderServiceImpl | Cobertura parcial |
+| Contexto Spring Boot | Implementado |
+| ProductServiceImpl | 17 tests |
+| OrderServiceImpl | 13 tests |
+| Límite de órdenes por usuario | Cubierto |
 | Auth/Security | Pendiente de ampliar |
 | PDF preview | Pendiente de ampliar |
 | Ownership | Pendiente de ampliar |
 | Controller tests | Pendiente |
 
-Tests recomendados próximos:
+La protección de uso incorpora un test específico que verifica que, cuando un usuario alcanza el límite permitido:
 
-- `previewOrder` no persiste
-- `previewOrderByDrinks` no persiste
-- `createOrder` persiste y asocia usuario
-- `createOrderByDrinks` persiste y asocia usuario
-- `getOrderById` permite dueño
-- `getOrderById` permite admin
-- `getOrderById` rechaza usuario no dueño
-- `generateOrderPreviewPdf` genera PDF sin ID
-- `generateOrderPdf` respeta ownership
+```txt
+se lanza RateLimitExceededException
+no se ejecuta orderRepository.save(...)
+```
+
+El pipeline de CI ejecuta:
+
+```bash
+mvn -B clean install
+```
+
+y el deploy no continúa si el build o cualquier test falla.
+
+Mejoras de testing que siguen siendo opcionales para futuras iteraciones:
+
+- ampliar tests de autenticación y autorización
+- probar ownership de detalle y PDF en más escenarios
+- agregar tests de generación de PDF
+- agregar tests de controller/HTTP para endpoints principales
+
+
+---
+
+## Deploy e infraestructura
+
+El backend está desplegado en **Oracle Cloud Infrastructure** sobre una VM Ubuntu 24.04 y utiliza **Neon PostgreSQL** como base de datos remota.
+
+### Arquitectura de despliegue
+
+```txt
+GitHub
+  ↓ push a master
+GitHub Actions
+  ↓ build + tests
+JAR Spring Boot
+  ↓ SSH / SCP
+Oracle Cloud VM
+  ↓ systemd
+CocktailOps Backend
+  ↓ JDBC
+Neon PostgreSQL
+```
+
+### Oracle Cloud
+
+El backend se ejecuta como servicio del sistema:
+
+```txt
+cocktailops.service
+```
+
+Archivo principal desplegado:
+
+```txt
+/opt/cocktailops/cocktailops.jar
+```
+
+Variables de entorno productivas:
+
+```txt
+/opt/cocktailops/cocktailops.env
+```
+
+El archivo de entorno permanece únicamente en la VM y no se versiona.
+
+El servicio utiliza `systemd`, por lo que:
+
+- arranca automáticamente después de reiniciar la VM
+- puede reiniciarse de forma controlada durante un deploy
+- los logs pueden consultarse con `journalctl`
+- `Restart=on-failure` permite recuperar el proceso ante fallos de ejecución
+
+Ejemplo de consulta de logs:
+
+```bash
+sudo journalctl -u cocktailops.service -f
+```
+
+### Base de datos en Neon
+
+La base productiva/demo utiliza PostgreSQL administrado por **Neon**.
+
+Configuración actual orientada a una demo de portfolio:
+
+```txt
+Plan: Free
+Autoscaling: 0.25 → 0.5 CU
+Scale to zero: 5 minutos
+```
+
+Esto reduce consumo cuando la aplicación permanece inactiva.
+
+### Health check
+
+La API expone:
+
+```http
+GET /healthz
+```
+
+Respuesta esperada:
+
+```json
+{
+  "status": "ok"
+}
+```
+
+Este endpoint se utiliza tanto para comprobaciones manuales como para validar despliegues automáticos.
+
+### CI/CD con GitHub Actions
+
+El workflow se ejecuta en:
+
+```txt
+push a master
+pull request hacia master
+```
+
+En un pull request se ejecuta CI:
+
+```txt
+checkout
+→ Java 17
+→ Maven build
+→ tests
+```
+
+En un push a `master`, después de superar CI, también se ejecuta CD:
+
+```txt
+build + 31 tests
+→ generar JAR
+→ conectar por SSH a Oracle
+→ copiar JAR nuevo
+→ crear backup del JAR anterior
+→ reemplazar aplicación
+→ reiniciar cocktailops.service
+→ esperar health check
+```
+
+El health check permite hasta aproximadamente **180 segundos**, contemplando el arranque más lento de una VM pequeña y una base Neon que puede estar suspendida.
+
+### Rollback automático
+
+Antes de reemplazar la versión activa, el workflow conserva:
+
+```txt
+/opt/cocktailops/cocktailops.jar.bak
+```
+
+Si la versión nueva no logra responder correctamente a `/healthz` dentro del tiempo configurado:
+
+```txt
+health check falla
+→ se restaura cocktailops.jar.bak
+→ systemd reinicia el servicio
+→ se vuelve a comprobar /healthz
+```
+
+Aunque el rollback funcione, GitHub Actions deja el workflow en estado fallido para indicar que la nueva versión no pudo desplegarse.
+
+### Secretos del deploy
+
+La clave SSH privada utilizada por GitHub Actions se almacena como **GitHub Actions Secret** y no forma parte del repositorio.
+
+El host y el usuario SSH se gestionan mediante variables del repositorio.
+
+No se versionan:
+
+- clave SSH privada
+- contraseña de Neon
+- JWT secret
+- archivo `cocktailops.env`
+
+### Estado de acceso público
+
+El backend ya está desplegado y operativo en Oracle. La capa pública definitiva para el frontend todavía está pendiente de cierre.
+
+El siguiente paso será desplegar el frontend en Vercel y configurar la comunicación HTTPS/proxy hacia Oracle. Después se podrá endurecer el acceso directo al backend y aplicar rate limiting por IP en la capa de entrada.
+
 
 ---
 
@@ -1111,7 +1345,7 @@ Tests recomendados próximos:
 flowchart LR
     FE[Frontend React + TypeScript]
     BE[Backend Spring Boot]
-    DB[(PostgreSQL)]
+    DB[(Neon PostgreSQL)]
     PDF[Thymeleaf + OpenHTMLToPDF]
     FLY[Flyway]
 
@@ -1119,6 +1353,24 @@ flowchart LR
     BE --> DB
     BE --> PDF
     FLY --> DB
+```
+
+### Arquitectura de despliegue
+
+```mermaid
+flowchart LR
+    DEV[Push / Merge a master]
+    GH[GitHub Actions CI/CD]
+    VM[Oracle Cloud VM]
+    SVC[systemd cocktailops.service]
+    BE[Spring Boot JAR]
+    DB[(Neon PostgreSQL)]
+
+    DEV --> GH
+    GH -->|Build + Tests + SCP/SSH| VM
+    VM --> SVC
+    SVC --> BE
+    BE --> DB
 ```
 
 ### Flujo de invitado
@@ -1164,34 +1416,42 @@ sequenceDiagram
 
 ## Próximos pasos
 
-### Antes de deploy
+### Cierre de despliegue full stack
 
-- Revisar variables de entorno productivas
-- Preparar `application-prod.properties`
-- Ajustar CORS para URL real del frontend
-- Verificar que no haya secretos en repositorio
-- Probar flujo completo local:
+- Desplegar frontend React/Vite en Vercel
+- Configurar la URL productiva del frontend
+- Configurar proxy/rewrite HTTPS desde Vercel hacia el backend de Oracle
+- Ajustar CORS según la URL definitiva
+- Verificar flujo completo desplegado:
   - invitado
+  - registro y login
   - USER
   - ADMIN
+  - orden TIME
+  - orden DRINKS
+  - historial
+  - ownership
   - PDF preview
   - PDF por ID
-- Actualizar README raíz si corresponde
-- Preparar capturas para portfolio
+  - límite de 20 órdenes / 24 h
+- Revisar y restringir el acceso directo a `:8080` cuando la capa pública final esté definida
+- Incorporar rate limiting por IP para endpoints públicos sensibles en la capa de entrada
+- Actualizar README raíz con la arquitectura y URLs definitivas
+- Preparar capturas y documentación final para portfolio
 
-### Mejoras backend futuras
+### Mejoras futuras no bloqueantes
 
-- Rate limiting básico para endpoints públicos de preview
-- Verificación de email
-- Reset de contraseña
-- Más tests de seguridad y ownership
-- Más tests de PDF
-- Dockerfile para backend
-- Deploy del backend
-- Panel administrativo real para catálogo
-- Auditoría de órdenes
-- Mejoras Swagger en endpoints nuevos
-- Postman collection del flujo completo
+Estas mejoras pueden aportar valor, pero no son necesarias para considerar el backend listo como proyecto de portfolio:
+
+- ampliar tests de seguridad, ownership y PDF
+- verificación de email
+- reset de contraseña
+- panel administrativo más completo para catálogo
+- auditoría de órdenes
+- mejoras adicionales de Swagger/OpenAPI
+- colección Postman del flujo completo
+- Dockerfile del backend si se quiere ofrecer una alternativa de ejecución empaquetada
+
 
 ---
 
@@ -1210,4 +1470,7 @@ Stack trabajado:
 - React
 - TypeScript
 - Testing
+- GitHub Actions CI/CD
+- Oracle Cloud
+- Neon PostgreSQL
 - QA Manual
