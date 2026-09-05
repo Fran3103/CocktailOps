@@ -48,7 +48,7 @@ jobs:
           ssh-keyscan -H "$ORACLE_HOST" >> ~/.ssh/known_hosts
 
           scp -i ~/.ssh/oracle_key \
-            backend/target/CocktailOps-0.0.1-SNAPSHOT.jar \
+            backend/target/CocktailOps-0.0.1.jar \
             "$ORACLE_USER@$ORACLE_HOST:/tmp/cocktailops.jar"
 
           ssh -i ~/.ssh/oracle_key "$ORACLE_USER@$ORACLE_HOST" '
