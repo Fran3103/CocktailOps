@@ -6,6 +6,7 @@ import type { OrderResponse } from "../order.types";
 type OrderHistoryTableProps = {
   orders: OrderResponse[];
   onViewDetail: (order: OrderResponse) => void;
+  showUserColumn?: boolean;
 };
 
 function formatDate(value: string | null | undefined) {
@@ -23,7 +24,7 @@ function getTotalDrinks(order: OrderResponse) {
   return (
     order.cocktail?.reduce(
       (total, cocktail) => total + (cocktail.quantity ?? 0),
-      0
+      0,
     ) ?? 0
   );
 }
@@ -32,19 +33,34 @@ function getModeLabel(mode: OrderResponse["mode"]) {
   return mode === "TIME" ? "Por evento" : "Por cantidad";
 }
 
+function getUserLabel(userId: number | null) {
+  return userId == null ? "Sin usuario" : `Usuario #${userId}`;
+}
+
 export function OrderHistoryTable({
   orders,
   onViewDetail,
+  showUserColumn = false,
 }: OrderHistoryTableProps) {
   return (
     <div className="overflow-hidden rounded-card border border-border-soft bg-surface-soft">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[860px] border-collapse">
+        <table
+          className={`w-full border-collapse ${
+            showUserColumn ? "min-w-[960px]" : "min-w-[860px]"
+          }`}
+        >
           <thead className="bg-surface">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-muted">
                 Orden
               </th>
+
+              {showUserColumn && (
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-muted">
+                  Usuario
+                </th>
+              )}
 
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-muted">
                 Modo
@@ -73,9 +89,9 @@ export function OrderHistoryTable({
           </thead>
 
           <tbody>
-            {orders.map((order) => (
+            {orders.map((order, index) => (
               <tr
-                key={order.id}
+                key={order.id ?? `${order.createdAt ?? "order"}-${index}`}
                 className="border-b border-border-soft last:border-0"
               >
                 <td className="px-4 py-4">
@@ -90,11 +106,17 @@ export function OrderHistoryTable({
                       </p>
 
                       <p className="text-xs text-text-muted">
-                        Usuario #{order.userId}
+                        Orden guardada
                       </p>
                     </div>
                   </div>
                 </td>
+
+                {showUserColumn && (
+                  <td className="px-4 py-4 text-sm text-text-muted">
+                    {getUserLabel(order.userId)}
+                  </td>
+                )}
 
                 <td className="px-4 py-4 text-sm text-text-muted">
                   {getModeLabel(order.mode)}
@@ -126,6 +148,7 @@ export function OrderHistoryTable({
                     type="button"
                     variant="secondary"
                     onClick={() => onViewDetail(order)}
+                    disabled={order.id == null}
                   >
                     <span className="flex items-center justify-center gap-2">
                       <Eye size={16} />
