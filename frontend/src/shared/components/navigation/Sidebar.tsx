@@ -1,4 +1,3 @@
-import { NavLink, useNavigate } from "react-router-dom";
 import {
   ClipboardList,
   History,
@@ -8,6 +7,7 @@ import {
   Package,
   User,
 } from "lucide-react";
+import { NavLink, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../../../features/auth/useAuth";
 import { ROUTES } from "../../constants/routes";
@@ -15,8 +15,28 @@ import { Button } from "../ui/Button";
 
 type SidebarProps = {
   onNavigate?: () => void;
+  isMobile?: boolean;
 };
-const publicNavItems = [
+
+const guestNavItems = [
+  {
+    label: "Dashboard",
+    path: ROUTES.dashboard,
+    icon: LayoutDashboard,
+  },
+  {
+    label: "Cócteles",
+    path: ROUTES.cocktails,
+    icon: Martini,
+  },
+  {
+    label: "Nueva orden",
+    path: ROUTES.createOrder,
+    icon: ClipboardList,
+  },
+];
+
+const authenticatedNavItems = [
   {
     label: "Dashboard",
     path: ROUTES.dashboard,
@@ -37,9 +57,6 @@ const publicNavItems = [
     path: ROUTES.createOrder,
     icon: ClipboardList,
   },
-];
-
-const authenticatedNavItems = [
   {
     label: "Historial",
     path: ROUTES.orders,
@@ -52,13 +69,13 @@ const authenticatedNavItems = [
   },
 ];
 
-export function Sidebar({ onNavigate }: SidebarProps) {
+export function Sidebar({ onNavigate, isMobile = false }: SidebarProps) {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
 
   const visibleNavItems = isAuthenticated
-  ? [...publicNavItems, ...authenticatedNavItems]
-  : publicNavItems;
+    ? authenticatedNavItems
+    : guestNavItems;
 
   function handleLogout() {
     logout();
@@ -72,8 +89,14 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   }
 
   return (
-   <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col overflow-y-auto border-r border-border-soft bg-surface px-4 py-6">
-      <div className="mb-8 pr-10 lg:pr-0">
+    <aside
+      className={
+        isMobile
+          ? "flex h-dvh w-full flex-col overflow-hidden border-r border-border-soft bg-surface px-4 py-6"
+          : "sticky top-0 flex h-screen w-64 shrink-0 flex-col overflow-hidden border-r border-border-soft bg-surface px-4 py-6"
+      }
+    >
+      <div className="mb-6 shrink-0 pr-10 lg:pr-0">
         <h1 className="font-heading text-xl font-bold text-primary">
           CocktailOps
         </h1>
@@ -83,7 +106,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         </p>
       </div>
 
-      <nav className="space-y-2">
+      <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
         {visibleNavItems.map((item) => {
           const Icon = item.icon;
 
@@ -107,7 +130,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         })}
       </nav>
 
-      <div className="mt-auto border-t border-border-soft pt-4">
+      <div className="mt-4 shrink-0 border-t border-border-soft pt-4">
         {isAuthenticated && user ? (
           <div className="space-y-3">
             <div>
