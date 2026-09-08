@@ -47,7 +47,7 @@ export function OrderHistoryTable({
       <div className="overflow-x-auto">
         <table
           className={`w-full border-collapse ${
-            showUserColumn ? "min-w-[960px]" : "min-w-[860px]"
+            showUserColumn ? "min-w-240" : "min-w-215"
           }`}
         >
           <thead className="bg-surface">

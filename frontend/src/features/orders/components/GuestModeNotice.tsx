@@ -1,35 +1,19 @@
-import { useNavigate } from "react-router-dom";
-
-import { Button } from "../../../shared/components/ui/Button";
-import { Card } from "../../../shared/components/ui/Card";
-import { ROUTES } from "../../../shared/constants/routes";
+import { Link } from "react-router-dom";
 
 export function GuestModeNotice() {
-  const navigate = useNavigate();
-
   return (
-    <Card className="border-primary/40 bg-surface">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="font-heading text-lg font-semibold text-text-main">
-            Estás usando CocktailOps en modo invitado
-          </h2>
-
-          <p className="mt-1 text-sm text-text-muted">
-           Podés generar la orden y consultar el resultado. Iniciá sesión para
-            asociar tus próximas órdenes a tu cuenta y acceder a ellas desde el
-            historial.
-          </p>
-        </div>
-
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => navigate(ROUTES.login)}
+    <div className="rounded-card border border-primary/25 bg-primary/10 px-3 py-2">
+      <p className="text-sm leading-6 text-text-muted">
+        <span className="font-semibold text-primary">Modo invitado:</span>{" "}
+        podés generar una orden temporal.{" "}
+        <Link
+          to="/login"
+          className="font-semibold text-primary underline-offset-4 hover:underline"
         >
-          Iniciar sesión
-        </Button>
-      </div>
-    </Card>
+          Iniciá sesión
+        </Link>{" "}
+        para guardarla en tu historial.
+      </p>
+    </div>
   );
 }

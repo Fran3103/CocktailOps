@@ -1,96 +1,76 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { SuccessToast } from "../../shared/components/feedback/SuccessToast";
-import { Button } from "../../shared/components/ui/Button";
-import { Card } from "../../shared/components/ui/Card";
-import { PageHeader } from "../../shared/components/ui/PageHeader";
 import { useAuth } from "../auth/useAuth";
-import { cocktailService } from "../cocktails/cocktailService";
-import type { Cocktail } from "../cocktails/cocktail.types";
-import { CocktailSelector } from "./components/CocktailSelector";
+
+import { useOrderCocktailSelection } from "./hooks/useOrderCocktailSelection";
+import { useOrderCocktailsCatalog } from "./hooks/useOrderCocktailsCatalog";
+import { useOrderCreationState } from "./hooks/useOrderCreationState";
+import { useOrderPayloads } from "./hooks/useOrderPayloads";
+import { useCreateOrder } from "./hooks/useCreateOrder";
+
+import { PageHeader } from "../../shared/components/ui/PageHeader";
+import { SuccessToast } from "../../shared/components/feedback/SuccessToast";
 import { CreatedOrderSummary } from "./components/CreatedOrderSummary";
-import { DrinksDetailsForm } from "./components/DrinksDetailsForm";
-import { EventDetailsForm } from "./components/EventDetailsForm";
+import { OrderCocktailsSection } from "./components/OrderCocktailsSection";
 import { GuestModeNotice } from "./components/GuestModeNotice";
-import { OrderModeSelector } from "./components/OrderModeSelector";
-import { OrderPresetSelector } from "./components/OrderPresetSelector";
-import { OrderSummaryPanel } from "./components/OrderSummaryPanel";
-import { SelectedCocktailsList } from "./components/SelectedCocktailsList";
-import { CalculationNotice } from "./components/CalculationNotice";
-import { orderPresets, type OrderPreset } from "./orderPresets";
-import {
-  buildSelectedCocktailsFromPreset,
-  distributeQuantitiesByWeight,
-} from "./orderPresetUtils";
-import { orderService } from "./orderService";
-import type {
-  CreateDrinksOrderRequest,
-  CreateTimeOrderRequest,
-  OrderMode,
-  OrderResponse,
-  SelectedOrderCocktail,
-} from "./order.types";
+import { OrderDetailsSection } from "./components/OrderDetailsSection";
+import { OrderReviewPanel } from "./components/OrderReviewPanel";
+
+import type { OrderWizardStep } from "./orderWizard.types";
+import { orderPresets } from "./orderPresets";
+import type { OrderMode } from "./order.types";
 
 export function CreateOrderPage() {
   const { isAuthenticated } = useAuth();
+  const {
+    isSubmitting,
+    setIsSubmitting,
+    submitError,
+    setSubmitError,
+    createdOrder,
+    setCreatedOrder,
+    showSuccessToast,
+    setShowSuccessToast,
+    createdOrderTimePayload,
+    setCreatedOrderTimePayload,
+    createdOrderDrinksPayload,
+    setCreatedOrderDrinksPayload,
+    clearResultState,
+    resetCreationState,
+  } = useOrderCreationState();
 
   const createdOrderRef = useRef<HTMLDivElement | null>(null);
 
   const [orderMode, setOrderMode] = useState<OrderMode>("TIME");
+  const [currentStep, setCurrentStep] = useState<OrderWizardStep>("DETAILS");
+  const [wizardError, setWizardError] = useState<string | null>(null);
 
   const [guests, setGuests] = useState("");
   const [durationHours, setDurationHours] = useState("");
   const [totalDrinks, setTotalDrinks] = useState("");
 
-  const [cocktails, setCocktails] = useState<Cocktail[]>([]);
-  const [selectedCocktails, setSelectedCocktails] = useState<
-    SelectedOrderCocktail[]
-  >([]);
-  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
+  const { cocktails, isLoadingCocktails, cocktailsError } =
+    useOrderCocktailsCatalog();
 
-  const [isLoadingCocktails, setIsLoadingCocktails] = useState(true);
-  const [cocktailsError, setCocktailsError] = useState<string | null>(null);
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-
-  const [createdOrder, setCreatedOrder] = useState<OrderResponse | null>(null);
-  const [showSuccessToast, setShowSuccessToast] = useState(false);
-
-  const [createdOrderTimePayload, setCreatedOrderTimePayload] =
-    useState<CreateTimeOrderRequest | null>(null);
-
-  const [createdOrderDrinksPayload, setCreatedOrderDrinksPayload] =
-    useState<CreateDrinksOrderRequest | null>(null);
-
-  useEffect(() => {
-    let ignore = false;
-
-    async function fetchCocktails() {
-      try {
-        const data = await cocktailService.getAll();
-
-        if (!ignore) {
-          setCocktails(data);
-          setCocktailsError(null);
-        }
-      } catch {
-        if (!ignore) {
-          setCocktailsError("No se pudieron cargar los cócteles.");
-        }
-      } finally {
-        if (!ignore) {
-          setIsLoadingCocktails(false);
-        }
-      }
-    }
-
-    void fetchCocktails();
-
-    return () => {
-      ignore = true;
-    };
-  }, []);
+  const {
+    selectedCocktails,
+    selectedPresetId,
+    assignedDrinks,
+    resetCocktailSelection,
+    handleApplyPreset,
+    handleAddCocktail,
+    handleWeightChange,
+    handleQuantityChange,
+    handleRemoveCocktail,
+    handleDistributeEqually,
+    distributeSelectedCocktailsByTotalDrinks,
+  } = useOrderCocktailSelection({
+    cocktails,
+    orderMode,
+    totalDrinks,
+    onClearResult: clearResultState,
+    onSubmitError: setSubmitError,
+  });
 
   useEffect(() => {
     if (createdOrder) {
@@ -101,138 +81,10 @@ export function CreateOrderPage() {
     }
   }, [createdOrder]);
 
-  useEffect(() => {
-    if (!showSuccessToast) {
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      setShowSuccessToast(false);
-    }, 3000);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [showSuccessToast]);
-
-  function clearResultState() {
-    setCreatedOrder(null);
-    setCreatedOrderTimePayload(null);
-    setCreatedOrderDrinksPayload(null);
-    setSubmitError(null);
-  }
-
   function handleOrderModeChange(mode: OrderMode) {
     setOrderMode(mode);
     clearResultState();
   }
-
-  function handleApplyPreset(preset: OrderPreset) {
-    clearResultState();
-
-    const { selectedCocktails: presetSelectedCocktails, missingCocktailNames } =
-      buildSelectedCocktailsFromPreset(preset, cocktails);
-
-    if (presetSelectedCocktails.length === 0) {
-      setSubmitError(
-        "No se pudo cargar la lista porque sus cócteles no están disponibles en el catálogo.",
-      );
-      return;
-    }
-
-    const numericTotalDrinks = Number(totalDrinks);
-
-    const shouldDistributeByTotalDrinks =
-      orderMode === "DRINKS" &&
-      numericTotalDrinks >= presetSelectedCocktails.length;
-
-    const nextSelectedCocktails = shouldDistributeByTotalDrinks
-      ? distributeQuantitiesByWeight(
-          presetSelectedCocktails,
-          numericTotalDrinks,
-        )
-      : presetSelectedCocktails;
-
-    setSelectedCocktails(nextSelectedCocktails);
-    setSelectedPresetId(preset.id);
-
-    if (missingCocktailNames.length > 0) {
-      setSubmitError(
-        `La lista se cargó parcialmente. Faltan en el catálogo: ${missingCocktailNames.join(", ")}.`,
-      );
-    }
-  }
-
-  function handleAddCocktail(cocktail: Cocktail) {
-    const cocktailId = cocktail.id;
-
-    const alreadySelected = selectedCocktails.some(
-      (selectedCocktail) => selectedCocktail.cocktailId === cocktailId,
-    );
-
-    if (alreadySelected) {
-      return;
-    }
-
-    setSelectedCocktails((currentCocktails) => [
-      ...currentCocktails,
-      {
-        cocktailId,
-        cocktailName: cocktail.name,
-        weight: 1,
-        quantity: 1,
-      },
-    ]);
-
-    setSelectedPresetId(null);
-    clearResultState();
-  }
-
-  function handleWeightChange(cocktailId: number, weight: number) {
-    const safeWeight = Number.isNaN(weight) || weight < 1 ? 1 : weight;
-
-    setSelectedCocktails((currentCocktails) =>
-      currentCocktails.map((cocktail) =>
-        cocktail.cocktailId === cocktailId
-          ? { ...cocktail, weight: safeWeight }
-          : cocktail,
-      ),
-    );
-
-    setSelectedPresetId(null);
-    clearResultState();
-  }
-
-  function handleQuantityChange(cocktailId: number, quantity: number) {
-    const safeQuantity = Number.isNaN(quantity) || quantity < 1 ? 1 : quantity;
-
-    setSelectedCocktails((currentCocktails) =>
-      currentCocktails.map((cocktail) =>
-        cocktail.cocktailId === cocktailId
-          ? { ...cocktail, quantity: safeQuantity }
-          : cocktail,
-      ),
-    );
-
-    setSelectedPresetId(null);
-    clearResultState();
-  }
-
-  function handleRemoveCocktail(cocktailId: number) {
-    setSelectedCocktails((currentCocktails) =>
-      currentCocktails.filter((cocktail) => cocktail.cocktailId !== cocktailId),
-    );
-
-    setSelectedPresetId(null);
-    clearResultState();
-  }
-
-  const assignedDrinks = useMemo(() => {
-    return selectedCocktails.reduce(
-      (total, cocktail) => total + cocktail.quantity,
-      0,
-    );
-  }, [selectedCocktails]);
 
   function handleTotalDrinksChange(value: string) {
     setTotalDrinks(value);
@@ -248,185 +100,110 @@ export function CreateOrderPage() {
       return;
     }
 
-    setSelectedCocktails((currentCocktails) =>
-      distributeQuantitiesByWeight(currentCocktails, numericTotalDrinks),
-    );
+    distributeSelectedCocktailsByTotalDrinks(numericTotalDrinks);
   }
 
-  function handleDistributeEqually() {
-    const numericTotalDrinks = Number(totalDrinks);
+  const { timePayload, drinksPayload, currentPayload } = useOrderPayloads({
+    orderMode,
+    guests,
+    durationHours,
+    totalDrinks,
+    assignedDrinks,
+    selectedCocktails,
+  });
 
-    if (numericTotalDrinks <= 0) {
-      setSubmitError("Indicá una cantidad total de tragos mayor a 0.");
-      return;
-    }
+  const { handleCreateOrder } = useCreateOrder({
+    orderMode,
+    isAuthenticated,
+    timePayload,
+    drinksPayload,
+    totalDrinks,
+    selectedCocktailsCount: selectedCocktails.length,
+    assignedDrinks,
+    setIsSubmitting,
+    setSubmitError,
+    setCreatedOrder,
+    setCreatedOrderTimePayload,
+    setCreatedOrderDrinksPayload,
+    setShowSuccessToast,
+  });
 
-    if (selectedCocktails.length === 0) {
-      setSubmitError("Seleccioná al menos un cóctel para dividir la cantidad.");
-      return;
-    }
+  const isDetailsStepComplete =
+    orderMode === "TIME"
+      ? Number(guests) > 0 && Number(durationHours) > 0
+      : Number(totalDrinks) > 0;
 
-    if (numericTotalDrinks < selectedCocktails.length) {
-      setSubmitError(
-        "El total de tragos debe ser mayor o igual a la cantidad de cócteles seleccionados.",
-      );
-      return;
-    }
+  const isCocktailsStepComplete = selectedCocktails.length > 0;
 
-    const baseQuantity = Math.floor(
-      numericTotalDrinks / selectedCocktails.length,
-    );
-
-    const remainder = numericTotalDrinks % selectedCocktails.length;
-
-    setSelectedCocktails((currentCocktails) =>
-      currentCocktails.map((cocktail, index) => ({
-        ...cocktail,
-        quantity: index < remainder ? baseQuantity + 1 : baseQuantity,
-      })),
-    );
-
-    setSelectedPresetId(null);
-    clearResultState();
+  function scrollToTop() {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   }
 
-  const timePayload = useMemo<CreateTimeOrderRequest | null>(() => {
-    const numericGuests = Number(guests);
-    const numericDurationHours = Number(durationHours);
-
-    if (
-      numericGuests <= 0 ||
-      numericDurationHours <= 0 ||
-      selectedCocktails.length === 0
-    ) {
-      return null;
-    }
-
-    return {
-      guests: numericGuests,
-      durationHours: numericDurationHours,
-      cocktails: selectedCocktails.map((cocktail) => ({
-        cocktailId: cocktail.cocktailId,
-        weight: cocktail.weight,
-      })),
-    };
-  }, [guests, durationHours, selectedCocktails]);
-
-  const drinksPayload = useMemo<CreateDrinksOrderRequest | null>(() => {
-    const numericTotalDrinks = Number(totalDrinks);
-
-    if (
-      numericTotalDrinks <= 0 ||
-      selectedCocktails.length === 0 ||
-      assignedDrinks !== numericTotalDrinks
-    ) {
-      return null;
-    }
-
-    return {
-      totalDrinks: numericTotalDrinks,
-      cocktails: selectedCocktails.map((cocktail) => ({
-        cocktailId: cocktail.cocktailId,
-        quantity: cocktail.quantity,
-      })),
-    };
-  }, [totalDrinks, selectedCocktails, assignedDrinks]);
-
-  const currentPayload = orderMode === "TIME" ? timePayload : drinksPayload;
-
-  async function handleCreateOrder() {
+  function handleNextStep() {
     setSubmitError(null);
-    setCreatedOrder(null);
-    setCreatedOrderTimePayload(null);
-    setCreatedOrderDrinksPayload(null);
+    setWizardError(null);
 
-    if (orderMode === "TIME") {
-      if (!timePayload) {
-        setSubmitError(
-          "Completá invitados, duración y al menos un cóctel para crear la orden.",
+    if (currentStep === "DETAILS") {
+      if (!isDetailsStepComplete) {
+        setWizardError(
+          orderMode === "TIME"
+            ? "Completá invitados y duración para continuar."
+            : "Indicá una cantidad total de tragos para continuar.",
         );
         return;
       }
 
-      setIsSubmitting(true);
-
-      try {
-        if (!isAuthenticated) {
-          const order = await orderService.createTimePreview(timePayload);
-          setCreatedOrder(order);
-        } else {
-          const order = await orderService.createTimeOrder(timePayload);
-          setCreatedOrder(order);
-        }
-
-        setCreatedOrderTimePayload(timePayload);
-        setCreatedOrderDrinksPayload(null);
-        setShowSuccessToast(true);
-      } catch {
-        setSubmitError(
-          "No se pudo crear la orden. Revisá los datos o intentá nuevamente.",
-        );
-      } finally {
-        setIsSubmitting(false);
-      }
-
+      setCurrentStep("COCKTAILS");
+      scrollToTop();
       return;
     }
 
-    if (!drinksPayload) {
-      const numericTotalDrinks = Number(totalDrinks);
+    if (currentStep === "COCKTAILS") {
+      if (!isCocktailsStepComplete) {
+        setWizardError("Seleccioná al menos un cóctel para continuar.");
+        return;
+      }
 
-      if (numericTotalDrinks <= 0) {
-        setSubmitError("Indicá una cantidad total de tragos mayor a 0.");
-      } else if (selectedCocktails.length === 0) {
-        setSubmitError("Seleccioná al menos un cóctel para crear la orden.");
-      } else {
-        setSubmitError(
-          `El total asignado debe ser igual al total de tragos. Actualmente asignaste ${assignedDrinks} de ${numericTotalDrinks}.`,
+      if (orderMode === "DRINKS" && !drinksPayload) {
+        setWizardError(
+          `El total asignado debe coincidir con el total de tragos. Actualmente asignaste ${assignedDrinks} de ${totalDrinks || "-"}.`,
         );
+        return;
       }
 
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      let order: OrderResponse;
-
-      if (!isAuthenticated) {
-        order = await orderService.createDrinksPreview(drinksPayload);
-      } else {
-        order = await orderService.createDrinksOrder(drinksPayload);
-      }
-
-      setCreatedOrder(order);
-      setCreatedOrderTimePayload(null);
-      setCreatedOrderDrinksPayload(drinksPayload);
-      setShowSuccessToast(true);
-    } catch {
-      setSubmitError(
-        "No se pudo crear la orden. Revisá los datos o intentá nuevamente.",
-      );
-    } finally {
-      setIsSubmitting(false);
+      setCurrentStep("SUMMARY");
+      scrollToTop();
     }
   }
 
+  function handlePreviousStep() {
+    setSubmitError(null);
+    setWizardError(null);
+
+    if (currentStep === "SUMMARY") {
+      setCurrentStep("COCKTAILS");
+      scrollToTop();
+      return;
+    }
+
+    if (currentStep === "COCKTAILS") {
+      setCurrentStep("DETAILS");
+      scrollToTop();
+    }
+  }
   function handleCreateNewOrder() {
     setOrderMode("TIME");
+    setCurrentStep("DETAILS");
     setGuests("");
     setDurationHours("");
     setTotalDrinks("");
-    setSelectedCocktails([]);
-    setSelectedPresetId(null);
-    setSubmitError(null);
-    setCreatedOrder(null);
-    setCreatedOrderTimePayload(null);
-    setCreatedOrderDrinksPayload(null);
-    setShowSuccessToast(false);
+    setWizardError(null);
+    resetCocktailSelection();
+    resetCreationState();
   }
-
   return (
     <section className="space-y-6">
       {showSuccessToast && createdOrder && (
@@ -441,12 +218,20 @@ export function CreateOrderPage() {
         />
       )}
 
-      <PageHeader
-        title="Nueva orden"
-        description="Armá una orden por evento o por cantidad total de tragos."
-      />
+      <div className="mx-auto w-full max-w-6xl space-y-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <PageHeader
+            title="Nueva orden"
+            description="Configurá un evento, seleccioná cócteles y generá la lista de insumos necesaria."
+          />
 
-      {!isAuthenticated && <GuestModeNotice />}
+          <div className="hidden rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-medium text-primary lg:block">
+            Flujo guiado de cálculo
+          </div>
+        </div>
+
+        {!isAuthenticated && <GuestModeNotice />}
+      </div>
 
       {createdOrder && (
         <div ref={createdOrderRef}>
@@ -463,155 +248,70 @@ export function CreateOrderPage() {
         </div>
       )}
 
-      <Card className="space-y-4">
-        <div>
-          <h2 className="font-heading text-xl font-semibold text-text-main">
-            Modo de cálculo
-          </h2>
-
-          <p className="mt-1 text-sm text-text-muted">
-            Elegí cómo querés calcular la orden.
-          </p>
-        </div>
-
-        <OrderModeSelector value={orderMode} onChange={handleOrderModeChange} />
-      </Card>
-
-      <Card className="space-y-4">
-        <div>
-          <h2 className="font-heading text-xl font-semibold text-text-main">
-            {orderMode === "TIME" ? "Datos del evento" : "Cantidad de tragos"}
-          </h2>
-
-          <p className="mt-1 text-sm text-text-muted">
-            {orderMode === "TIME"
-              ? "Calcula la orden según invitados, duración y peso de cada cóctel."
-              : "Calcula la orden según la cantidad total de tragos y la cantidad elegida por cóctel."}
-          </p>
-        </div>
-
-        {orderMode === "TIME" ? (
-          <EventDetailsForm
-            guests={guests}
-            durationHours={durationHours}
-            onGuestsChange={(value) => {
-              setGuests(value);
-              clearResultState();
-            }}
-            onDurationHoursChange={(value) => {
-              setDurationHours(value);
-              clearResultState();
-            }}
-          />
-        ) : (
-          <DrinksDetailsForm
-            totalDrinks={totalDrinks}
-            assignedDrinks={assignedDrinks}
-            selectedCocktailsCount={selectedCocktails.length}
-            onTotalDrinksChange={handleTotalDrinksChange}
-            onDistributeEqually={handleDistributeEqually}
-          />
-        )}
-      </Card>
-
-      {!isLoadingCocktails && !cocktailsError && (
-        <OrderPresetSelector
-          presets={orderPresets}
-          selectedPresetId={selectedPresetId}
-          onSelectPreset={handleApplyPreset}
-        />
-      )}
-
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_380px]">
-        <div className="space-y-6">
-          <Card className="space-y-4">
-            <div>
-              <h2 className="font-heading text-xl font-semibold text-text-main">
-                Cócteles seleccionados
-              </h2>
-
-              <p className="mt-1 text-sm text-text-muted">
-                {orderMode === "TIME"
-                  ? "El peso define la importancia relativa de cada cóctel."
-                  : "La cantidad define cuántos tragos de cada cóctel se calcularán."}
-              </p>
-            </div>
-
-            <SelectedCocktailsList
+      {!createdOrder && (
+        <div className="mx-auto w-full max-w-6xl space-y-6">
+          {currentStep === "DETAILS" && (
+            <OrderDetailsSection
               orderMode={orderMode}
+              guests={guests}
+              durationHours={durationHours}
+              totalDrinks={totalDrinks}
+              assignedDrinks={assignedDrinks}
+              selectedCocktailsCount={selectedCocktails.length}
+              error={wizardError}
+              onOrderModeChange={handleOrderModeChange}
+              onGuestsChange={(value) => {
+                setGuests(value);
+                clearResultState();
+              }}
+              onDurationHoursChange={(value) => {
+                setDurationHours(value);
+                clearResultState();
+              }}
+              onTotalDrinksChange={handleTotalDrinksChange}
+              onDistributeEqually={handleDistributeEqually}
+              onNext={handleNextStep}
+            />
+          )}
+
+          {currentStep === "COCKTAILS" && (
+            <OrderCocktailsSection
+              orderMode={orderMode}
+              cocktails={cocktails}
               selectedCocktails={selectedCocktails}
+              selectedPresetId={selectedPresetId}
+              presets={orderPresets}
+              isLoadingCocktails={isLoadingCocktails}
+              cocktailsError={cocktailsError}
+              onSelectPreset={handleApplyPreset}
+              onAddCocktail={handleAddCocktail}
               onWeightChange={handleWeightChange}
               onQuantityChange={handleQuantityChange}
               onRemoveCocktail={handleRemoveCocktail}
+              error={wizardError}
+              onPrevious={handlePreviousStep}
+              onNext={handleNextStep}
             />
-          </Card>
-
-          <div className="space-y-4">
-            <div>
-              <h2 className="font-heading text-xl font-semibold text-text-main">
-                Catálogo de cócteles
-              </h2>
-
-              <p className="mt-1 text-sm text-text-muted">
-                Elegí los cócteles que formarán parte de la orden.
-              </p>
-            </div>
-
-            {isLoadingCocktails && (
-              <Card>
-                <p className="text-text-muted">Cargando cócteles...</p>
-              </Card>
-            )}
-
-            {!isLoadingCocktails && cocktailsError && (
-              <Card>
-                <p className="text-danger">{cocktailsError}</p>
-              </Card>
-            )}
-
-            {!isLoadingCocktails && !cocktailsError && (
-              <CocktailSelector
-                cocktails={cocktails}
-                selectedCocktails={selectedCocktails}
-                onAddCocktail={handleAddCocktail}
-              />
-            )}
-          </div>
-        </div>
-       
-        <div className="xl:sticky xl:top-8 xl:self-start gap-4 flex flex-col">
-            <CalculationNotice  />
-          <OrderSummaryPanel
-            orderMode={orderMode}
-            guests={guests}
-            durationHours={durationHours}
-            totalDrinks={totalDrinks}
-            assignedDrinks={assignedDrinks}
-            selectedCocktails={selectedCocktails}
-            payload={currentPayload}
-          />
-
-          {submitError && (
-            <Card className="mt-4 border-danger/40">
-              <p className="text-sm text-danger">{submitError}</p>
-            </Card>
           )}
 
-          <Button
-            type="button"
-            fullWidth
-            className="mt-4"
-            onClick={handleCreateOrder}
-            disabled={isSubmitting}
-          >
-            {isSubmitting
-              ? "Generando orden..."
-              : isAuthenticated
-                ? "Crear y guardar orden"
-                : "Generar orden"}
-          </Button>
+          {currentStep === "SUMMARY" && (
+            <OrderReviewPanel
+              isAuthenticated={isAuthenticated}
+              isSubmitting={isSubmitting}
+              submitError={submitError}
+              orderMode={orderMode}
+              guests={guests}
+              durationHours={durationHours}
+              totalDrinks={totalDrinks}
+              assignedDrinks={assignedDrinks}
+              selectedCocktails={selectedCocktails}
+              payload={currentPayload}
+              onPrevious={handlePreviousStep}
+              onCreateOrder={handleCreateOrder}
+            />
+          )}
         </div>
-      </div>
+      )}
     </section>
   );
 }
