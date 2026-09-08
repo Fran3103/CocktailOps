@@ -3,8 +3,10 @@ import { useNavigate } from "react-router-dom";
 
 import { Button } from "../../shared/components/ui/Button";
 import { Card } from "../../shared/components/ui/Card";
+import { ErrorState } from "../../shared/utils/ErrorState";
 import { PageHeader } from "../../shared/components/ui/PageHeader";
 import { ROUTES } from "../../shared/constants/routes";
+import { getApiErrorMessage } from "../../shared/utils/getApiErrorMessage";
 import { useAuth } from "../auth/useAuth";
 import { OrderHistoryTable } from "./components/OrderHistoryTable";
 import { orderService } from "./orderService";
@@ -13,10 +15,27 @@ import type { OrderResponse } from "./order.types";
 type HistoryScope = "ALL" | "MINE";
 
 function getTotalProducts(orders: OrderResponse[]) {
-  return orders.reduce(
-    (total, order) => total + (order.items?.length ?? 0),
-    0,
-  );
+  return orders.reduce((total, order) => total + (order.items?.length ?? 0), 0);
+}
+
+function getHistoryErrorMessage(error: unknown, scope: HistoryScope) {
+  const isAllOrdersScope = scope === "ALL";
+
+  return getApiErrorMessage(error, {
+    defaultMessage: isAllOrdersScope
+      ? "No se pudieron cargar todas las órdenes."
+      : "No se pudieron cargar tus órdenes.",
+    networkMessage:
+      "No se pudo conectar con el servidor para cargar el historial.",
+    unauthorizedMessage:
+      "Tu sesión no está activa o venció. Iniciá sesión nuevamente para ver el historial.",
+    forbiddenMessage: isAllOrdersScope
+      ? "No tenés permisos para consultar el historial completo del sistema."
+      : "No tenés permisos para consultar este historial.",
+    notFoundMessage: "No se encontró el historial solicitado.",
+    serverMessage:
+      "Ocurrió un error en el servidor al cargar el historial. Intentá nuevamente más tarde.",
+  });
 }
 
 export function OrderHistoryPage() {
@@ -54,12 +73,10 @@ export function OrderHistoryPage() {
         if (!ignore) {
           setOrders(data);
         }
-      } catch {
+      } catch (loadOrdersError) {
         if (!ignore) {
           setError(
-            effectiveHistoryScope === "ALL"
-              ? "No se pudieron cargar todas las órdenes."
-              : "No se pudieron cargar tus órdenes.",
+            getHistoryErrorMessage(loadOrdersError, effectiveHistoryScope),
           );
         }
       } finally {
@@ -83,12 +100,8 @@ export function OrderHistoryPage() {
     try {
       const data = await fetchOrders(effectiveHistoryScope);
       setOrders(data);
-    } catch {
-      setError(
-        effectiveHistoryScope === "ALL"
-          ? "No se pudieron cargar todas las órdenes."
-          : "No se pudieron cargar tus órdenes.",
-      );
+    } catch (retryError) {
+      setError(getHistoryErrorMessage(retryError, effectiveHistoryScope));
     } finally {
       setIsLoading(false);
     }
@@ -181,13 +194,19 @@ export function OrderHistoryPage() {
       )}
 
       {!isLoading && error && (
-        <Card>
-          <p className="text-danger">{error}</p>
-
-          <Button type="button" className="mt-4" onClick={handleRetry}>
+        <ErrorState title="No pudimos cargar el historial" description={error}>
+          <Button type="button" onClick={handleRetry}>
             Reintentar
           </Button>
-        </Card>
+
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => navigate(ROUTES.dashboard)}
+          >
+            Volver al dashboard
+          </Button>
+        </ErrorState>
       )}
 
       {!isLoading && !error && sortedOrders.length === 0 && (

@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "../../shared/components/ui/Button";
 import { Card } from "../../shared/components/ui/Card";
+import { ErrorState } from "../../shared/utils/ErrorState";
 import { PageHeader } from "../../shared/components/ui/PageHeader";
+import { getApiErrorMessage } from "../../shared/utils/getApiErrorMessage";
 import { cocktailService } from "./cocktailService";
 import type { Cocktail, CocktailPreparationType } from "./cocktail.types";
 import { CocktailGrid } from "./components/CocktailGrid";
@@ -44,6 +46,20 @@ const preparationFilters: PreparationFilter[] = [
   },
 ];
 
+function getCocktailsErrorMessage(error: unknown) {
+  return getApiErrorMessage(error, {
+    defaultMessage: "No se pudieron cargar los cócteles.",
+    networkMessage:
+      "No se pudo conectar con el servidor para cargar los cócteles.",
+    unauthorizedMessage:
+      "Tu sesión no está activa o venció. Iniciá sesión nuevamente.",
+    forbiddenMessage: "No tenés permisos para consultar los cócteles.",
+    notFoundMessage: "No se encontró el catálogo de cócteles.",
+    serverMessage:
+      "Ocurrió un error en el servidor al cargar los cócteles. Intentá nuevamente más tarde.",
+  });
+}
+
 export function CocktailsPage() {
   const [cocktails, setCocktails] = useState<Cocktail[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -69,9 +85,9 @@ export function CocktailsPage() {
           setCocktails(data);
           setError(null);
         }
-      } catch {
+      } catch (fetchCocktailsError) {
         if (!ignore) {
-          setError("No se pudieron cargar los cócteles.");
+          setError(getCocktailsErrorMessage(fetchCocktailsError));
         }
       } finally {
         if (!ignore) {
@@ -94,8 +110,8 @@ export function CocktailsPage() {
     try {
       const data = await cocktailService.getAll();
       setCocktails(data);
-    } catch {
-      setError("No se pudieron cargar los cócteles.");
+    } catch (retryError) {
+      setError(getCocktailsErrorMessage(retryError));
     } finally {
       setIsLoading(false);
     }
@@ -205,14 +221,15 @@ export function CocktailsPage() {
         </Card>
       )}
 
-      {error && (
-        <Card>
-          <p className="text-danger">{error}</p>
-
-          <Button type="button" className="mt-4" onClick={handleRetry}>
+      {!isLoading && error && (
+        <ErrorState
+          title="No pudimos cargar los cócteles"
+          description={error}
+        >
+          <Button type="button" onClick={handleRetry}>
             Reintentar
           </Button>
-        </Card>
+        </ErrorState>
       )}
 
       {!isLoading && !error && filteredCocktails.length === 0 && (
@@ -231,12 +248,11 @@ export function CocktailsPage() {
           />
 
           <div className="flex flex-col items-center gap-3 rounded-card border border-border-soft bg-surface-soft px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-text-muted text-center" >
+            <p className="text-center text-sm text-text-muted">
               Mostrando {firstVisibleCocktail}-{lastVisibleCocktail} de{" "}
-              {filteredCocktails.length} cócteles filtrados. 
+              {filteredCocktails.length} cócteles filtrados.
               <br />
-              Total del catálogo:{" "}
-              {cocktails.length}.
+              Total del catálogo: {cocktails.length}.
             </p>
 
             {totalPages > 1 && (

@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 
 import { Button } from "../../shared/components/ui/Button";
-import { Card } from "../../shared/components/ui/Card";
+import { ErrorState } from "../../shared/utils/ErrorState";
 import { PageHeader } from "../../shared/components/ui/PageHeader";
 import { ROUTES } from "../../shared/constants/routes";
 
@@ -9,26 +9,29 @@ export function UnauthorizedPage() {
   const navigate = useNavigate();
 
   return (
-    <section>
+    <section className="space-y-6">
       <PageHeader
         title="Acceso denegado"
-        description="No tenés permisos suficientes para acceder a esta sección."
+        description="Esta sección requiere permisos adicionales."
       />
 
-      <Card className="mt-6 max-w-xl">
-        <p className="text-text-muted">
-          Esta funcionalidad está reservada para usuarios con permisos
-          específicos dentro de CocktailOps.
-        </p>
+      <ErrorState
+        status="403"
+        title="No tenés permisos para acceder"
+        description="La ruta existe, pero tu usuario no tiene autorización para ver esta sección. Si necesitás acceder como administrador, iniciá sesión con una cuenta que tenga ese rol."
+      >
+        <Button type="button" onClick={() => navigate(ROUTES.dashboard)}>
+          Volver al dashboard
+        </Button>
 
         <Button
           type="button"
-          className="mt-4"
-          onClick={() => navigate(ROUTES.dashboard)}
+          variant="secondary"
+          onClick={() => navigate(ROUTES.createOrder)}
         >
-          Volver al dashboard
+          Crear una orden
         </Button>
-      </Card>
+      </ErrorState>
     </section>
   );
 }

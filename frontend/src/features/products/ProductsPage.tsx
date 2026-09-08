@@ -2,12 +2,27 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "../../shared/components/ui/Button";
 import { Card } from "../../shared/components/ui/Card";
+import { ErrorState } from "../../shared/utils/ErrorState";
 import { PageHeader } from "../../shared/components/ui/PageHeader";
-import { productService } from "./productService";
-import type { Product } from "./product.types";
+import { getApiErrorMessage } from "../../shared/utils/getApiErrorMessage";
 import { ProductFilters } from "./components/ProductFilters";
 import { ProductTable } from "./components/ProductTable";
+import { productService } from "./productService";
+import type { Product } from "./product.types";
 
+function getProductsErrorMessage(error: unknown) {
+  return getApiErrorMessage(error, {
+    defaultMessage: "No se pudieron cargar los productos.",
+    networkMessage:
+      "No se pudo conectar con el servidor para cargar los productos.",
+    unauthorizedMessage:
+      "Tu sesión no está activa o venció. Iniciá sesión nuevamente.",
+    forbiddenMessage: "No tenés permisos para consultar los productos.",
+    notFoundMessage: "No se encontró el catálogo de productos.",
+    serverMessage:
+      "Ocurrió un error en el servidor al cargar los productos. Intentá nuevamente más tarde.",
+  });
+}
 
 export function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -26,9 +41,9 @@ export function ProductsPage() {
           setProducts(data);
           setError(null);
         }
-      } catch {
+      } catch (fetchProductsError) {
         if (!ignore) {
-          setError("No se pudieron cargar los productos.");
+          setError(getProductsErrorMessage(fetchProductsError));
         }
       } finally {
         if (!ignore) {
@@ -51,8 +66,8 @@ export function ProductsPage() {
     try {
       const data = await productService.getAll();
       setProducts(data);
-    } catch {
-      setError("No se pudieron cargar los productos.");
+    } catch (retryError) {
+      setError(getProductsErrorMessage(retryError));
     } finally {
       setIsLoading(false);
     }
@@ -100,14 +115,15 @@ export function ProductsPage() {
         </Card>
       )}
 
-      {error && (
-        <Card>
-          <p className="text-danger">{error}</p>
-
-          <Button type="button" className="mt-4" onClick={handleRetry}>
+      {!isLoading && error && (
+        <ErrorState
+          title="No pudimos cargar los productos"
+          description={error}
+        >
+          <Button type="button" onClick={handleRetry}>
             Reintentar
           </Button>
-        </Card>
+        </ErrorState>
       )}
 
       {!isLoading && !error && filteredProducts.length === 0 && (

@@ -4,15 +4,16 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { Button } from "../../shared/components/ui/Button";
 import { Card } from "../../shared/components/ui/Card";
+import { ErrorState } from "../../shared/utils/ErrorState";
 import { PageHeader } from "../../shared/components/ui/PageHeader";
 import { ROUTES } from "../../shared/constants/routes";
+import { getApiErrorMessage } from "../../shared/utils/getApiErrorMessage";
+import { useAuth } from "../auth/useAuth";
 import { OrderCocktailsTable } from "./components/OrderCocktailsTable";
 import { OrderItemsTable } from "./components/OrderItemsTable";
-import { orderService } from "./orderService";
-
 import { OrderPdfDownloadButton } from "./components/OrderPdfDownloadButton";
+import { orderService } from "./orderService";
 import type { OrderResponse } from "./order.types";
-import { useAuth } from "../auth/useAuth";
 
 type OrderDetailLocationState = {
   order?: OrderResponse;
@@ -36,6 +37,19 @@ function getTotalDrinks(order: OrderResponse) {
       0,
     ) ?? 0
   );
+}
+
+function getOrderDetailErrorMessage(error: unknown) {
+  return getApiErrorMessage(error, {
+    defaultMessage: "No se pudo cargar el detalle de la orden.",
+    networkMessage: "No se pudo conectar con el servidor para cargar la orden.",
+    unauthorizedMessage:
+      "Tu sesión no está activa o venció. Iniciá sesión nuevamente para ver esta orden.",
+    forbiddenMessage: "No tenés permisos para ver esta orden.",
+    notFoundMessage: "No se encontró la orden solicitada.",
+    serverMessage:
+      "Ocurrió un error en el servidor al cargar el detalle de la orden. Intentá nuevamente más tarde.",
+  });
 }
 
 export function OrderDetailPage() {
@@ -77,9 +91,9 @@ export function OrderDetailPage() {
           setOrder(data);
           setError(null);
         }
-      } catch {
+      } catch (fetchOrderError) {
         if (!ignore) {
-          setError("No se pudo cargar el detalle de la orden.");
+          setError(getOrderDetailErrorMessage(fetchOrderError));
         }
       } finally {
         if (!ignore) {
@@ -103,17 +117,23 @@ export function OrderDetailPage() {
           description="El identificador de la orden no es válido."
         />
 
-        <Card>
-          <p className="text-danger">ID de orden inválido.</p>
+        <ErrorState
+          status="400"
+          title="ID de orden inválido"
+          description="La URL no contiene un identificador válido para consultar una orden guardada."
+        >
+          <Button type="button" onClick={() => navigate(ROUTES.orders)}>
+            Volver al historial
+          </Button>
 
           <Button
             type="button"
-            className="mt-4"
+            variant="secondary"
             onClick={() => navigate(ROUTES.createOrder)}
           >
             Crear una nueva orden
           </Button>
-        </Card>
+        </ErrorState>
       </section>
     );
   }
@@ -141,26 +161,34 @@ export function OrderDetailPage() {
           description="No se pudo mostrar la información de esta orden."
         />
 
-        <Card>
-          <p className="text-danger">
-            {error ?? "No se encontró la orden solicitada."}
-          </p>
+        <ErrorState
+          title="No pudimos cargar la orden"
+          description={error ?? "No se encontró la orden solicitada."}
+        >
+          <Button type="button" onClick={() => navigate(ROUTES.orders)}>
+            Volver al historial
+          </Button>
 
           <Button
             type="button"
-            className="mt-4"
+            variant="secondary"
             onClick={() => navigate(ROUTES.createOrder)}
           >
             Crear una nueva orden
           </Button>
-        </Card>
+        </ErrorState>
       </section>
     );
   }
 
   const totalDrinks = getTotalDrinks(order);
   const isTimeMode = order.mode === "TIME";
-  const orderOwerLabel = order.userId  == null ? "Orden temporal": user?.id === order.userId ? `Orden asociada a ${user.firstName}` : `Orden de usuario #${order.userId}`; 
+  const orderOwnerLabel =
+    order.userId == null
+      ? "Orden temporal"
+      : user?.id === order.userId
+        ? `Orden asociada a ${user.firstName}`
+        : `Orden de usuario #${order.userId}`;
 
   if (order.id == null) {
     return (
@@ -170,22 +198,27 @@ export function OrderDetailPage() {
           description="Esta orden no tiene un identificador válido."
         />
 
-        <Card>
-          <p className="text-danger">
-            Esta orden no puede recuperarse como orden guardada.
-          </p>
+        <ErrorState
+          status="400"
+          title="Orden sin ID"
+          description="Esta orden no puede recuperarse como orden guardada porque no tiene identificador."
+        >
+          <Button type="button" onClick={() => navigate(ROUTES.createOrder)}>
+            Crear una nueva orden
+          </Button>
 
           <Button
             type="button"
-            className="mt-4"
-            onClick={() => navigate(ROUTES.createOrder)}
+            variant="secondary"
+            onClick={() => navigate(ROUTES.orders)}
           >
-            Crear una nueva orden
+            Volver al historial
           </Button>
-        </Card>
+        </ErrorState>
       </section>
     );
   }
+
   return (
     <section className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -194,7 +227,7 @@ export function OrderDetailPage() {
           description="Detalle del cálculo generado por CocktailOps."
         />
 
-        <div className="flex flex-col gap-3 sm:flex-row ">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <OrderPdfDownloadButton
             source={{ type: "SAVED_ORDER", orderId: order.id }}
           />
@@ -255,7 +288,7 @@ export function OrderDetailPage() {
 
           <span className="flex items-center gap-2">
             <ClipboardList size={16} />
-            {orderOwerLabel}
+            {orderOwnerLabel}
           </span>
         </div>
       </Card>

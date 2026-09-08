@@ -1,12 +1,13 @@
-import { isAxiosError } from "axios";
 import { ClipboardList, GlassWater, History } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { ROUTES } from "../../../shared/constants/routes";
 import { Button } from "../../../shared/components/ui/Button";
 import { Card } from "../../../shared/components/ui/Card";
+import { ErrorState } from "../../../shared/utils/ErrorState";
 import { PageHeader } from "../../../shared/components/ui/PageHeader";
+import { ROUTES } from "../../../shared/constants/routes";
+import { getApiErrorMessage } from "../../../shared/utils/getApiErrorMessage";
 import { orderService } from "../../orders/orderService";
 import type { OrderResponse } from "../../orders/order.types";
 import { CocktailsPreview } from "./CocktailsPreview";
@@ -31,21 +32,17 @@ function getOrdersTotalDrinks(orders: OrderResponse[]) {
 }
 
 function getOrdersErrorMessage(error: unknown) {
-  if (!isAxiosError(error)) {
-    return "No se pudieron cargar tus órdenes.";
-  }
-
-  const status = error.response?.status;
-
-  if (status === 401) {
-    return "Tu sesión venció. Iniciá sesión nuevamente.";
-  }
-
-  if (status === 403) {
-    return "No tenés permisos para ver estas órdenes.";
-  }
-
-  return "No se pudieron cargar tus órdenes.";
+  return getApiErrorMessage(error, {
+    defaultMessage: "No se pudieron cargar tus órdenes.",
+    networkMessage:
+      "No se pudo conectar con el servidor para cargar tu dashboard.",
+    unauthorizedMessage:
+      "Tu sesión no está activa o venció. Iniciá sesión nuevamente.",
+    forbiddenMessage: "No tenés permisos para ver estas órdenes.",
+    notFoundMessage: "No se encontró el historial de tus órdenes.",
+    serverMessage:
+      "Ocurrió un error en el servidor al cargar tu dashboard. Intentá nuevamente más tarde.",
+  });
 }
 
 function sortOrdersByDateDesc(orders: OrderResponse[]) {
@@ -138,23 +135,19 @@ export function UserDashboard() {
           description="No pudimos cargar el resumen de tus órdenes."
         />
 
-        <Card className="border-danger/30 bg-surface-soft/80">
-          <p className="text-sm text-danger">{error}</p>
+        <ErrorState title="No pudimos cargar tu dashboard" description={error}>
+          <Button type="button" onClick={loadOrders}>
+            Reintentar
+          </Button>
 
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-            <Button type="button" onClick={loadOrders}>
-              Reintentar
-            </Button>
-
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => navigate(ROUTES.login)}
-            >
-              Ir al login
-            </Button>
-          </div>
-        </Card>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => navigate(ROUTES.login)}
+          >
+            Ir al login
+          </Button>
+        </ErrorState>
 
         <CocktailsPreview />
       </section>
