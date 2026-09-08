@@ -13,6 +13,9 @@ type CocktailSelectorProps = {
   showHeader?: boolean;
   footer?: ReactNode;
   embedded?: boolean;
+  searchTerm?: string;
+  onSearchTermChange?: (value: string) => void;
+  totalCocktailsCount?: number;
 };
 
 const preparationLabels: Record<string, string> = {
@@ -51,11 +54,30 @@ export function CocktailSelector({
   showHeader = true,
   embedded = false,
   footer,
+  searchTerm,
+  onSearchTermChange,
+  totalCocktailsCount,
 }: CocktailSelectorProps) {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [internalSearchTerm, setInternalSearchTerm] = useState("");
 
-  const filteredCocktails = useMemo(() => {
-    const normalizedSearch = searchTerm.toLowerCase().trim();
+  const isSearchControlled = searchTerm !== undefined;
+  const resolvedSearchTerm = searchTerm ?? internalSearchTerm;
+
+  function handleSearchTermChange(value: string) {
+    if (isSearchControlled) {
+      onSearchTermChange?.(value);
+      return;
+    }
+
+    setInternalSearchTerm(value);
+  }
+
+  const visibleCocktails = useMemo(() => {
+    if (isSearchControlled) {
+      return cocktails;
+    }
+
+    const normalizedSearch = resolvedSearchTerm.toLowerCase().trim();
 
     if (!normalizedSearch) {
       return cocktails;
@@ -83,7 +105,9 @@ export function CocktailSelector({
         ingredients.includes(normalizedSearch)
       );
     });
-  }, [cocktails, searchTerm]);
+  }, [cocktails, isSearchControlled, resolvedSearchTerm]);
+
+  const totalCount = totalCocktailsCount ?? cocktails.length;
 
   const content = (
     <div className="space-y-4">
@@ -109,8 +133,8 @@ export function CocktailSelector({
 
         <input
           type="search"
-          value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
+          value={resolvedSearchTerm}
+          onChange={(event) => handleSearchTermChange(event.target.value)}
           placeholder="Buscar cóctel..."
           className="w-full rounded-control border border-border bg-background py-2 pl-10 pr-4 text-sm text-text-main outline-none placeholder:text-text-muted focus:border-primary"
         />
@@ -119,7 +143,7 @@ export function CocktailSelector({
       <div className="rounded-card border border-border-soft bg-background/30">
         <div className="flex flex-col gap-1 border-b border-border-soft px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
           <p className="text-text-muted">
-            Mostrando {filteredCocktails.length} de {cocktails.length}
+            Mostrando {visibleCocktails.length} de {totalCount}
           </p>
 
           <p className="text-primary">
@@ -127,7 +151,7 @@ export function CocktailSelector({
           </p>
         </div>
 
-        {filteredCocktails.length === 0 ? (
+        {visibleCocktails.length === 0 ? (
           <div className="px-4 py-6">
             <p className="text-sm text-text-muted">
               No se encontraron cócteles para esa búsqueda.
@@ -135,7 +159,7 @@ export function CocktailSelector({
           </div>
         ) : (
           <div className="divide-y divide-border-soft">
-            {filteredCocktails.map((cocktail) => {
+            {visibleCocktails.map((cocktail) => {
               const selected = isSelected(cocktail, selectedCocktails);
               const preparationLabel = getPreparationLabel(
                 cocktail.preparationType,
@@ -213,6 +237,7 @@ export function CocktailSelector({
             })}
           </div>
         )}
+
         {footer && (
           <div className="border-t border-border-soft px-4 py-3">{footer}</div>
         )}

@@ -19,6 +19,7 @@ const DESKTOP_PRESET_PAGE_SIZE = 4;
 const MOBILE_MEDIA_QUERY = "(max-width: 767px)";
 
 type CocktailSelectionMode = "PRESETS" | "MANUAL";
+
 type CocktailPreparationFilter =
   | "ALL"
   | "DIRECT"
@@ -36,6 +37,13 @@ const preparationFilters: {
   { value: "STIRRED", label: "Refrescados" },
   { value: "FROZEN", label: "Frozen" },
 ];
+
+const preparationSearchLabels: Record<string, string> = {
+  DIRECT: "directo directos",
+  SHAKEN: "batido batidos",
+  STIRRED: "refrescado refrescados",
+  FROZEN: "frozen",
+};
 
 type OrderCocktailsSectionProps = {
   orderMode: OrderMode;
@@ -94,8 +102,11 @@ export function OrderCocktailsSection({
 }: OrderCocktailsSectionProps) {
   const [selectionMode, setSelectionMode] =
     useState<CocktailSelectionMode>("PRESETS");
+
   const [preparationFilter, setPreparationFilter] =
     useState<CocktailPreparationFilter>("ALL");
+
+  const [catalogSearchTerm, setCatalogSearchTerm] = useState("");
 
   const [catalogPage, setCatalogPage] = useState(1);
   const [presetPage, setPresetPage] = useState(1);
@@ -125,19 +136,44 @@ export function OrderCocktailsSection({
   }, []);
 
   const filteredCatalogCocktails = useMemo(() => {
-    if (preparationFilter === "ALL") {
-      return cocktails;
-    }
+    const normalizedSearch = catalogSearchTerm.toLowerCase().trim();
 
-    return cocktails.filter(
-      (cocktail) => cocktail.preparationType === preparationFilter,
-    );
-  }, [cocktails, preparationFilter]);
+    return cocktails.filter((cocktail) => {
+      const matchesPreparation =
+        preparationFilter === "ALL" ||
+        cocktail.preparationType === preparationFilter;
+
+      if (!matchesPreparation) {
+        return false;
+      }
+
+      if (!normalizedSearch) {
+        return true;
+      }
+
+      const searchableText = [
+        cocktail.name,
+        cocktail.description ?? "",
+        cocktail.preparationType ?? "",
+        cocktail.preparationType
+          ? preparationSearchLabels[cocktail.preparationType] ?? ""
+          : "",
+        ...(cocktail.ingredients?.map(
+          (ingredient) => ingredient.productName ?? "",
+        ) ?? []),
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return searchableText.includes(normalizedSearch);
+    });
+  }, [cocktails, preparationFilter, catalogSearchTerm]);
 
   const totalCatalogPages = Math.max(
     1,
     Math.ceil(filteredCatalogCocktails.length / catalogPageSize),
   );
+
   const safeCatalogPage = Math.min(catalogPage, totalCatalogPages);
   const catalogStartIndex = (safeCatalogPage - 1) * catalogPageSize;
   const catalogEndIndex = catalogStartIndex + catalogPageSize;
@@ -183,6 +219,11 @@ export function OrderCocktailsSection({
 
   function handlePreparationFilterChange(filter: CocktailPreparationFilter) {
     setPreparationFilter(filter);
+    setCatalogPage(1);
+  }
+
+  function handleCatalogSearchTermChange(value: string) {
+    setCatalogSearchTerm(value);
     setCatalogPage(1);
   }
 
@@ -311,6 +352,7 @@ export function OrderCocktailsSection({
               );
             })}
           </div>
+
           {isLoadingCocktails && (
             <div className="rounded-card border border-border-soft bg-background/30 p-4">
               <p className="text-sm text-text-muted">Cargando cócteles...</p>
@@ -324,46 +366,47 @@ export function OrderCocktailsSection({
           )}
 
           {!isLoadingCocktails && !cocktailsError && (
-            <>
-              <CocktailSelector
-                embedded
-                showHeader={false}
-                cocktails={paginatedCocktails}
-                selectedCocktails={selectedCocktails}
-                onAddCocktail={onAddCocktail}
-                footer={
-                  filteredCatalogCocktails.length > catalogPageSize && (
-                    <div className="space-y-3 border-t border-border-soft pt-4">
-                      <p className="text-sm text-text-muted">
-                        Página {safeCatalogPage} de {totalCatalogPages}
-                      </p>
+            <CocktailSelector
+              embedded
+              showHeader={false}
+              cocktails={paginatedCocktails}
+              selectedCocktails={selectedCocktails}
+              onAddCocktail={onAddCocktail}
+              searchTerm={catalogSearchTerm}
+              onSearchTermChange={handleCatalogSearchTermChange}
+              totalCocktailsCount={filteredCatalogCocktails.length}
+              footer={
+                filteredCatalogCocktails.length > catalogPageSize ? (
+                  <div className="space-y-3">
+                    <p className="text-sm text-text-muted">
+                      Página {safeCatalogPage} de {totalCatalogPages}
+                    </p>
 
-                      <div className="grid grid-cols-2 gap-3">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          onClick={handlePreviousCatalogPage}
-                          disabled={safeCatalogPage === 1}
-                          fullWidth
-                        >
-                          Anterior
-                        </Button>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={handlePreviousCatalogPage}
+                        disabled={safeCatalogPage === 1}
+                        fullWidth
+                      >
+                        Anterior
+                      </Button>
 
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          onClick={handleNextCatalogPage}
-                          disabled={safeCatalogPage === totalCatalogPages}
-                          fullWidth
-                        >
-                          Siguiente
-                        </Button>
-                      </div>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={handleNextCatalogPage}
+                        disabled={safeCatalogPage === totalCatalogPages}
+                        fullWidth
+                      >
+                        Siguiente
+                      </Button>
                     </div>
-                  )
-                }
-              />
-            </>
+                  </div>
+                ) : null
+              }
+            />
           )}
         </div>
       )}
@@ -400,9 +443,10 @@ export function OrderCocktailsSection({
         <Button type="button" variant="secondary" onClick={onPrevious}>
           Volver
         </Button>
+
         <Button type="button" onClick={onNext}>
           Siguiente: revisar cálculo
-        </Button>{" "}
+        </Button>
       </div>
     </Card>
   );
