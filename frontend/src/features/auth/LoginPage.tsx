@@ -6,6 +6,7 @@ import { Button } from "../../shared/components/ui/Button";
 import { Card } from "../../shared/components/ui/Card";
 import { Input } from "../../shared/components/ui/Input";
 import { ROUTES } from "../../shared/constants/routes";
+import { PasswordInput } from "../../shared/components/ui/PasswordInput";
 
 import type { LoginRequest } from "./auth.types";
 import { useAuth } from "./useAuth";
@@ -13,7 +14,9 @@ import { useAuth } from "./useAuth";
 export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname ?? ROUTES.dashboard;
+  const from =
+    (location.state as { from?: { pathname: string } } | null)?.from
+      ?.pathname ?? ROUTES.dashboard;
   const { login } = useAuth();
 
   const [formData, setFormData] = useState<LoginRequest>({
@@ -69,9 +72,7 @@ export function LoginPage() {
           autoComplete="email"
           required
         />
-
-        <Input
-          type="password"
+        <PasswordInput
           placeholder="Contraseña"
           name="password"
           value={formData.password}

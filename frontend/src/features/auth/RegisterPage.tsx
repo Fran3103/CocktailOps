@@ -6,6 +6,7 @@ import { Button } from "../../shared/components/ui/Button";
 import { Card } from "../../shared/components/ui/Card";
 import { Input } from "../../shared/components/ui/Input";
 import { ROUTES } from "../../shared/constants/routes";
+import { PasswordInput } from "../../shared/components/ui/PasswordInput";
 
 import type { RegisterRequest } from "./auth.types";
 import { useAuth } from "./useAuth";
@@ -90,13 +91,12 @@ export function RegisterPage() {
           required
         />
 
-        <Input
-          type="password"
+        <PasswordInput
           placeholder="Contraseña"
           name="password"
           value={formData.password}
           onChange={handleChange}
-          autoComplete="new-password"
+          autoComplete="current-password"
           required
         />
 
