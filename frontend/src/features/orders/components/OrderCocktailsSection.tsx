@@ -19,6 +19,23 @@ const DESKTOP_PRESET_PAGE_SIZE = 4;
 const MOBILE_MEDIA_QUERY = "(max-width: 767px)";
 
 type CocktailSelectionMode = "PRESETS" | "MANUAL";
+type CocktailPreparationFilter =
+  | "ALL"
+  | "DIRECT"
+  | "SHAKEN"
+  | "STIRRED"
+  | "FROZEN";
+
+const preparationFilters: {
+  value: CocktailPreparationFilter;
+  label: string;
+}[] = [
+  { value: "ALL", label: "Todos" },
+  { value: "DIRECT", label: "Directos" },
+  { value: "SHAKEN", label: "Batidos" },
+  { value: "STIRRED", label: "Refrescados" },
+  { value: "FROZEN", label: "Frozen" },
+];
 
 type OrderCocktailsSectionProps = {
   orderMode: OrderMode;
@@ -77,6 +94,8 @@ export function OrderCocktailsSection({
 }: OrderCocktailsSectionProps) {
   const [selectionMode, setSelectionMode] =
     useState<CocktailSelectionMode>("PRESETS");
+  const [preparationFilter, setPreparationFilter] =
+    useState<CocktailPreparationFilter>("ALL");
 
   const [catalogPage, setCatalogPage] = useState(1);
   const [presetPage, setPresetPage] = useState(1);
@@ -105,18 +124,27 @@ export function OrderCocktailsSection({
     };
   }, []);
 
+  const filteredCatalogCocktails = useMemo(() => {
+    if (preparationFilter === "ALL") {
+      return cocktails;
+    }
+
+    return cocktails.filter(
+      (cocktail) => cocktail.preparationType === preparationFilter,
+    );
+  }, [cocktails, preparationFilter]);
+
   const totalCatalogPages = Math.max(
     1,
-    Math.ceil(cocktails.length / catalogPageSize),
+    Math.ceil(filteredCatalogCocktails.length / catalogPageSize),
   );
-
   const safeCatalogPage = Math.min(catalogPage, totalCatalogPages);
   const catalogStartIndex = (safeCatalogPage - 1) * catalogPageSize;
   const catalogEndIndex = catalogStartIndex + catalogPageSize;
 
   const paginatedCocktails = useMemo(() => {
-    return cocktails.slice(catalogStartIndex, catalogEndIndex);
-  }, [cocktails, catalogStartIndex, catalogEndIndex]);
+    return filteredCatalogCocktails.slice(catalogStartIndex, catalogEndIndex);
+  }, [filteredCatalogCocktails, catalogStartIndex, catalogEndIndex]);
 
   const totalPresetPages = Math.max(
     1,
@@ -151,6 +179,11 @@ export function OrderCocktailsSection({
 
   function handleNextPresetPage() {
     setPresetPage((currentPage) => Math.min(currentPage + 1, totalPresetPages));
+  }
+
+  function handlePreparationFilterChange(filter: CocktailPreparationFilter) {
+    setPreparationFilter(filter);
+    setCatalogPage(1);
   }
 
   return (
@@ -258,6 +291,26 @@ export function OrderCocktailsSection({
 
       {selectionMode === "MANUAL" && (
         <div className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            {preparationFilters.map((filter) => {
+              const isActive = preparationFilter === filter.value;
+
+              return (
+                <button
+                  key={filter.value}
+                  type="button"
+                  onClick={() => handlePreparationFilterChange(filter.value)}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                    isActive
+                      ? "border-primary bg-primary text-background"
+                      : "border-border-soft bg-background/40 text-text-muted hover:border-primary/60 hover:text-text-main"
+                  }`}
+                >
+                  {filter.label}
+                </button>
+              );
+            })}
+          </div>
           {isLoadingCocktails && (
             <div className="rounded-card border border-border-soft bg-background/30 p-4">
               <p className="text-sm text-text-muted">Cargando cócteles...</p>
@@ -279,7 +332,7 @@ export function OrderCocktailsSection({
                 selectedCocktails={selectedCocktails}
                 onAddCocktail={onAddCocktail}
                 footer={
-                  cocktails.length > catalogPageSize && (
+                  filteredCatalogCocktails.length > catalogPageSize && (
                     <div className="space-y-3 border-t border-border-soft pt-4">
                       <p className="text-sm text-text-muted">
                         Página {safeCatalogPage} de {totalCatalogPages}
@@ -350,7 +403,6 @@ export function OrderCocktailsSection({
         <Button type="button" onClick={onNext}>
           Siguiente: revisar cálculo
         </Button>{" "}
-        
       </div>
     </Card>
   );
