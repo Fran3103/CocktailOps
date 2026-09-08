@@ -1,4 +1,4 @@
-import { Eye } from "lucide-react";
+import { CalendarDays, ClipboardList, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { ROUTES } from "../../../shared/constants/routes";
@@ -34,6 +34,14 @@ function formatDate(date: string | null) {
     month: "2-digit",
     year: "numeric",
   }).format(new Date(date));
+}
+
+function getUserLabel(userId: number | null | undefined) {
+  return userId == null ? "Sin usuario" : `Usuario #${userId}`;
+}
+
+function getOrderKey(order: OrderResponse, index: number) {
+  return order.id ?? `${order.createdAt ?? "order"}-${index}`;
 }
 
 export function RecentOrdersTable({
@@ -73,8 +81,99 @@ export function RecentOrdersTable({
         <p className="mt-1 text-sm text-text-muted">{description}</p>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] text-left text-sm">
+      <div className="space-y-3 md:hidden">
+        {orders.map((order, index) => {
+          const orderId = order.id;
+          const totalDrinks = getTotalDrinks(order);
+
+          return (
+            <article
+              key={getOrderKey(order, index)}
+              className="rounded-card border border-border-soft bg-background/30 p-4"
+            >
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control bg-surface text-primary">
+                  <ClipboardList size={18} />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-semibold text-text-main">
+                      Orden #{orderId ?? "Sin ID"}
+                    </h3>
+
+                    <span className="rounded-full border border-border-soft px-2 py-0.5 text-[11px] font-medium text-success">
+                      {order.status}
+                    </span>
+                  </div>
+
+                  <p className="mt-1 text-sm text-text-muted">
+                    {formatOrderMode(order.mode)} · {totalDrinks} tragos
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 gap-3 text-sm">
+                {showUserColumn && (
+                  <div className="rounded-control border border-border-soft bg-background/40 px-3 py-2">
+                    <p className="text-xs uppercase tracking-wide text-text-muted">
+                      Usuario
+                    </p>
+                    <p className="mt-1 font-medium text-text-main">
+                      {getUserLabel(order.userId)}
+                    </p>
+                  </div>
+                )}
+
+                <div className="rounded-control border border-border-soft bg-background/40 px-3 py-2">
+                  <p className="text-xs uppercase tracking-wide text-text-muted">
+                    Fecha
+                  </p>
+
+                  <p className="mt-1 flex items-center gap-2 font-medium text-text-main">
+                    <CalendarDays size={15} />
+                    {formatDate(order.createdAt)}
+                  </p>
+                </div>
+              </div>
+
+              {orderId != null ? (
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    fullWidth
+                    onClick={() => handleViewDetail(orderId)}
+                  >
+                    <span className="flex items-center justify-center gap-2">
+                      <Eye size={15} />
+                      Ver
+                    </span>
+                  </Button>
+
+                  <OrderPdfDownloadButton
+                    source={{
+                      type: "SAVED_ORDER",
+                      orderId,
+                    }}
+                    variant="secondary"
+                    label="PDF"
+                    loadingLabel="PDF..."
+                    fullWidth
+                  />
+                </div>
+              ) : (
+                <p className="mt-4 text-sm text-text-muted">
+                  Esta orden no tiene acciones disponibles.
+                </p>
+              )}
+            </article>
+          );
+        })}
+      </div>
+
+      <div className="hidden overflow-x-auto md:block">
+        <table className="w-full min-w-190 text-left text-sm">
           <thead className="border-b border-border-soft text-text-muted">
             <tr>
               <th className="py-3 pr-4 font-medium">ID</th>
@@ -91,18 +190,18 @@ export function RecentOrdersTable({
           </thead>
 
           <tbody className="divide-y divide-border-soft">
-            {orders.map((order) => {
+            {orders.map((order, index) => {
               const orderId = order.id;
 
               return (
-                <tr key={orderId ?? `order-${order.createdAt}`}>
+                <tr key={getOrderKey(order, index)}>
                   <td className="py-4 pr-4 font-medium text-text-main">
                     {orderId ?? "Sin ID"}
                   </td>
 
                   {showUserColumn && (
                     <td className="py-4 pr-4 text-text-muted">
-                      {order.userId ? `#${order.userId}` : "Sin usuario"}
+                      {getUserLabel(order.userId)}
                     </td>
                   )}
 
