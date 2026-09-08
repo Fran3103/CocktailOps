@@ -23,6 +23,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import static com.cocktailops.CocktailOps.testutil.TestDataFactory.*;
 
+import com.cocktailops.CocktailOps.dto.orderDto.OrderByDrinksRequestDto;
+import com.cocktailops.CocktailOps.dto.orderDto.OrderCocktailQuantityDto;
+import com.cocktailops.CocktailOps.entitie.Cocktail;
+import com.cocktailops.CocktailOps.entitie.Product;
+
+import java.math.BigDecimal;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -369,5 +376,48 @@ public class OrderServiceImplTest {
         );
 
         verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void previewOrderByDrinks_whenTotalDrinksIs101_addsTwoIceBags() {
+
+        Cocktail cocktail = new Cocktail();
+        cocktail.setId(1L);
+        cocktail.setName("Negroni");
+        cocktail.setIngredients(new ArrayList<>());
+
+        Product ice = new Product();
+        ice.setId(57L);
+        ice.setName("Hielo");
+        ice.setUnit("GR");
+        ice.setUnitSize(new BigDecimal("15000"));
+        ice.setActive(true);
+
+        OrderByDrinksRequestDto dto = new OrderByDrinksRequestDto(
+                101,
+                List.of(
+                        new OrderCocktailQuantityDto(1L, 101)
+                )
+        );
+
+        when(cocktailRepository.findByWithIngredients(1L))
+                .thenReturn(Optional.of(cocktail));
+
+        when(productRepository.findByName("Hielo"))
+                .thenReturn(Optional.of(ice));
+
+        OrderResponseDto result = orderServiceImpl.previewOrderByDrinks(dto);
+
+        assertNotNull(result);
+        assertEquals(101, result.cocktail().get(0).quantity());
+
+        assertEquals(1, result.items().size());
+        assertEquals("Hielo", result.items().get(0).productName());
+        assertEquals(2, result.items().get(0).packsToBuy());
+        assertEquals(new BigDecimal("15000"), result.items().get(0).packSize());
+        assertEquals("GR", result.items().get(0).measureUnit());
+
+        verify(cocktailRepository).findByWithIngredients(1L);
+        verify(productRepository).findByName("Hielo");
     }
 }

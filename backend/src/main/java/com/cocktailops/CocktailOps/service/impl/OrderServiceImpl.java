@@ -66,7 +66,8 @@ public class OrderServiceImpl implements IOrderService {
     private static final int LARGE_SELECTION_DRINKS_PER_PERSON_PER_HOUR = 2;
 
     private static final int MAX_ORDERS_PER_24_HOURS = 25;
-
+    private static final String ICE_PRODUCT_NAME = "Hielo";
+    private static final int DRINKS_PER_ICE_BAG = 100;
     /**
      * Cantidad estimada de tragos por persona por hora.
 
@@ -325,7 +326,7 @@ public class OrderServiceImpl implements IOrderService {
         }
 
         addOrderItems(order, requiredByProductId, productCache);
-
+        addGlobalIceToOrder(order);
         return order;
     }
 
@@ -493,7 +494,7 @@ public class OrderServiceImpl implements IOrderService {
         }
 
         addOrderItems(order, requiredByProductId, productCache);
-
+        addGlobalIceToOrder(order);
         return order;
     }
 
@@ -624,7 +625,30 @@ public class OrderServiceImpl implements IOrderService {
             order.getOrderItems().add(orderItem);
         }
     }
+    private void addGlobalIceToOrder(Order order) {
 
+        int totalDrinks = order.getTotalDrinks();
+
+        if (totalDrinks <= 0) {
+            return;
+        }
+
+        Product ice = productRepository.findByName(ICE_PRODUCT_NAME)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Product " + ICE_PRODUCT_NAME + " not found"
+                ));
+
+        int bagsToBuy = (totalDrinks + DRINKS_PER_ICE_BAG - 1)
+                / DRINKS_PER_ICE_BAG;
+
+        OrderItem iceItem = new OrderItem();
+        iceItem.setOrder(order);
+        iceItem.setProduct(ice);
+        iceItem.setQuantity(bagsToBuy);
+        iceItem.setUnit(ice.getUnit());
+
+        order.getOrderItems().add(iceItem);
+    }
     /**
      * Suma todos los tragos asignados a cócteles.
      */
