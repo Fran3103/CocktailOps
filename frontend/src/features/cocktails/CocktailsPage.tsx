@@ -230,10 +230,12 @@ export function CocktailsPage() {
             itemsPerPage={COCKTAILS_PER_PAGE}
           />
 
-          <div className="flex flex-col gap-3 rounded-card border border-border-soft bg-surface-soft px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-text-muted">
+          <div className="flex flex-col items-center gap-3 rounded-card border border-border-soft bg-surface-soft px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-text-muted text-center" >
               Mostrando {firstVisibleCocktail}-{lastVisibleCocktail} de{" "}
-              {filteredCocktails.length} cócteles filtrados. Total del catálogo:{" "}
+              {filteredCocktails.length} cócteles filtrados. 
+              <br />
+              Total del catálogo:{" "}
               {cocktails.length}.
             </p>
 

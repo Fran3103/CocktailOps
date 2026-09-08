@@ -27,7 +27,7 @@ export function CocktailCard({ cocktail }: CocktailCardProps) {
   const preparationLabel = getPreparationLabel(cocktail.preparationType);
 
   return (
-    <Card className="flex h-45 flex-col overflow-hidden p-4 transition hover:border-primary/40 sm:p-5">
+    <Card className="flex md:h-45 flex-col overflow-hidden p-4 transition hover:border-primary/40 sm:p-5">
       <div className="flex items-start gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control border border-border-soft bg-background/60 text-primary">
           <Martini size={20} />
@@ -54,7 +54,7 @@ export function CocktailCard({ cocktail }: CocktailCardProps) {
 
       {ingredients.length > 0 && (
         <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-text-muted">
+          <p className="mb-1 mt-1 text-xs font-semibold uppercase tracking-wide text-text-muted">
             Ingredientes
           </p>
 
