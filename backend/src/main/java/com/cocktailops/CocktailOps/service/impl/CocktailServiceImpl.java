@@ -78,6 +78,7 @@ public class CocktailServiceImpl implements ICocktailService {
                 savedCocktail.getId(),
                 savedCocktail.getName(),
                 savedCocktail.getDescription(),
+                savedCocktail.getPreparationType(),
                 savedCocktail.getImageUrl(),
                 savedCocktail.getImageAlt(),
                 savedCocktail.getIngredients().stream()
@@ -107,6 +108,7 @@ public class CocktailServiceImpl implements ICocktailService {
                 cocktail.get().getId(),
                 cocktail.get().getName(),
                 cocktail.get().getDescription(),
+                cocktail.get().getPreparationType(),
                 cocktail.get().getImageUrl(),
                 cocktail.get().getImageAlt(),
                 cocktail.get().getIngredients().stream()
@@ -135,6 +137,9 @@ public class CocktailServiceImpl implements ICocktailService {
 
         if (Dto.name() != null) existingCocktail.setName(Dto.name());
         if (Dto.description() != null) existingCocktail.setDescription(Dto.description());
+        if (Dto.preparationType() != null) {
+            existingCocktail.setPreparationType(Dto.preparationType());
+        }
         if (Dto.imageUrl() != null) existingCocktail.setImageUrl(Dto.imageUrl());
         if (Dto.imageAlt() != null) existingCocktail.setImageAlt(Dto.imageAlt());
 
@@ -145,6 +150,7 @@ public class CocktailServiceImpl implements ICocktailService {
                 updatedCocktail.getId(),
                 updatedCocktail.getName(),
                 updatedCocktail.getDescription(),
+                updatedCocktail.getPreparationType(),
                 updatedCocktail.getImageUrl(),
                 updatedCocktail.getImageAlt(),
                 updatedCocktail.getIngredients().stream()
@@ -166,16 +172,37 @@ public class CocktailServiceImpl implements ICocktailService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public CocktailResponseDto findByName(String name) {
-        log.info("Fetching cocktail with name: {}", name);
-        CocktailResponseDto cocktail = cocktailRepository.findByName(name);
-        if (cocktail == null) {
-            log.warn("Cocktail with name {} not found", name);
-            throw new ResourceNotFoundException("Shop with name " + name + " not found");
-        }
-        log.info("Cocktail with name {} found", name);
-        return cocktail;
 
+        log.info("Fetching cocktail with name: {}", name);
+
+        Cocktail cocktail = cocktailRepository.findByNameWithIngredients(name.trim())
+                .orElseThrow(() -> {
+                    log.warn("Cocktail with name {} not found", name);
+                    return new ResourceNotFoundException(
+                            "Cocktail with name " + name + " not found"
+                    );
+                });
+
+        log.info("Cocktail with name {} found", name);
+
+        return new CocktailResponseDto(
+                cocktail.getId(),
+                cocktail.getName(),
+                cocktail.getDescription(),
+                cocktail.getPreparationType(),
+                cocktail.getImageUrl(),
+                cocktail.getImageAlt(),
+                cocktail.getIngredients().stream()
+                        .map(ing -> new CocktailIngredientResponseDto(
+                                ing.getProduct().getId(),
+                                ing.getProduct().getName(),
+                                ing.getAmount(),
+                                ing.getUnit()
+                        ))
+                        .toList()
+        );
     }
 
     @Override
@@ -188,6 +215,7 @@ public class CocktailServiceImpl implements ICocktailService {
                         cocktail.getId(),
                         cocktail.getName(),
                         cocktail.getDescription(),
+                        cocktail.getPreparationType(),
                         cocktail.getImageUrl(),
                         cocktail.getImageAlt(),
                         cocktail.getIngredients().stream()

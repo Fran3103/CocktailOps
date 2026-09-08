@@ -13,7 +13,13 @@ import java.util.List;
 @Repository
 public interface ICocktailRepository extends JpaRepository<Cocktail, Long> {
 
-    CocktailResponseDto findByName(String name);
+    @Query("""
+    select distinct c from Cocktail c
+    left join fetch c.ingredients i
+    left join fetch i.product
+       where lower(c.name) = lower(:name)
+""")
+    Optional<Cocktail> findByNameWithIngredients(@Param("name") String name);
 
     Boolean existsByName(String name);
 

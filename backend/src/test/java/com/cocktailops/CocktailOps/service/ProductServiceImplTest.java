@@ -134,6 +134,7 @@ public class ProductServiceImplTest {
         ProductRequestDto requestDto = new ProductRequestDto(
                 1L,
                 "Vodka",
+                "licor",
                 10L,
                 "ml",
                 new BigDecimal("750"),
@@ -173,6 +174,7 @@ public class ProductServiceImplTest {
         ProductRequestDto requestDto = new ProductRequestDto(
                 1L,
                 "Vodka",
+                "licor",
                 10L,
                 "ml",
                 new BigDecimal("750"),
@@ -199,6 +201,7 @@ public class ProductServiceImplTest {
         ProductRequestDto requestDto = new ProductRequestDto(
                 1L,
                 "Vodka",
+                "licor",
                 10L,
                 "ml",
                 new BigDecimal("750"),
@@ -236,6 +239,7 @@ public class ProductServiceImplTest {
         product.setId(productId);
         product.setCategory(category);
         product.setName("Vodka");
+        product.setDescription("licor");
         product.setUnit("ml");
         product.setImageAlt("Vodka Sernova");
         product.setImageUrl("https://res.cloudinary.com/dzj8q4qeu/image/upload/v1700000000/products/vodka_sernova.png");
@@ -245,6 +249,7 @@ public class ProductServiceImplTest {
         ProductRequestDto updateDto = new ProductRequestDto(
                 1L,
                 "Vodka Updated",
+                "licor",
                 10L,
                 "ml",
                 new BigDecimal("750"),
@@ -300,6 +305,7 @@ public class ProductServiceImplTest {
         ProductRequestDto requestDto = new ProductRequestDto(
                 1L,
                 "Vodka actualizado",
+                "licor",
                 10L,
                 "ml",
                 new BigDecimal("750"),
@@ -335,6 +341,7 @@ public class ProductServiceImplTest {
         ProductRequestDto requestDto = new ProductRequestDto(
                 1L,
                 "Vodka actualizado",
+                "licor",
                 10L,
                 "ml",
                 new BigDecimal("750"),

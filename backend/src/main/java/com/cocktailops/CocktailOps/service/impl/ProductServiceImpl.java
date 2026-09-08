@@ -34,6 +34,7 @@ public class ProductServiceImpl implements IProductService {
         return new ProductResponseDto(
                 product.getId(),
                  product.getName(),
+                product.getDescription(),
                 product.getCategory().getId(),
                 product.getCategory().getName(),
                 product.getUnit(),
@@ -67,6 +68,7 @@ public class ProductServiceImpl implements IProductService {
 
         Product product = new Product();
         product.setName(productDto.name());
+        product.setDescription(productDto.description());
         product.setCategory(category.get());
         product.setUnit(productDto.unit());
         product.setImageUrl(productDto.imageUrl());
@@ -79,6 +81,7 @@ public class ProductServiceImpl implements IProductService {
         return new ProductResponseDto(
                 savedProduct.getId(),
                 savedProduct.getName(),
+                savedProduct.getDescription(),
                 savedProduct.getCategory().getId(),
                 savedProduct.getCategory().getName(),
                 savedProduct.getUnit(),
@@ -109,6 +112,9 @@ public class ProductServiceImpl implements IProductService {
 
         if (productDto.name() != null) product.setName(productDto.name());
         product.setCategory(category.get());
+        if (productDto.description() != null) {
+            product.setDescription(productDto.description());
+        };
         if (productDto.unit() != null) product.setUnit(productDto.unit());
         if (productDto.imageUrl() != null) product.setImageUrl(productDto.imageUrl());
         if (productDto.imageAlt() != null) product.setImageAlt(productDto.imageAlt());
@@ -120,6 +126,7 @@ public class ProductServiceImpl implements IProductService {
         return new ProductResponseDto(
                 updatedProduct.getId(),
                 updatedProduct.getName(),
+                updatedProduct.getDescription(),
                 updatedProduct.getCategory().getId(),
                 updatedProduct.getCategory().getName(),
                 updatedProduct.getUnit(),
@@ -149,6 +156,7 @@ public class ProductServiceImpl implements IProductService {
                 .map(product -> new ProductResponseDto(
                         product.getId(),
                         product.getName(),
+                        product.getDescription(),
                         product.getCategory().getId(),
                         product.getCategory().getName(),
                         product.getUnit(),
@@ -168,6 +176,7 @@ public class ProductServiceImpl implements IProductService {
                 .map(product -> new ProductResponseDto(
                         product.getId(),
                         product.getName(),
+                        product.getDescription(),
                         product.getCategory().getId(),
                         product.getCategory().getName(),
                         product.getUnit(),
@@ -185,6 +194,7 @@ public class ProductServiceImpl implements IProductService {
         return new ProductResponseDto(
                 product.getId(),
                 product.getName(),
+                product.getDescription(),
                 category.getId(),
                 category.getName(),
                 product.getUnit(),

@@ -9,6 +9,11 @@ public record ProductResponseDto(
         Long productId,
         @Schema(description = "nombre del producto", example = "vodka")
         String name,
+        @Schema(
+                description = "descripción breve del producto",
+                example = "Bitter aromático especiado utilizado en coctelería clásica"
+        )
+        String description,
         @Schema(description = "id de la categoría del producto", example = "2")
         Long categoryId,
         @Schema(description = "nombre de la categoría del producto", example = "Licores")

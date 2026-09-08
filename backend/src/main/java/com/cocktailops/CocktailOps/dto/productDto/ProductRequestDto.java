@@ -9,6 +9,11 @@ public record ProductRequestDto(
         Long id,
         @Schema(description = "nombre del producto", example = "vodka")
         String name,
+        @Schema(
+                description = "descripción breve del producto",
+                example = "Bitter aromático especiado utilizado en coctelería clásica"
+        )
+        String description,
         @Schema(description = "id de la categoría del producto", example = "2")
         Long category,
         @Schema(description = "unidad de medida del producto", example = "ml")

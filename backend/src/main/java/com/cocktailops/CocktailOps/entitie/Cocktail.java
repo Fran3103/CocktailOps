@@ -34,4 +34,8 @@ public class Cocktail {
     @Column(name = "image_alt")
     private String imageAlt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "preparation_type", nullable = false)
+    private PreparationType preparationType;
+
 }

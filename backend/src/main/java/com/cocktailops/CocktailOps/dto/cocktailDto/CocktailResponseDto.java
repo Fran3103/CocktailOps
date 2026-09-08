@@ -1,5 +1,6 @@
 package com.cocktailops.CocktailOps.dto.cocktailDto;
 
+import com.cocktailops.CocktailOps.entitie.PreparationType;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
@@ -11,6 +12,11 @@ public record CocktailResponseDto(
         String name,
         @Schema(description = "descripcion del cocktail ", example = "mojito, lleva menta y limas cocktail refrescante")
         String description,
+        @Schema(
+                description = "tipo de preparación del cóctel",
+                example = "SHAKEN"
+        )
+        PreparationType preparationType,
         @Schema(description = "url de la imagen del producto")
         String imageUrl,
         @Schema(description = "nombre del alt de la imagen", example = "mojito")
