@@ -113,6 +113,12 @@ export function RegisterPage() {
           Iniciar sesión
         </Link>
       </p>
+      <Link
+        to={ROUTES.createOrder}
+        className="mt-4 block text-center text-sm font-medium text-text-muted transition hover:text-text-main"
+      >
+        Continuar como invitado
+      </Link>
     </Card>
   );
 }
