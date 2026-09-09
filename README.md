@@ -1,277 +1,273 @@
 # CocktailOps
 
-![Java CI](https://github.com/Fran3103/CocktailOps/actions/workflows/ci.yml/badge.svg)
+![Java CI/CD](https://github.com/Fran3103/CocktailOps/actions/workflows/ci.yml/badge.svg)
 
-CocktailOps es una aplicación **full stack** para planificar órdenes de cócteles para eventos. Permite consultar catálogos de cócteles e insumos, usar listas rápidas predefinidas, calcular productos necesarios, generar listas de compra, crear órdenes guardadas para usuarios registrados y descargar PDFs listos para imprimir.
+**CocktailOps** es una aplicación full stack para planificar barras de cócteles para eventos. Permite seleccionar una carta, estimar la cantidad de tragos, distribuir el consumo según prioridades, calcular ingredientes y formatos de compra, generar una lista consolidada y descargar un PDF listo para usar.
 
-El proyecto está desarrollado como solución de portfolio profesional, con foco en buenas prácticas de backend, frontend conectado a una API real, seguridad, documentación, testing, migraciones, CI y una experiencia funcional de punta a punta.
+La aplicación funciona tanto para visitantes como para usuarios registrados y cuenta con autenticación JWT, roles, historial, ownership de órdenes, catálogo real, generación de PDF, testing, CI/CD y despliegue cloud.
+
+> **Demo:** https://cocktailops.vercel.app  
+> **Repositorio:** https://github.com/Fran3103/CocktailOps  
+> **Estado:** versión portfolio funcional y desplegada.
 
 ---
 
 ## Índice
 
-- [Objetivo del proyecto](#objetivo-del-proyecto)
-- [Estado actual](#estado-actual)
-- [Estructura del repositorio](#estructura-del-repositorio)
-- [Módulos](#módulos)
-- [Tecnologías principales](#tecnologías-principales)
-- [Reglas principales del producto](#reglas-principales-del-producto)
-- [Seguridad y permisos](#seguridad-y-permisos)
-- [Cálculo de órdenes](#cálculo-de-órdenes)
-- [PDF y lista de compra](#pdf-y-lista-de-compra)
-- [Catálogo demo y listas rápidas](#catálogo-demo-y-listas-rápidas)
+- [Problema que resuelve](#problema-que-resuelve)
+- [Demo y estado actual](#demo-y-estado-actual)
 - [Flujos principales](#flujos-principales)
-- [Ejecución rápida](#ejecución-rápida)
-- [Variables de entorno](#variables-de-entorno)
+- [Arquitectura](#arquitectura)
+- [Tecnologías](#tecnologías)
+- [Backend](#backend)
+- [Frontend](#frontend)
+- [Motor de cálculo](#motor-de-cálculo)
+- [Productos preparados](#productos-preparados)
+- [PDF y lista de compra](#pdf-y-lista-de-compra)
+- [Autenticación y permisos](#autenticación-y-permisos)
+- [Catálogo y presets](#catálogo-y-presets)
+- [Testing](#testing)
+- [Base de datos y migraciones](#base-de-datos-y-migraciones)
+- [Deploy e infraestructura](#deploy-e-infraestructura)
 - [CI/CD](#cicd)
-- [Roadmap](#roadmap)
+- [Ejecución local](#ejecución-local)
+- [Estructura del repositorio](#estructura-del-repositorio)
+- [Alcance de la versión portfolio](#alcance-de-la-versión-portfolio)
+- [Módulo Shop y evolución futura](#módulo-shop-y-evolución-futura)
+- [Documentación](#documentación)
 - [Autor](#autor)
 
 ---
 
-## Objetivo del proyecto
+# Problema que resuelve
 
-El objetivo principal de CocktailOps es resolver un problema real del rubro eventos y barras:
+En una barra de eventos no alcanza con conocer la receta de un cóctel. También hay que responder preguntas operativas como:
 
-> Calcular de forma rápida y ordenada qué productos se necesitan para preparar determinados cócteles en un evento, según cantidad de invitados, duración o cantidad total de bebidas.
+- ¿cuántos tragos se van a preparar?
+- ¿cómo se distribuyen entre las distintas opciones?
+- ¿cuánto se necesita de cada ingrediente?
+- ¿cuántas botellas, packs o unidades hay que comprar?
+- ¿cómo se evita calcular el mismo producto varias veces?
+- ¿qué productos se compran y cuáles se preparan previamente?
+- ¿cómo se entrega una lista usable al equipo?
 
-El sistema permite cubrir tres tipos de uso:
-
-```txt
-Visitante anónimo
-→ Ver dashboard público
-→ Consultar catálogo
-→ Usar listas rápidas o elegir cócteles manualmente
-→ Generar una orden temporal
-→ Ver resultado inmediato
-→ Descargar PDF preview
-```
+CocktailOps transforma:
 
 ```txt
-Usuario autenticado
-→ Iniciar sesión
-→ Crear orden guardada asociada a su cuenta
-→ Consultar dashboard personal
-→ Ver historial propio
-→ Consultar detalle
-→ Descargar PDF protegido
+Invitados
++ duración
++ selección de cócteles
++ prioridades
 ```
+
+o bien:
 
 ```txt
-Administrador
-→ Iniciar sesión con rol ADMIN
-→ Ver dashboard administrativo
-→ Consultar métricas generales
-→ Ver órdenes del sistema
-→ Acceder a detalle de órdenes guardadas
-→ Descargar PDFs según permisos del backend
+Cantidad exacta de tragos
++ cantidades por cóctel
 ```
 
-Además, el proyecto busca demostrar conocimientos técnicos aplicados en:
+en:
 
-- Diseño de API REST
-- Arquitectura por capas
-- Persistencia con PostgreSQL
-- Migraciones con Flyway
-- Seguridad con JWT
-- Roles y autorización
-- Ownership de recursos
-- Integración frontend-backend
-- Manejo de estados en frontend
-- Generación de PDFs
-- Testing unitario
-- CI/CD básico
-- Documentación técnica
-- Preparación para QA manual
+```txt
+Distribución de cócteles
+→ ingredientes requeridos
+→ productos preparados
+→ consolidación de insumos
+→ formatos de compra
+→ hielo
+→ lista final
+→ PDF
+```
 
 ---
 
-## Estado actual
+# Demo y estado actual
 
-| Módulo / Funcionalidad | Estado |
+La aplicación está desplegada y operativa:
+
+```txt
+https://cocktailops.vercel.app
+```
+
+## Estado general
+
+| Área | Estado |
 |---|---|
-| Backend API | Implementado |
+| Backend Spring Boot | Implementado |
 | Frontend React | Implementado |
-| Seguridad JWT | Implementada |
-| Roles USER / ADMIN | Implementados |
+| PostgreSQL | Implementado |
+| Flyway | Implementado |
 | Catálogo de productos | Implementado |
 | Catálogo ampliado de cócteles | Implementado |
-| Productos con categoría básica | Implementado |
-| Listas rápidas predefinidas | Implementadas |
-| Dashboard invitado | Implementado |
-| Dashboard USER | Implementado |
-| Dashboard ADMIN | Implementado |
-| Orden temporal de invitado | Implementada |
-| Preview público JSON | Implementado |
-| PDF preview público para invitados | Implementado |
-| Creación de órdenes guardadas para usuarios | Implementada |
-| Historial de órdenes | Implementado |
-| Detalle de orden protegida | Implementado |
-| PDF protegido por ownership | Implementado |
-| Docker Compose PostgreSQL | Implementado |
-| Flyway + seed demo | Implementado |
-| Normalización de unidades de catálogo | Implementada |
-| GitHub Actions CI | Implementado |
-| Testing backend | En progreso |
-| Testing frontend automatizado | Pendiente |
-| QA Manual | Planificado |
-| Deploy frontend/backend | Pendiente |
+| Tipos de preparación | Implementado |
+| Modo TIME | Implementado |
+| Modo DRINKS | Implementado |
+| Prioridades de cócteles | Implementado |
+| Productos preparados / subrecetas | Implementado |
+| Almíbar → azúcar | Implementado |
+| Hielo global | Implementado |
+| PDF | Implementado |
+| Registro / Login | Implementado |
+| JWT | Implementado |
+| Roles USER / ADMIN | Implementado |
+| Historial | Implementado |
+| Ownership de órdenes | Implementado |
+| Dashboards por rol | Implementado |
+| Responsive mobile / desktop | Implementado |
+| Backend Oracle Cloud | Implementado |
+| Base Neon PostgreSQL | Implementado |
+| Frontend Vercel | Implementado |
+| Proxy Vercel → backend | Implementado |
+| GitHub Actions CI/CD | Implementado |
+| Rollback automático | Implementado |
+| Tests backend | 40 tests en verde |
+| Swagger/OpenAPI final | En actualización |
+| README backend/frontend/general | En actualización |
+| Integración de tiendas/carrito | Futuro |
+| CRUD administrativo visual | Futuro |
 
 ---
 
-## Estructura del repositorio
+# Flujos principales
+
+## Invitado
+
+Un visitante puede usar la funcionalidad principal sin crear una cuenta:
 
 ```txt
-CocktailOps/
-├── backend/          # API REST con Java + Spring Boot
-├── frontend/         # Web App React + TypeScript + Vite
-├── docs/             # Documentación técnica, diagramas, capturas y Postman
-├── qa/               # Documentación futura de pruebas manuales
-├── .github/          # Workflows de GitHub Actions
-├── docker-compose.yml
-├── README.md
-└── .gitignore
+Entrar a CocktailOps
+→ consultar cócteles y productos
+→ crear una orden
+→ elegir un preset o seleccionar cócteles
+→ definir prioridades o cantidades
+→ calcular
+→ ver resultado temporal
+→ descargar PDF preview
+```
+
+La orden del invitado:
+
+```txt
+no se persiste
+no tiene ID real
+no aparece en historial
 ```
 
 ---
 
-## Módulos
-
-### Backend
-
-El backend está desarrollado con Java y Spring Boot.
-
-Incluye:
-
-- API REST
-- Gestión de productos
-- Gestión de categorías
-- Gestión de cócteles
-- Creación de órdenes modo `TIME`
-- Creación de órdenes modo `DRINKS`
-- Preview público de órdenes temporales
-- Cálculo de ingredientes y packs
-- Generación de PDF protegido por ID
-- Generación pública de PDF preview desde el body
-- Autenticación con JWT
-- Roles `USER` / `ADMIN`
-- Historial de órdenes por usuario
-- Protección de detalle y PDF por ownership
-- PostgreSQL con Flyway
-- Seed demo de catálogo
-- Catálogo ampliado de cócteles
-- Normalización de unidades
-- Tests unitarios
-- CI con GitHub Actions
-
-Más detalle en:
+## Usuario registrado
 
 ```txt
-backend/README.md
+Registro / Login
+→ Dashboard USER
+→ Crear orden
+→ Guardar orden
+→ Consultar historial propio
+→ Ver detalle
+→ Descargar PDF
+```
+
+Las órdenes quedan asociadas al usuario autenticado.
+
+---
+
+## Administrador
+
+```txt
+Login ADMIN
+→ Dashboard administrativo
+→ Métricas generales
+→ Historial global
+→ Detalle de órdenes
+→ Descarga de PDFs
+```
+
+En la versión actual, el rol `ADMIN` está utilizado principalmente para el acceso global a órdenes.
+
+El backend ya protege operaciones administrativas de catálogo, pero el frontend no incluye todavía un panel CRUD completo de productos, cócteles y categorías.
+
+---
+
+# Arquitectura
+
+## Arquitectura general
+
+```mermaid
+flowchart LR
+    U[Usuario]
+    FE[React + TypeScript]
+    VX[Vercel]
+    BE[Spring Boot]
+    DB[(Neon PostgreSQL)]
+    PDF[Thymeleaf + OpenHTMLToPDF]
+
+    U --> FE
+    FE --> VX
+    VX -->|/api| BE
+    BE --> DB
+    BE --> PDF
 ```
 
 ---
 
-### Frontend
-
-El frontend está desarrollado con React, Vite, TypeScript y Tailwind CSS.
-
-Incluye:
-
-- Layout principal tipo dashboard
-- Sidebar responsive
-- Login y registro conectados al backend
-- Manejo de JWT en frontend
-- Persistencia de sesión en `localStorage`
-- Rutas públicas y protegidas
-- Guardas por autenticación
-- Guardas por rol administrativo
-- Página de acceso no autorizado
-- Dashboard público para invitados
-- Dashboard personal para usuarios registrados
-- Dashboard administrativo para rol `ADMIN`
-- Métricas de órdenes propias
-- Métricas generales de órdenes del sistema para admin
-- Tabla de últimas órdenes
-- Catálogo de cócteles conectado al backend
-- Buscador de cócteles
-- Listado de productos conectado al backend
-- Filtro/buscador de productos
-- Creación de órdenes por evento
-- Creación de órdenes por cantidad total de tragos
-- Listas rápidas predefinidas de cócteles
-- Carga automática de cócteles desde presets
-- Distribución de cantidades por peso en modo tragos
-- Edición manual posterior al preset
-- Diferenciación entre usuario invitado y usuario registrado
-- Historial de órdenes del usuario autenticado
-- Detalle de orden guardada
-- Descarga de PDF por orden guardada
-- Descarga de PDF preview para órdenes invitadas
-- Nota visual sobre cálculo conservador de compra
-- Estados de carga, error y vacío
-- Feedback visual de orden creada
-- Toast de éxito
-- Navegación desde orden creada hacia detalle cuando la orden tiene ID
-- Prevención de navegación al detalle para órdenes temporales
-- Manejo específico de errores HTTP en descarga de PDF
-
-Más detalle en:
+## Backend
 
 ```txt
-frontend/README.md
+Controller
+   ↓
+Service
+   ↓
+Repository
+   ↓
+PostgreSQL
 ```
 
----
-
-### Docs
-
-La carpeta `docs/` contiene o contendrá documentación complementaria:
-
-- Capturas de Postman
-- Diagramas
-- Imágenes para README
-- Documentación técnica extendida
-- Referencias visuales para portfolio
+La lógica de negocio se concentra en los servicios y la API utiliza DTOs en lugar de exponer entidades JPA directamente.
 
 ---
 
-### QA
+## Frontend
 
-La carpeta `qa/` está pensada para documentar pruebas manuales y criterios de calidad.
+El frontend se organiza por features:
 
-Contenido futuro:
+```txt
+auth
+cocktails
+dashboard
+orders
+products
+profiles
+```
 
-- Plan de pruebas
-- Casos de prueba
-- Reportes de bugs
-- Pruebas exploratorias
-- Validaciones de seguridad y permisos
-- Evidencia de pruebas del flujo principal
+La comunicación HTTP se centraliza mediante Axios y los flujos complejos de órdenes se separan en hooks, helpers, services y componentes reutilizables.
 
 ---
 
-## Tecnologías principales
+# Tecnologías
 
-### Backend
+## Backend
 
 - Java 17
-- Spring Boot
-- Maven
+- Spring Boot 4.0.2
+- Spring Web MVC
+- Spring Data JPA
+- Hibernate
 - PostgreSQL
-- Spring Data JPA / Hibernate
 - Flyway
-- Spring Security + JWT
+- Spring Security
+- JWT / JJWT
+- Bean Validation
+- Maven
+- Lombok
 - Swagger / OpenAPI
-- Thymeleaf + OpenHTMLToPDF
+- Thymeleaf
+- OpenHTMLToPDF
 - JUnit 5
 - Mockito
 - H2
-- Docker Compose
-- GitHub Actions CI
-- Lombok
 
-### Frontend
+## Frontend
 
 - React
 - Vite
@@ -283,277 +279,467 @@ Contenido futuro:
 - ESLint
 - npm
 
-### Herramientas y prácticas
+## Infraestructura
 
-- Git / GitHub
-- Postman
-- Docker Desktop
-- Arquitectura por capas
-- DTOs para requests y responses
-- Validaciones
-- Manejo global de errores
-- Documentación técnica
-- Testing unitario
-- QA Manual en planificación
+- Docker Compose
+- GitHub Actions
+- Oracle Cloud Infrastructure
+- Ubuntu 24.04
+- systemd
+- Neon PostgreSQL
+- Vercel
+- SSH / SCP
 
 ---
 
-## Reglas principales del producto
+# Backend
 
-### Visitante anónimo
+El backend contiene el núcleo de CocktailOps.
 
-Un visitante puede:
+Responsabilidades principales:
 
-- ver el dashboard público
-- ver productos
-- ver cócteles
-- usar listas rápidas predefinidas
-- elegir cócteles manualmente
-- generar una orden temporal
-- ver el resultado inmediato
-- descargar un PDF preview desde el resumen inmediato
+- autenticación;
+- autorización;
+- catálogo;
+- recetas;
+- cálculo de órdenes;
+- distribución de cócteles;
+- conversión de unidades;
+- productos preparados;
+- packs;
+- hielo;
+- persistencia;
+- ownership;
+- historial;
+- generación de PDF;
+- límites de uso.
 
-Un visitante no puede:
-
-- acceder a historial
-- acceder a perfil
-- conservar órdenes asociadas a una cuenta
-- recuperar una orden temporal después de salir del flujo
-- consultar una orden temporal por ID
-- descargar PDFs protegidos por ID
-
-Regla actual:
+Documentación específica:
 
 ```txt
-Una orden invitada es temporal.
-No se guarda en base de datos.
-No tiene ID.
-No tiene historial.
-El PDF debe descargarse desde el resumen inmediato.
+backend/README.md
 ```
 
 ---
 
-### Usuario registrado
+# Frontend
 
-Un usuario registrado puede:
+El frontend convierte la API en una aplicación web usable.
 
-- iniciar sesión
-- crear órdenes asociadas a su cuenta
-- usar listas rápidas predefinidas
-- guardar órdenes reales en backend
-- ver su dashboard personal
-- ver su historial de órdenes
-- entrar al detalle de órdenes propias
-- descargar PDFs desde el detalle o desde historial
-- acceder a su perfil
+Incluye:
 
----
+- dashboard público;
+- dashboard USER;
+- dashboard ADMIN;
+- login;
+- registro;
+- sesión JWT;
+- catálogo de cócteles;
+- buscador;
+- filtros por preparación;
+- catálogo de productos;
+- filtros;
+- creación de orden en pasos;
+- presets;
+- prioridades visuales;
+- historial;
+- detalle;
+- PDF;
+- 403;
+- 404;
+- estados de carga;
+- estados vacíos;
+- errores específicos;
+- diseño responsive.
 
-### Administrador
-
-Un usuario con rol `ADMIN` puede:
-
-- ver el dashboard administrativo
-- consultar métricas generales de órdenes guardadas
-- ver últimas órdenes del sistema
-- ver columna de usuario en órdenes recientes
-- acceder al detalle de órdenes guardadas según reglas del backend
-- descargar PDFs de órdenes guardadas según permisos del backend
-
-Las páginas administrativas CRUD para productos, cócteles y categorías todavía no están implementadas en frontend.
-
----
-
-## Seguridad y permisos
-
-CocktailOps usa autenticación stateless con JWT.
-
-Reglas actuales principales:
-
-| Endpoint | Acceso |
-|---|---|
-| `/auth/**` | Público |
-| Swagger / OpenAPI | Público |
-| GET catálogo | Público |
-| POST / PUT / PATCH / DELETE catálogo | ADMIN |
-| `/user/**` | ADMIN |
-| `/shop/**` | ADMIN |
-| `POST /orders/preview` | Público |
-| `POST /orders/by-drinks/preview` | Público |
-| `POST /orders/preview/pdf` | Público |
-| `POST /orders/by-drinks/preview/pdf` | Público |
-| `POST /orders` | Usuario autenticado |
-| `POST /orders/by-drinks` | Usuario autenticado |
-| `GET /orders/my-orders` | Usuario autenticado |
-| `GET /orders` | ADMIN |
-| `GET /orders/{id}` | Dueño de la orden o ADMIN |
-| `GET /orders/{id}/pdf` | Dueño de la orden o ADMIN |
-
----
-
-## Cálculo de órdenes
-
-### Modo TIME
-
-El modo `TIME` calcula la cantidad total de tragos a partir de:
+Documentación específica:
 
 ```txt
-invitados × duración × tragos por persona por hora
+frontend/README.md
 ```
 
-Ejemplo base:
+---
+
+# Motor de cálculo
+
+CocktailOps soporta dos formas de crear órdenes.
+
+---
+
+## Modo TIME
+
+El usuario indica:
 
 ```txt
-60 invitados × 5 horas × 1 trago/persona/hora = 300 tragos
+invitados
+duración
+cócteles
+prioridad por cóctel
 ```
 
-Además, el backend aplica una estimación reforzada para eventos grandes con muchas opciones de cócteles:
+La fórmula base es:
 
 ```txt
-Si invitados >= 60
-y cócteles seleccionados >= 8
-→ usa 2 tragos por persona por hora
+totalDrinks = guests × durationHours × drinksPerPersonPerHour
+```
+
+La estimación actual utiliza:
+
+```txt
+1 trago por persona por hora
 ```
 
 Ejemplo:
 
 ```txt
-60 invitados × 5 horas × 2 tragos/persona/hora = 600 tragos
+290 invitados
+× 6 horas
+× 1 trago/persona/hora
+
+= 1740 tragos
 ```
 
-Para eventos más chicos, aunque haya muchos cócteles, se mantiene la estimación conservadora:
+No existe una regla adicional que duplique automáticamente el consumo por tratarse de un evento grande.
+
+---
+
+## Prioridades
+
+Para evitar que el usuario tenga que manejar números técnicos, el frontend muestra prioridades:
+
+| Prioridad | Weight |
+|---|---:|
+| Baja | `1` |
+| Normal | `2` |
+| Media | `3` |
+| Alta | `4` |
+
+Reglas:
 
 ```txt
-40 invitados × 5 horas × 1 trago/persona/hora = 200 tragos
+mínimo = 1
+máximo = 4
+default = 2
+```
+
+`0` no se utiliza. Para excluir un cóctel, se elimina de la selección.
+
+---
+
+## Distribución por pesos
+
+Ejemplo:
+
+```txt
+Total: 100 tragos
+
+Mojito      → 1
+Daiquiri    → 1
+Gin Tonic   → 2
+```
+
+Resultado:
+
+```txt
+Mojito      → 25
+Daiquiri    → 25
+Gin Tonic   → 50
+```
+
+Cuando aparecen decimales, el backend distribuye los restos garantizando que:
+
+```txt
+suma de cócteles = totalDrinks
 ```
 
 ---
 
-### Pesos por cóctel
+## Modo DRINKS
 
-En modo `TIME`, cada cóctel puede recibir un `weight`.
+En este modo no se utilizan invitados ni duración.
 
-El peso indica preferencia relativa:
+Ejemplo:
 
-```txt
-Más peso → más tragos asignados a ese cóctel.
-Menos peso → menos tragos asignados.
+```json
+{
+  "totalDrinks": 100,
+  "cocktails": [
+    { "cocktailId": 1, "quantity": 40 },
+    { "cocktailId": 2, "quantity": 35 },
+    { "cocktailId": 3, "quantity": 25 }
+  ]
+}
 ```
-
----
-
-### Modo DRINKS
-
-El modo `DRINKS` no estima por invitados ni duración.
-
-El usuario indica:
-
-- total exacto de tragos
-- cantidad de tragos por cóctel
 
 Regla:
 
 ```txt
-La suma de cantidades por cóctel debe ser igual a totalDrinks.
+40 + 35 + 25 = 100
 ```
 
-En este modo, el frontend puede dividir cantidades equitativamente o distribuirlas por peso cuando se aplica una lista rápida.
+La suma debe coincidir exactamente con `totalDrinks`.
 
 ---
 
-### Acumulación de ingredientes
+## Acumulación de ingredientes
 
-El backend no calcula botellas por cóctel de forma separada.
-
-Primero acumula los ingredientes por producto y luego calcula la compra sugerida.
+CocktailOps no calcula botellas individualmente por cada cóctel.
 
 Ejemplo:
 
 ```txt
 Mojito usa Ron
 Daiquiri usa Ron
+```
 
-El sistema suma todo el ron requerido.
-Después calcula cuántas botellas comprar.
+El sistema:
+
+```txt
+suma todo el Ron
+→ obtiene la cantidad total requerida
+→ recién después calcula botellas
+```
+
+Esto evita duplicar formatos de compra.
+
+---
+
+## Conversión de unidades
+
+Unidades principales:
+
+```txt
+ML
+GR
+UNID
+OZ
+```
+
+Conversiones soportadas:
+
+```txt
+OZ → ML
+OZ → GR
+```
+
+El motor evita conversiones conceptualmente inválidas como:
+
+```txt
+UNID → ML
+UNID → GR
 ```
 
 ---
 
-## PDF y lista de compra
+## Formatos de compra
 
-CocktailOps genera PDFs con **Thymeleaf + OpenHTMLToPDF**.
-
-Tipos de PDF:
-
-| Caso | Endpoint |
-|---|---|
-| Orden guardada | `GET /orders/{id}/pdf` |
-| Preview TIME | `POST /orders/preview/pdf` |
-| Preview DRINKS | `POST /orders/by-drinks/preview/pdf` |
-
-La lista de compra representa una **compra sugerida**.
-
-No significa que no vaya a sobrar producto. El sistema calcula la cantidad necesaria para poder preparar hasta el total de tragos estimado y redondea hacia arriba según el formato de compra:
+Ejemplo:
 
 ```txt
-Botellas
-Packs
-Unidades
+Ron requerido = 1600 ml
+Botella       = 750 ml
+
+1600 / 750 = 2.13
+→ comprar 3 botellas
+```
+
+Se utiliza redondeo hacia arriba porque los productos se compran en presentaciones completas.
+
+---
+
+## Hielo
+
+El hielo se calcula de manera global y no forma parte de cada receta.
+
+Regla actual:
+
+```txt
+1 bolsa de 15 kg cada 55 tragos
 ```
 
 Ejemplo:
 
 ```txt
-Ron requerido: 1600 ML
-Botella: 750 ML
-
-1600 / 750 = 2.13
-Resultado: comprar 3 botellas
+1740 / 55 = 31.63
+→ 32 bolsas
 ```
-
-Por eso el PDF y el frontend incluyen aclaraciones para explicar la estimación y el redondeo.
 
 ---
 
-## Catálogo demo y listas rápidas
+# Productos preparados
 
-El catálogo demo se carga mediante Flyway e incluye aproximadamente 30 cócteles.
+CocktailOps distingue entre:
 
-Ejemplos:
+```txt
+purchasable = true
+→ producto comprado
 
-- Mojito
-- Daiquiri
-- Gin Tonic
-- Margarita
-- Fernet Cola
-- Aperol Spritz
-- Cuba Libre
-- Negroni
-- Old Fashioned
-- Whisky Sour
-- Tom Collins
-- Dry Martini
-- Cosmopolitan
-- Moscow Mule
-- Paloma
-- Caipirinha
-- Caipiroska
-- Piña Colada
-- Sex on the Beach
-- Espresso Martini
-- Tequila Sunrise
-- Americano
-- Garibaldi
-- French 75
-- Bellini
-- Vodka Tonic
-- Campari Tonic
-- Gin Fizz
-- Vodka Collins
-- Caipirissima
+purchasable = false
+→ producto preparado
+```
 
-El frontend usa ese catálogo para ofrecer listas rápidas predefinidas:
+Los productos preparados se expanden antes de calcular los packs finales.
+
+---
+
+## Almíbar simple
+
+El primer caso implementado es:
+
+```txt
+1000 g de azúcar
++ agua
+≈ 1600 ml de almíbar
+```
+
+El agua no se registra como compra.
+
+Flujo:
+
+```txt
+Cócteles necesitan almíbar
+→ calcular almíbar total
+→ convertir a azúcar necesaria
+→ sumar con azúcar directa
+→ calcular packs de azúcar
+```
+
+Por eso el almíbar no aparece como producto final a comprar.
+
+El diseño soporta expansión recursiva y detección de ciclos entre productos preparados.
+
+---
+
+# PDF y lista de compra
+
+Los PDFs se generan con:
+
+```txt
+Thymeleaf
++ OpenHTMLToPDF
+```
+
+## PDF de invitado
+
+Se genera desde un preview y no requiere persistir una orden.
+
+## PDF de usuario
+
+Se genera a partir de una orden persistida y respeta ownership.
+
+## Contenido
+
+El documento muestra:
+
+- fecha;
+- modo;
+- invitados y duración si corresponde;
+- total de tragos;
+- cócteles distribuidos;
+- total de cócteles;
+- lista de compra;
+- cantidad de packs;
+- presentación;
+- medida;
+- total disponible;
+- total de unidades de compra;
+- aclaración sobre redondeo.
+
+La lista representa una estimación suficiente para preparar los tragos calculados. Puede existir sobrante debido al redondeo de presentaciones comerciales.
+
+---
+
+# Autenticación y permisos
+
+CocktailOps utiliza Spring Security + JWT con una arquitectura stateless.
+
+```http
+Authorization: Bearer <token>
+```
+
+## Accesos principales
+
+| Recurso | Acceso |
+|---|---|
+| Health | Público |
+| Swagger / OpenAPI | Público |
+| Registro / Login | Público |
+| Lectura de catálogo | Público |
+| Preview de orden | Público |
+| PDF preview | Público |
+| Crear orden persistida | Autenticado |
+| Historial propio | Autenticado |
+| Detalle de orden | Dueño / ADMIN |
+| PDF persistido | Dueño / ADMIN |
+| Historial global | ADMIN |
+| Escritura de catálogo | ADMIN |
+| `/shop/**` | ADMIN |
+
+---
+
+## Ownership
+
+```txt
+USER
+→ solo puede consultar órdenes propias
+
+ADMIN
+→ puede consultar cualquier orden
+```
+
+Esto se aplica al detalle y a la descarga de PDFs persistidos.
+
+---
+
+## Límite de uso
+
+Cada usuario puede persistir:
+
+```txt
+25 órdenes
+dentro de una ventana de 24 horas
+```
+
+Al alcanzar el límite:
+
+```http
+429 Too Many Requests
+```
+
+Los previews de invitados no cuentan porque no se guardan.
+
+---
+
+# Catálogo y presets
+
+El catálogo de demo está versionado mediante Flyway.
+
+Incluye:
+
+- categorías;
+- productos;
+- descripciones;
+- unidades;
+- formatos de compra;
+- imágenes;
+- cócteles;
+- recetas;
+- tipos de preparación.
+
+Tipos de preparación:
+
+```txt
+DIRECT
+SHAKEN
+STIRRED
+FROZEN
+```
+
+---
+
+## Listas rápidas
+
+El frontend incorpora presets como:
 
 - Clásicos simples
 - Clásicos completos
@@ -564,236 +750,178 @@ El frontend usa ese catálogo para ofrecer listas rápidas predefinidas:
 - Premium clásico
 - Popular y rápido
 
-Los presets no guardan IDs fijos. Buscan cócteles por nombre dentro del catálogo real que viene desde backend.
+Los presets buscan los cócteles por nombre dentro del catálogo recibido desde backend, en lugar de depender de IDs hardcodeados.
 
-El usuario puede aplicar una lista rápida y después ajustar manualmente:
-
-```txt
-Modo TIME   → pesos/preferencias
-Modo DRINKS → cantidades por cóctel
-```
+Después de aplicar un preset, el usuario puede modificar libremente la selección.
 
 ---
 
-## Flujos principales
+# Testing
 
-### Flujo invitado
-
-```txt
-Entrar a la app
-→ Ver dashboard público
-→ Ver cócteles/productos
-→ Crear orden
-→ Elegir lista rápida o seleccionar cócteles manualmente
-→ Ver resumen de orden temporal
-→ Descargar PDF preview
-```
-
-El preview JSON se genera mediante:
-
-```http
-POST /orders/preview
-```
-
-o:
-
-```http
-POST /orders/by-drinks/preview
-```
-
-El PDF preview se genera mediante:
-
-```http
-POST /orders/preview/pdf
-```
-
-o:
-
-```http
-POST /orders/by-drinks/preview/pdf
-```
-
-Estos endpoints son públicos y reciben el body usado para calcular la orden.
-
-Limitación actual:
+El backend cuenta actualmente con:
 
 ```txt
-La orden invitada no se guarda.
-Si el usuario abandona el flujo o refresca fuera del resumen inmediato,
-puede perder el payload necesario para regenerar el PDF preview.
+40 tests en verde
 ```
 
----
+La suite utiliza:
 
-### Flujo usuario registrado
+- JUnit 5
+- Mockito
+- H2
+- Spring Boot Test
+
+Áreas cubiertas:
+
+- contexto Spring;
+- productos;
+- cócteles;
+- órdenes;
+- validaciones;
+- duplicados;
+- recursos inexistentes;
+- distribución por prioridades;
+- cálculo de packs;
+- límite de órdenes;
+- productos preparados;
+- hielo.
+
+Casos destacados:
 
 ```txt
-Login
-→ Dashboard personal
-→ Crear orden
-→ Elegir lista rápida o seleccionar cócteles manualmente
-→ Orden asociada al usuario
-→ Ver detalle
-→ Descargar PDF
-→ Ir a Historial
-→ Ver órdenes anteriores
-→ Entrar al detalle de una orden anterior
+weight entre 1 y 4
+default Normal = 2
+suma exacta de cócteles
+almíbar convertido a azúcar
+1740 tragos → 32 bolsas de hielo
+límite de 25 órdenes / 24 h
 ```
 
-El historial se obtiene mediante:
-
-```http
-GET /orders/my-orders
-Authorization: Bearer <token>
-```
-
----
-
-### Flujo administrador
-
-```txt
-Login ADMIN
-→ Dashboard admin
-→ Ver métricas generales
-→ Ver últimas órdenes del sistema
-→ Acceder a detalle de órdenes guardadas
-→ Descargar PDF según permisos backend
-```
-
-El listado administrativo se obtiene mediante:
-
-```http
-GET /orders
-Authorization: Bearer <token-admin>
-```
-
----
-
-## Ejecución rápida
-
-### Levantar PostgreSQL
-
-Desde la raíz del proyecto:
-
-```bash
-docker compose up -d
-```
-
-El contenedor expone PostgreSQL en:
-
-```txt
-localhost:5434
-```
-
----
-
-### Ejecutar backend
-
-Desde la carpeta `backend`:
+Ejecutar:
 
 ```bash
 cd backend
-mvn spring-boot:run "-Dspring-boot.run.profiles=local"
+./mvnw test
 ```
 
-O desde la raíz:
+Windows:
 
-```bash
-mvn -f backend/pom.xml spring-boot:run "-Dspring-boot.run.profiles=local"
+```powershell
+cd backend
+.\mvnw.cmd test
 ```
 
-Swagger UI:
+El frontend tiene build y lint funcionales. Los tests automatizados de UI quedan como mejora futura no bloqueante para esta versión portfolio.
+
+---
+
+# Base de datos y migraciones
+
+## Local
+
+Docker Compose levanta:
 
 ```txt
-http://localhost:8081/swagger-ui/index.html
+PostgreSQL 16
+localhost:5434
+cocktailOps_db
 ```
 
-Más información en:
+## Demo
+
+La base remota está alojada en:
 
 ```txt
-backend/README.md
+Neon PostgreSQL
 ```
 
 ---
 
-### Ejecutar frontend
+## Flyway
 
-Desde la carpeta `frontend`:
+Las migraciones cubren la evolución completa del sistema.
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-La aplicación queda disponible en:
+Entre los últimos cambios:
 
 ```txt
-http://localhost:5173
+V11 → descripción de productos
+V12 → ampliación del catálogo
+V13 → tipos de preparación
+V14 → hielo fuera de recetas individuales
+V15 → ajuste de recetas
+V16 → productos preparados / subrecetas
 ```
 
-Más información en:
-
-```txt
-frontend/README.md
-```
+Las migraciones se consideran inmutables una vez aplicadas.
 
 ---
 
-## Variables de entorno
+# Deploy e infraestructura
 
-### Backend
-
-Crear:
+## Frontend
 
 ```txt
-backend/src/main/resources/application-local.properties
+React
+→ Vercel
+→ https://cocktailops.vercel.app
 ```
 
-Ejemplo base local con Docker:
-
-```properties
-server.port=8081
-
-spring.datasource.url=jdbc:postgresql://127.0.0.1:5434/cocktailOps_db?sslmode=disable
-spring.datasource.username=postgres
-spring.datasource.password=admin
-spring.datasource.driver-class-name=org.postgresql.Driver
-
-spring.flyway.enabled=true
-spring.flyway.locations=classpath:db/migration
-
-spring.jpa.hibernate.ddl-auto=validate
-spring.jpa.properties.hibernate.jdbc.time_zone=UTC
-
-spring.jackson.time-zone=UTC
-
-order.drinksPerPersonPerHour=1
-
-security.jwt.secret=local-dev-secret-key-32-characters-minimum-change-me-123456
-```
-
----
-
-### Frontend
-
-Crear:
-
-```txt
-frontend/.env.local
-```
-
-Ejemplo:
+En producción:
 
 ```env
-VITE_API_BASE_URL=http://localhost:8081
+VITE_API_BASE_URL=/api
+```
+
+Vercel utiliza un rewrite para enviar las requests `/api/*` al backend.
+
+---
+
+## Backend
+
+```txt
+Spring Boot JAR
+→ Oracle Cloud VM
+→ Ubuntu 24.04
+→ systemd
+```
+
+Servicio:
+
+```txt
+cocktailops.service
+```
+
+La aplicación arranca automáticamente después de un reboot.
+
+---
+
+## Base de datos
+
+```txt
+Oracle Backend
+→ JDBC
+→ Neon PostgreSQL
 ```
 
 ---
 
-## CI/CD
+## Health check
 
-El proyecto utiliza GitHub Actions para ejecutar build y tests del backend en cada push o pull request sobre `master`.
+```http
+GET /healthz
+```
+
+Respuesta:
+
+```json
+{
+  "status": "ok"
+}
+```
+
+---
+
+# CI/CD
 
 Workflow:
 
@@ -801,68 +929,319 @@ Workflow:
 .github/workflows/ci.yml
 ```
 
----
+## Pull Request hacia master
 
-## Roadmap
+```txt
+checkout
+→ Java 17
+→ Maven
+→ build
+→ tests
+```
 
-### Completado
+## Push a master
 
-- Backend API funcional
-- Frontend React implementado
-- Migraciones con Flyway
-- Seed demo de catálogo
-- Catálogo ampliado de cócteles
-- Normalización de unidades
-- Cálculo de órdenes `TIME` / `DRINKS`
-- Orden temporal para invitados
-- Preview JSON público
-- Generación de PDF preview público
-- Creación de órdenes guardadas para usuarios
-- Seguridad con Spring Security + JWT
-- Roles `USER` / `ADMIN`
-- Ownership de órdenes y PDFs
-- Historial de órdenes por usuario
-- Dashboard invitado
-- Dashboard USER
-- Dashboard ADMIN
-- Listas rápidas predefinidas
-- Catálogo de productos y cócteles conectado al frontend
-- Docker Compose para PostgreSQL
-- GitHub Actions CI
-- README y documentación técnica
-
-### Próximos pasos
-
-- Preparar configuración productiva
-- Ajustar CORS para URL real del frontend
-- Evaluar deploy frontend/backend
-- Agregar tests específicos para endpoints protegidos
-- Agregar tests para endpoints públicos de PDF preview
-- Aumentar cobertura de tests backend
-- Agregar tests frontend básicos
-- Mejorar estados de error específicos según status HTTP
-- Persistir temporalmente payload preview en `sessionStorage`
-- Agregar páginas administrativas CRUD para productos/cócteles/categorías
-- Refactorizar `CreateOrderPage` en hooks y subcomponentes más pequeños
-- Documentar plan de QA manual
-- Preparar capturas para portfolio/LinkedIn
-- Dockerizar también la aplicación Spring Boot
-- Confirmación de correo en registro
-- Recuperación de contraseña
-- Límites de uso / rate limiting para previews, PDFs, login y registro
+```txt
+build
+→ tests
+→ generar JAR
+→ SCP
+→ Oracle
+→ backup del JAR anterior
+→ reemplazar versión
+→ restart systemd
+→ health check
+```
 
 ---
 
-## Autor
+## Rollback
 
-Proyecto desarrollado por **Franco Aguirre** como parte de su portfolio profesional en desarrollo backend/full stack.
+Si la nueva versión no supera el health check:
 
-Stack principal aplicado:
+```txt
+deploy falla
+→ restaurar cocktailops.jar.bak
+→ reiniciar servicio
+→ comprobar health
+```
+
+El pipeline permanece fallido aunque el rollback sea exitoso, dejando visible que la nueva versión no pudo desplegarse.
+
+---
+
+# Ejecución local
+
+## 1. Clonar
+
+```bash
+git clone https://github.com/Fran3103/CocktailOps.git
+cd CocktailOps
+```
+
+---
+
+## 2. PostgreSQL
+
+```bash
+docker compose up -d
+```
+
+Base local:
+
+```txt
+localhost:5434
+```
+
+---
+
+## 3. Backend
+
+Crear:
+
+```txt
+backend/src/main/resources/application-local.properties
+```
+
+tomando como base:
+
+```txt
+backend/src/main/resources/application-local.example.properties
+```
+
+Ejecutar en Windows:
+
+```powershell
+cd backend
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=local"
+```
+
+Backend local:
+
+```txt
+http://localhost:8081
+```
+
+Swagger:
+
+```txt
+http://localhost:8081/swagger-ui/index.html
+```
+
+---
+
+## 4. Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Crear:
+
+```txt
+frontend/.env.local
+```
+
+con:
+
+```env
+VITE_API_BASE_URL=http://localhost:8081
+```
+
+Frontend:
+
+```txt
+http://localhost:5173
+```
+
+---
+
+# Estructura del repositorio
+
+```txt
+CocktailOps/
+├── .github/
+│   └── workflows/
+│       └── ci.yml
+├── backend/
+│   ├── src/
+│   ├── pom.xml
+│   └── README.md
+├── frontend/
+│   ├── src/
+│   ├── package.json
+│   ├── vercel.json
+│   └── README.md
+├── docs/
+├── docker-compose.yml
+├── README.md
+└── .gitignore
+```
+
+---
+
+# Alcance de la versión portfolio
+
+CocktailOps nació como una idea más amplia, pero esta versión tiene un alcance deliberadamente cerrado.
+
+## Funcionalidades terminadas
+
+```txt
+Catálogo
++ autenticación
++ órdenes
++ cálculo
++ recetas
++ productos preparados
++ PDF
++ historial
++ permisos
++ frontend
++ backend
++ base de datos
++ testing
++ deploy
++ CI/CD
+```
+
+La aplicación puede utilizarse de punta a punta.
+
+---
+
+## No forman parte de esta versión
+
+- panel CRUD completo de administración;
+- integración automática con tiendas;
+- carrito de compra;
+- comparación de proveedores;
+- pagos;
+- confirmación de email;
+- recuperación de contraseña;
+- rate limiting por IP;
+- ajuste automático por clima;
+- optimización según stock previo.
+
+Estas mejoras no son necesarias para considerar la versión portfolio terminada.
+
+---
+
+# Módulo Shop y evolución futura
+
+El backend ya contiene una base para trabajar con tiendas:
+
+```txt
+Shop
+ShopController
+ShopService
+ShopRepository
+DTOs
+```
+
+Actualmente este módulo no está integrado al flujo principal del frontend.
+
+La visión futura es:
+
+```txt
+Orden
+→ lista calculada
+→ productos de Shop
+→ matching
+→ enlaces de compra / carrito
+```
+
+La idea sería permitir que el usuario, después de generar una lista, pueda opcionalmente:
+
+- abrir productos en una tienda;
+- generar enlaces de compra;
+- crear un carrito;
+- consultar diferentes proveedores.
+
+Esta funcionalidad se dejó fuera de la V1 para evitar convertir el proyecto de portfolio en un producto sin fin.
+
+---
+
+# Documentación
+
+La documentación se divide en tres niveles:
+
+## General
+
+```txt
+README.md
+```
+
+Explica el producto completo y su arquitectura.
+
+## Backend
+
+```txt
+backend/README.md
+```
+
+Incluye el motor de cálculo, seguridad, API, testing, migraciones, PDF, infraestructura y CI/CD.
+
+## Frontend
+
+```txt
+frontend/README.md
+```
+
+Incluye arquitectura de UI, rutas, flujos, presets, prioridades, integración con backend y deploy.
+
+## Swagger / OpenAPI
+
+La documentación interactiva de endpoints se encuentra en Swagger.
+
+En local:
+
+```txt
+http://localhost:8081/swagger-ui/index.html
+```
+
+La revisión final de ejemplos, códigos HTTP y descripciones forma parte del cierre documental del proyecto.
+
+---
+
+# Próximo cierre
+
+Antes de publicar formalmente el proyecto como pieza de portfolio quedan principalmente tareas de presentación:
+
+```txt
+Swagger/OpenAPI final
+→ revisar README backend
+→ revisar README frontend
+→ README general
+→ smoke final
+→ capturas del proyecto
+→ publicación
+```
+
+No se planean nuevas funcionalidades grandes antes de su presentación, salvo que aparezca un bug real durante la validación final.
+
+---
+
+# Autor
+
+Proyecto desarrollado por **Franco Aguirre** como proyecto full stack de portfolio.
+
+Áreas aplicadas:
 
 - Java
 - Spring Boot
+- REST APIs
 - PostgreSQL
+- Flyway
+- Spring Security
+- JWT
 - React
 - TypeScript
 - Testing
-- QA Manual
+- CI/CD
+- Oracle Cloud
+- Neon PostgreSQL
+- Vercel
+- PDF
+- QA funcional
+

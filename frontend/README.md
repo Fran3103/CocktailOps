@@ -1,8 +1,8 @@
 # CocktailOps Frontend
 
-Web App para CocktailOps, desarrollada con React, Vite, TypeScript y Tailwind CSS.
+Web App para CocktailOps, desarrollada con **React**, **Vite**, **TypeScript** y **Tailwind CSS**.
 
-Este módulo representa la interfaz visual del sistema y conecta el flujo principal del usuario con la API REST del backend: autenticación, dashboard por rol, catálogo de cócteles, catálogo de productos, creación de órdenes, listas rápidas predefinidas, historial propio, detalle de orden y descarga de PDFs.
+Este módulo representa la interfaz visual del sistema CocktailOps y conecta el flujo principal del usuario con la API REST del backend: autenticación, dashboard por rol, catálogo de cócteles, catálogo de productos, creación de órdenes, listas rápidas predefinidas, historial, detalle de orden, descarga de PDFs y estados visuales de error.
 
 ---
 
@@ -10,6 +10,7 @@ Este módulo representa la interfaz visual del sistema y conecta el flujo princi
 
 - [Descripción](#descripción)
 - [Objetivo del frontend](#objetivo-del-frontend)
+- [Estado actual](#estado-actual)
 - [Reglas actuales del producto](#reglas-actuales-del-producto)
 - [Decisiones técnicas](#decisiones-técnicas)
 - [Características principales](#características-principales)
@@ -17,13 +18,16 @@ Este módulo representa la interfaz visual del sistema y conecta el flujo princi
 - [Autenticación y acceso](#autenticación-y-acceso)
 - [Instalación y uso](#instalación-y-uso)
 - [Variables de entorno](#variables-de-entorno)
+- [Deploy](#deploy)
 - [Estructura del proyecto](#estructura-del-proyecto)
 - [Rutas principales](#rutas-principales)
 - [Integración con backend](#integración-con-backend)
 - [Flujos principales](#flujos-principales)
 - [Listas rápidas predefinidas](#listas-rápidas-predefinidas)
+- [Prioridades de cócteles](#prioridades-de-cócteles)
 - [Notas sobre el cálculo](#notas-sobre-el-cálculo)
-- [Estado actual del frontend](#estado-actual-del-frontend)
+- [Manejo de errores](#manejo-de-errores)
+- [Estado de módulos](#estado-de-módulos)
 - [Próximos pasos frontend](#próximos-pasos-frontend)
 - [Autor](#autor)
 
@@ -35,20 +39,21 @@ CocktailOps Frontend permite interactuar visualmente con un sistema de planifica
 
 La aplicación está pensada para que un usuario pueda:
 
-- consultar cócteles disponibles
-- consultar productos e insumos disponibles
-- crear una orden para un evento según invitados y duración
-- crear una orden por cantidad total de tragos
-- usar listas rápidas predefinidas según el tipo de evento
-- ajustar manualmente cócteles, pesos o cantidades
-- obtener una lista calculada de productos e insumos necesarios
-- ver el resumen de una orden generada
-- descargar el PDF de una orden temporal o guardada
-- iniciar sesión o registrarse
-- guardar órdenes asociadas a su usuario
-- consultar su historial de órdenes
-- entrar al detalle de una orden guardada
-- ver un dashboard distinto según el tipo de acceso
+- consultar cócteles disponibles;
+- consultar productos e insumos disponibles;
+- crear una orden para un evento según invitados y duración;
+- crear una orden por cantidad total de tragos;
+- usar listas rápidas predefinidas según el tipo de evento;
+- ajustar manualmente cócteles, prioridades o cantidades;
+- obtener una lista calculada de productos e insumos necesarios;
+- ver el resumen de una orden generada;
+- descargar el PDF de una orden temporal o guardada;
+- iniciar sesión o registrarse;
+- guardar órdenes asociadas a su usuario;
+- consultar su historial de órdenes;
+- entrar al detalle de una orden guardada;
+- ver un dashboard distinto según el tipo de acceso;
+- visualizar estados claros de carga, vacío, error, 403 y 404.
 
 El frontend forma parte de una solución full stack orientada a portfolio, con foco en una experiencia clara, profesional y funcional.
 
@@ -58,19 +63,21 @@ El frontend forma parte de una solución full stack orientada a portfolio, con f
 
 El objetivo principal de este módulo es convertir la API de CocktailOps en una aplicación web usable.
 
-El frontend permite mostrar el flujo completo del producto:
+Flujo general del producto:
 
 ```txt
 Ver dashboard
 → Consultar catálogo de cócteles/productos
 → Crear una orden
 → Elegir cócteles manualmente o usar una lista rápida
+→ Ajustar prioridades o cantidades
+→ Ver resumen previo
 → Calcular productos necesarios
-→ Ver resumen de orden
+→ Ver resumen de orden generada
 → Descargar PDF
 ```
 
-Para usuarios autenticados, también permite:
+Para usuarios autenticados:
 
 ```txt
 Login
@@ -81,7 +88,7 @@ Login
 → Descargar PDF de una orden guardada
 ```
 
-Para usuarios administradores, permite:
+Para usuarios administradores:
 
 ```txt
 Login ADMIN
@@ -89,9 +96,41 @@ Login ADMIN
 → Consultar métricas generales de órdenes
 → Ver últimas órdenes del sistema
 → Acceder al detalle de órdenes guardadas
+→ Descargar PDFs según permisos del backend
 ```
 
 La autenticación no bloquea el uso principal de la aplicación. Su objetivo es habilitar funcionalidades persistentes como historial, perfil y asociación de órdenes a una cuenta.
+
+---
+
+## Estado actual
+
+El frontend se encuentra en estado funcional para portfolio.
+
+Actualmente incluye:
+
+- deploy en Vercel;
+- conexión con backend productivo mediante proxy `/api`;
+- login y registro;
+- dashboards por rol;
+- catálogo de cócteles;
+- catálogo de productos;
+- creación de órdenes por evento;
+- creación de órdenes por cantidad total de tragos;
+- uso de listas rápidas predefinidas;
+- prioridades visuales para cócteles en modo evento;
+- órdenes temporales para invitados;
+- órdenes guardadas para usuarios autenticados;
+- historial de órdenes;
+- detalle de orden;
+- descarga de PDF guardado y PDF preview;
+- sidebar responsive;
+- tablas adaptadas para mobile/desktop;
+- estados visuales de error reutilizables;
+- pantalla 403;
+- pantalla 404;
+- manejo específico de errores HTTP;
+- build y lint funcionales.
 
 ---
 
@@ -101,20 +140,20 @@ La autenticación no bloquea el uso principal de la aplicación. Su objetivo es 
 
 Un usuario invitado puede:
 
-- ver el dashboard público
-- ver el catálogo de cócteles
-- ver el catálogo de productos
-- generar una orden temporal
-- usar listas rápidas predefinidas
-- ver el resumen inmediato de la orden generada
-- descargar el PDF de la orden generada
+- ver el dashboard público;
+- ver el catálogo de cócteles;
+- ver el catálogo de productos;
+- generar una orden temporal;
+- usar listas rápidas predefinidas;
+- ver el resumen inmediato de la orden generada;
+- descargar el PDF de la orden generada.
 
 Un usuario invitado no puede:
 
-- acceder al historial
-- acceder al perfil
-- conservar órdenes asociadas a una cuenta
-- recuperar una orden temporal después de salir del flujo
+- acceder al historial;
+- acceder al perfil;
+- conservar órdenes asociadas a una cuenta;
+- recuperar una orden temporal después de salir del flujo.
 
 Regla actual:
 
@@ -138,15 +177,15 @@ order.id == null
 
 Un usuario registrado puede:
 
-- iniciar sesión
-- crear órdenes asociadas a su cuenta
-- usar listas rápidas predefinidas
-- guardar órdenes reales en backend
-- ver su dashboard personal
-- ver su historial de órdenes
-- entrar al detalle de órdenes propias
-- descargar PDFs desde el detalle o desde historial
-- acceder a su perfil
+- iniciar sesión;
+- crear órdenes asociadas a su cuenta;
+- usar listas rápidas predefinidas;
+- guardar órdenes reales en backend;
+- ver su dashboard personal;
+- ver su historial de órdenes;
+- entrar al detalle de órdenes propias;
+- descargar PDFs desde el detalle o desde historial;
+- acceder a su perfil.
 
 ---
 
@@ -154,14 +193,48 @@ Un usuario registrado puede:
 
 Un usuario con rol `ADMIN` puede:
 
-- ver el dashboard administrativo
-- consultar métricas generales de órdenes guardadas
-- ver últimas órdenes del sistema
-- ver columna de usuario en órdenes recientes
-- acceder al detalle de órdenes guardadas según reglas del backend
-- descargar PDFs de órdenes guardadas según permisos del backend
+- ver el dashboard administrativo;
+- consultar métricas generales de órdenes guardadas;
+- ver últimas órdenes del sistema;
+- ver columna de usuario en órdenes recientes;
+- acceder al detalle de órdenes guardadas según reglas del backend;
+- descargar PDFs de órdenes guardadas según permisos del backend.
 
 Las páginas administrativas CRUD para productos, cócteles y categorías todavía no están implementadas en frontend.
+
+---
+
+### Órdenes por evento
+
+En modo evento, el usuario completa:
+
+- cantidad de invitados;
+- duración del evento;
+- cócteles seleccionados;
+- prioridad de cada cóctel.
+
+El frontend muestra prioridades en palabras y envía pesos numéricos al backend.
+
+```txt
+Prioridad baja   → weight 1
+Prioridad normal → weight 2
+Prioridad media  → weight 3
+Prioridad alta   → weight 5
+```
+
+La regla anterior de aumentar automáticamente tragos por persona/hora según la cantidad de cócteles seleccionados fue removida de la UI. Las listas predefinidas ya no muestran etiquetas como `1 pax/hora` o `2 pax/hora`.
+
+---
+
+### Órdenes por cantidad total de tragos
+
+En modo cantidad de tragos, el usuario completa:
+
+- total de tragos;
+- cócteles seleccionados;
+- cantidad asignada a cada cóctel.
+
+También puede usar una lista rápida predefinida. Si existe un total válido, el frontend puede distribuir cantidades según los pesos internos del preset.
 
 ---
 
@@ -173,10 +246,10 @@ El frontend se construye con React y Vite para tener una base moderna, rápida y
 
 Vite permite:
 
-- iniciar el proyecto con poca configuración
-- tener un entorno de desarrollo rápido
-- trabajar cómodamente con TypeScript
-- preparar la aplicación para un futuro deploy
+- iniciar el proyecto con poca configuración;
+- tener un entorno de desarrollo rápido;
+- trabajar cómodamente con TypeScript;
+- preparar la aplicación para deploy.
 
 ---
 
@@ -186,11 +259,11 @@ El proyecto utiliza TypeScript para mejorar la seguridad y claridad del código.
 
 Motivos:
 
-- tipar respuestas del backend
-- representar DTOs del sistema
-- evitar errores comunes en props y estados
-- mejorar el autocompletado del editor
-- facilitar el mantenimiento a medida que crece el frontend
+- tipar respuestas del backend;
+- representar DTOs del sistema;
+- evitar errores comunes en props y estados;
+- mejorar el autocompletado del editor;
+- facilitar el mantenimiento a medida que crece el frontend.
 
 Archivos esperados:
 
@@ -207,23 +280,22 @@ Tailwind CSS se utiliza para construir una interfaz moderna, responsive y consis
 
 El diseño visual sigue una estética tipo dashboard SaaS:
 
-- fondo oscuro
-- tarjetas limpias
-- bordes sutiles
-- acentos dorados
-- tablas legibles
-- formularios claros
-- sidebar responsive
-- feedback visual de acciones importantes
-- diseño profesional para portfolio
+- fondo oscuro;
+- tarjetas limpias;
+- bordes sutiles;
+- acentos dorados;
+- tablas legibles;
+- formularios claros;
+- sidebar responsive;
+- feedback visual de acciones importantes;
+- estados visuales de error;
+- diseño profesional para portfolio.
 
 ---
 
 ### Arquitectura por features
 
 El frontend se organiza por dominio funcional.
-
-Ejemplo:
 
 ```txt
 features/auth
@@ -242,8 +314,6 @@ Esto evita mezclar toda la aplicación en una sola carpeta de componentes y faci
 
 La comunicación con el backend se centraliza en services.
 
-Ejemplo:
-
 ```txt
 authService.ts
 cocktailService.ts
@@ -253,29 +323,38 @@ orderService.ts
 
 Motivos:
 
-- separar lógica HTTP de componentes visuales
-- reutilizar llamadas a API
-- mantener componentes más limpios
-- facilitar cambios futuros en endpoints
+- separar lógica HTTP de componentes visuales;
+- reutilizar llamadas a API;
+- mantener componentes más limpios;
+- facilitar cambios futuros en endpoints.
 
 ---
 
-### Helpers para lógica de negocio del frontend
+### Hooks y helpers para creación de órdenes
 
-La lógica auxiliar que no pertenece directamente al render se mueve a archivos externos.
+El flujo de creación de órdenes fue dividido en componentes, hooks y helpers para evitar que `CreateOrderPage` concentre toda la lógica.
 
-Ejemplo:
+Ejemplos:
 
 ```txt
+hooks/useOrderCocktailsCatalog.ts
+hooks/useOrderCocktailSelection.ts
+hooks/useOrderPayloads.ts
+hooks/useOrderCreationState.ts
+hooks/useCreateOrder.ts
 orderPresetUtils.ts
+orderPriority.ts
 ```
 
-Este helper se encarga de:
+Estos archivos separan responsabilidades como:
 
-- buscar cócteles del preset por nombre dentro del catálogo real
-- detectar cócteles faltantes
-- transformar presets en cócteles seleccionados
-- distribuir cantidades por peso en modo cantidad total de tragos
+- carga del catálogo de cócteles;
+- selección manual o por presets;
+- distribución por pesos internos;
+- construcción de payloads;
+- creación de orden temporal o guardada;
+- limpieza de estados;
+- conversión entre prioridad visual y `weight`.
 
 ---
 
@@ -292,6 +371,7 @@ Rutas públicas:
 - `/login`
 - `/register`
 - `/unauthorized`
+- `/404`
 
 Rutas privadas:
 
@@ -303,49 +383,72 @@ El detalle de orden está protegido porque representa una orden guardada. Las ó
 
 ---
 
+### Responsive design
+
+El frontend fue adaptado para uso desktop y mobile.
+
+Se trabajó especialmente en:
+
+- sidebar responsive;
+- prevención de scroll de fondo cuando el menú mobile está abierto;
+- cards adaptadas a mobile;
+- tablas que se convierten en cards en pantallas chicas;
+- layouts con ancho máximo más estable;
+- flujo de creación de orden en pasos.
+
+---
+
 ## Características principales
 
 ### Funcionalidades implementadas
 
-- Layout principal tipo dashboard
-- Sidebar responsive
-- Login y registro de usuarios
-- Manejo de JWT en frontend
-- Persistencia de sesión en `localStorage`
-- Rutas protegidas
-- Guardas por autenticación
-- Guardas por rol administrativo
-- Página de acceso no autorizado
-- Dashboard público para invitados
-- Dashboard personal para usuarios registrados
-- Dashboard administrativo para rol `ADMIN`
-- Métricas de órdenes propias
-- Métricas generales de órdenes del sistema para admin
-- Tabla de últimas órdenes
-- Catálogo de cócteles conectado al backend
-- Buscador de cócteles
-- Listado de productos conectado al backend
-- Filtro/buscador de productos
-- Creación de órdenes por evento
-- Creación de órdenes por cantidad total de tragos
-- Listas rápidas predefinidas de cócteles
-- Carga automática de cócteles desde presets
-- Distribución de cantidades por peso en modo tragos
-- Edición manual posterior al preset
-- Diferenciación entre usuario invitado y usuario registrado
-- Historial de órdenes del usuario autenticado
-- Detalle de orden guardada
-- Descarga de PDF por orden guardada
-- Descarga de PDF preview para órdenes invitadas
-- Nota visual sobre cálculo conservador de compra
-- Estados de carga
-- Estados de error
-- Estados vacíos
-- Feedback visual de orden creada
-- Toast de éxito
-- Navegación desde orden creada hacia detalle cuando la orden tiene ID
-- Prevención de navegación al detalle para órdenes temporales
-- Manejo específico de errores HTTP en descarga de PDF
+- Layout principal tipo dashboard.
+- Sidebar responsive.
+- Login y registro de usuarios.
+- Mostrar/ocultar contraseña en formularios de autenticación.
+- Manejo de JWT en frontend.
+- Persistencia de sesión en `localStorage`.
+- Rutas protegidas.
+- Guardas por autenticación.
+- Guardas por rol administrativo.
+- Página de acceso no autorizado `403`.
+- Página de no encontrado `404`.
+- Dashboard público para invitados.
+- Dashboard personal para usuarios registrados.
+- Dashboard administrativo para rol `ADMIN`.
+- Métricas de órdenes propias.
+- Métricas generales de órdenes del sistema para admin.
+- Tabla de últimas órdenes.
+- Catálogo de cócteles conectado al backend.
+- Buscador de cócteles.
+- Filtros por tipo de preparación.
+- Paginación del catálogo de cócteles.
+- Listado de productos conectado al backend.
+- Filtro/buscador de productos.
+- Creación de órdenes por evento.
+- Creación de órdenes por cantidad total de tragos.
+- Flujo de creación de orden en pasos.
+- Listas rápidas predefinidas de cócteles.
+- Carga automática de cócteles desde presets.
+- Prioridades visuales para cócteles en modo evento.
+- Distribución de cantidades por peso en modo tragos.
+- Edición manual posterior al preset.
+- Diferenciación entre usuario invitado y usuario registrado.
+- Historial de órdenes del usuario autenticado.
+- Vista de historial propia y general para admin.
+- Detalle de orden guardada.
+- Descarga de PDF por orden guardada.
+- Descarga de PDF preview para órdenes invitadas.
+- Nota visual sobre cálculo conservador de compra.
+- Estados de carga.
+- Estados de error reutilizables.
+- Estados vacíos.
+- Feedback visual de orden creada.
+- Toast de éxito.
+- Navegación desde orden creada hacia detalle cuando la orden tiene ID.
+- Prevención de navegación al detalle para órdenes temporales.
+- Manejo específico de errores HTTP en descarga de PDF.
+- Tablas responsive para historial, dashboard, productos y detalle de orden.
 
 ---
 
@@ -411,6 +514,9 @@ El token y los datos básicos del usuario se guardan en `localStorage`.
 | Descargar PDF de orden guardada | Usuario autenticado dueño / ADMIN según regla backend |
 | Dashboard administrativo | ADMIN |
 | Métricas generales de órdenes | ADMIN |
+| Historial general de órdenes | ADMIN |
+| Pantalla 403 | Público dentro del layout |
+| Pantalla 404 | Público dentro del layout |
 
 ---
 
@@ -418,16 +524,14 @@ El token y los datos básicos del usuario se guardan en `localStorage`.
 
 ### Requisitos previos
 
-- Node.js
-- npm
-- Backend de CocktailOps corriendo localmente
-- Base de datos configurada en backend
+- Node.js 22 o superior recomendado.
+- npm.
+- Backend de CocktailOps corriendo localmente o backend productivo accesible.
+- Base de datos configurada en backend.
 
 ---
 
 ### Clonar repositorio
-
-Desde la carpeta donde quieras guardar el proyecto:
 
 ```bash
 git clone https://github.com/Fran3103/CocktailOps.git
@@ -437,8 +541,6 @@ cd CocktailOps
 ---
 
 ### Instalar dependencias del frontend
-
-Desde la carpeta del frontend:
 
 ```bash
 cd frontend
@@ -489,19 +591,61 @@ npm run preview
 
 Crear un archivo `.env.local` dentro de la carpeta `frontend/`.
 
-Ejemplo:
+Ejemplo para desarrollo local:
 
 ```env
-VITE_API_BASE_URL=http://localhost:8081
+VITE_API_BASE_URL=http://localhost:8080
 ```
 
-También se puede mantener un archivo `.env.example` con la misma clave para documentar la configuración necesaria:
+Cuando se usa el frontend desplegado en Vercel con rewrite interno hacia el backend productivo, la variable puede quedar así:
 
 ```env
-VITE_API_BASE_URL=http://localhost:8081
+VITE_API_BASE_URL=/api
 ```
 
 > Los archivos `.env` y `.env.local` no deben versionarse si contienen valores sensibles o configuraciones específicas del entorno local.
+
+---
+
+## Deploy
+
+El frontend se encuentra desplegado en Vercel.
+
+```txt
+https://cocktailops.vercel.app
+```
+
+### Estrategia de conexión con backend productivo
+
+En producción, el frontend usa `/api` como base URL y Vercel reescribe esas requests hacia el backend productivo.
+
+Ejemplo conceptual:
+
+```json
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "http://<BACKEND_HOST>:8080/:path*"
+    },
+    {
+      "source": "/:path*",
+      "destination": "/index.html"
+    }
+  ]
+}
+```
+
+Esto permite que el frontend llame a la API mediante rutas relativas:
+
+```txt
+/api/cocktails
+/api/products
+/api/orders
+/api/auth/login
+```
+
+También permite mantener funcionando las rutas internas de React Router al refrescar el navegador.
 
 ---
 
@@ -555,11 +699,13 @@ frontend/
 │   │   │   ├── CreateOrderPage.tsx
 │   │   │   ├── OrderDetailPage.tsx
 │   │   │   ├── OrderHistoryPage.tsx
+│   │   │   ├── hooks/
+│   │   │   ├── components/
 │   │   │   ├── order.types.ts
 │   │   │   ├── orderPresets.ts
 │   │   │   ├── orderPresetUtils.ts
-│   │   │   ├── orderService.ts
-│   │   │   └── components/
+│   │   │   ├── orderPriority.ts
+│   │   │   └── orderService.ts
 │   │   │
 │   │   ├── products/
 │   │   │   ├── ProductsPage.tsx
@@ -576,14 +722,22 @@ frontend/
 │   │
 │   ├── shared/
 │   │   ├── components/
-│   │   │   ├── feedback/
 │   │   │   ├── navigation/
 │   │   │   ├── placeholders/
 │   │   │   └── ui/
+│   │   │       ├── Button.tsx
+│   │   │       ├── Card.tsx
+│   │   │       ├── ErrorState.tsx
+│   │   │       ├── Input.tsx
+│   │   │       ├── PageHeader.tsx
+│   │   │       └── PasswordInput.tsx
 │   │   ├── constants/
 │   │   ├── hooks/
+│   │   ├── pages/
+│   │   │   └── NotFoundPage.tsx
 │   │   ├── types/
 │   │   └── utils/
+│   │       └── getApiErrorMessage.ts
 │   │
 │   ├── styles/
 │   ├── index.css
@@ -593,6 +747,7 @@ frontend/
 ├── public/
 ├── package.json
 ├── vite.config.ts
+├── vercel.json
 ├── tsconfig.json
 └── README.md
 ```
@@ -611,6 +766,7 @@ frontend/
 /products
 /create-order
 /unauthorized
+/404
 ```
 
 ### Rutas privadas USER
@@ -625,11 +781,16 @@ frontend/
 
 ```txt
 /dashboard
+/orders
+/orders/:id
+/profile
 ```
 
 El dashboard administrativo se resuelve por rol dentro de `/dashboard`. Si el usuario autenticado tiene rol `ADMIN`, se muestra el dashboard administrativo.
 
 Actualmente no hay rutas CRUD administrativas separadas para productos, cócteles o categorías.
+
+Las rutas inexistentes muestran la página 404.
 
 ---
 
@@ -640,7 +801,13 @@ El frontend se conecta con el backend mediante API REST.
 La URL base se configura con:
 
 ```env
-VITE_API_BASE_URL=http://localhost:8081
+VITE_API_BASE_URL=http://localhost:8080
+```
+
+o, en deploy:
+
+```env
+VITE_API_BASE_URL=/api
 ```
 
 El cliente HTTP se centraliza en:
@@ -682,7 +849,7 @@ Uso en frontend:
 ```txt
 Frontend solicita cócteles
 → Backend responde catálogo
-→ Frontend renderiza cards, buscador, preview y selector de órdenes
+→ Frontend ordena/filtra/renderiza cards, buscador, preview y selector de órdenes
 ```
 
 ---
@@ -698,7 +865,7 @@ Uso en frontend:
 ```txt
 Frontend solicita productos
 → Backend responde catálogo
-→ Frontend renderiza tabla y filtros
+→ Frontend renderiza tabla/cards responsive y filtros
 ```
 
 ---
@@ -728,7 +895,8 @@ Uso en frontend:
 
 ```txt
 Usuario autenticado completa invitados, duración y cócteles
-→ Frontend envía payload
+→ Frontend muestra prioridad en palabras
+→ Frontend envía weight numérico al backend
 → Backend calcula cantidad de tragos, ingredientes y packs
 → Backend guarda la orden
 → Frontend muestra resumen
@@ -747,7 +915,8 @@ Uso en frontend:
 
 ```txt
 Invitado completa invitados, duración y cócteles
-→ Frontend envía payload preview
+→ Frontend muestra prioridad en palabras
+→ Frontend envía weight numérico al backend
 → Backend calcula sin guardar en base de datos
 → Frontend muestra resumen temporal
 → Invitado puede descargar PDF preview
@@ -825,7 +994,7 @@ Uso en frontend:
 Usuario autenticado ingresa a Historial
 → Frontend solicita /orders/my-orders
 → Backend devuelve solo órdenes asociadas al usuario autenticado
-→ Frontend muestra tabla/listado con acceso al detalle
+→ Frontend muestra tabla/card responsive con acceso al detalle y PDF
 ```
 
 ---
@@ -839,10 +1008,10 @@ GET /orders
 Uso en frontend:
 
 ```txt
-Usuario ADMIN entra al dashboard
+Usuario ADMIN entra al dashboard o historial
 → Frontend solicita /orders
 → Backend devuelve órdenes del sistema según permisos
-→ Frontend muestra métricas y últimas órdenes
+→ Frontend muestra métricas, últimas órdenes o historial general
 ```
 
 ---
@@ -961,8 +1130,11 @@ Entrar a la app
 → Ver dashboard público
 → Ver cócteles/productos
 → Crear orden
+→ Completar datos
 → Elegir lista rápida o seleccionar cócteles manualmente
-→ Ver resumen de orden temporal
+→ Ajustar prioridades o cantidades
+→ Ver resumen previo
+→ Generar orden temporal
 → Descargar PDF preview
 ```
 
@@ -989,6 +1161,7 @@ Login
 → Dashboard personal
 → Crear orden
 → Elegir lista rápida o seleccionar cócteles manualmente
+→ Ajustar prioridades o cantidades
 → Orden asociada al usuario
 → Ver detalle
 → Descargar PDF
@@ -1006,6 +1179,8 @@ Login ADMIN
 → Dashboard admin
 → Ver métricas generales
 → Ver últimas órdenes del sistema
+→ Ir a historial
+→ Alternar entre todas las órdenes y mis órdenes
 → Acceder a detalle de órdenes guardadas
 → Descargar PDF según permisos backend
 ```
@@ -1017,8 +1192,8 @@ Login ADMIN
 ```txt
 Usuario autenticado
 → /orders
-→ GET /orders/my-orders
-→ Tabla de órdenes
+→ GET /orders/my-orders o GET /orders según rol/vista
+→ Tabla/cards de órdenes
 → Ver detalle
 → Descargar PDF
 ```
@@ -1078,8 +1253,9 @@ Esto evita depender de IDs de base de datos y permite que los presets funcionen 
 En modo por evento:
 
 ```txt
-El preset carga cócteles y pesos.
-El backend usa los pesos para distribuir los tragos calculados.
+El preset carga cócteles y pesos internos.
+El usuario ve prioridades en palabras.
+El backend recibe weight numérico para calcular la distribución.
 ```
 
 En modo por cantidad total de tragos:
@@ -1094,13 +1270,83 @@ Si el usuario modifica manualmente la selección:
 
 ```txt
 Agregar cóctel
-Editar peso
+Editar prioridad
 Editar cantidad
 Eliminar cóctel
 Dividir equitativamente
 ```
 
 el preset deja de marcarse como activo.
+
+Las listas predefinidas no muestran reglas de `1 pax/hora` ni `2 pax/hora`.
+
+---
+
+## Prioridades de cócteles
+
+Para que el usuario no tenga que entender el concepto técnico de `weight`, el frontend muestra prioridades en palabras.
+
+Archivo principal:
+
+```txt
+src/features/orders/orderPriority.ts
+```
+
+Mapeo actual:
+
+| Prioridad visible | Valor enviado al backend |
+|---|---:|
+| Baja | 1 |
+| Normal | 2 |
+| Media | 3 |
+| Alta | 5 |
+
+Motivo:
+
+- `weight` sigue existiendo como dato interno.
+- El usuario ve una opción clara y entendible.
+- No se usa `0` porque eso equivaldría a excluir el cóctel del cálculo.
+- Para excluir un cóctel, el usuario debe quitarlo de la selección.
+- `Normal` no usa `1` para diferenciarse de `Baja`.
+
+Ejemplo de payload real enviado al backend:
+
+```json
+{
+  "guests": 80,
+  "durationHours": 5,
+  "cocktails": [
+    {
+      "cocktailId": 1,
+      "weight": 5
+    },
+    {
+      "cocktailId": 2,
+      "weight": 2
+    },
+    {
+      "cocktailId": 3,
+      "weight": 1
+    }
+  ]
+}
+```
+
+En el resumen final, el frontend muestra:
+
+```txt
+Prioridad alta
+Prioridad normal
+Prioridad baja
+```
+
+y no muestra:
+
+```txt
+Peso 5
+Peso 2
+Peso 1
+```
 
 ---
 
@@ -1118,10 +1364,10 @@ puede redondear hacia arriba para asegurar disponibilidad.
 
 Esto significa que:
 
-- puede quedar sobrante de algunos insumos
-- no descuenta stock previo
-- no optimiza compras mínimas
-- prioriza que alcance para preparar la cantidad calculada
+- puede quedar sobrante de algunos insumos;
+- no descuenta stock previo;
+- no optimiza compras mínimas;
+- prioriza que alcance para preparar la cantidad calculada.
 
 Componente:
 
@@ -1129,11 +1375,49 @@ Componente:
 src/features/orders/components/CalculationNotice.tsx
 ```
 
-Esta aclaración también debería mantenerse alineada con la nota incluida en el PDF generado por backend.
+Esta aclaración debe mantenerse alineada con la nota incluida en el PDF generado por backend.
 
 ---
 
-## Estado actual del frontend
+## Manejo de errores
+
+El frontend incluye manejo visual de errores mediante componentes reutilizables.
+
+Archivos principales:
+
+```txt
+src/shared/utils/getApiErrorMessage.ts
+src/shared/components/ui/ErrorState.tsx
+src/shared/pages/NotFoundPage.tsx
+src/features/auth/UnauthorizedPage.tsx
+```
+
+Errores contemplados:
+
+| Caso | Resultado visual |
+|---|---|
+| 400 | Orden inválida, ID inválido o datos incorrectos |
+| 401 | Sesión no activa o vencida |
+| 403 | Acceso denegado |
+| 404 | Página o recurso no encontrado |
+| 500 | Error del servidor |
+| Sin respuesta | Error de conexión o backend no disponible |
+
+Páginas y módulos que usan estados visuales de error:
+
+- Dashboard USER
+- Dashboard ADMIN
+- Catálogo de cócteles
+- Catálogo de productos
+- Historial de órdenes
+- Detalle de orden
+- Descarga de PDF
+- 403 Unauthorized
+- 404 Not Found
+
+---
+
+## Estado de módulos
 
 | Módulo | Estado |
 |---|---|
@@ -1146,7 +1430,9 @@ Esta aclaración también debería mantenerse alineada con la nota incluida en e
 | Layout público / privado | Implementado |
 | Sidebar responsive | Implementado |
 | Rutas base | Implementado |
+| Ruta 404 | Implementado |
 | Login / Register | Implementado |
+| Mostrar/ocultar contraseña | Implementado |
 | Manejo de JWT | Implementado |
 | AuthContext | Implementado |
 | ProtectedRoute | Implementado |
@@ -1157,29 +1443,38 @@ Esta aclaración también debería mantenerse alineada con la nota incluida en e
 | Dashboard ADMIN | Implementado |
 | Métricas por rol | Implementado |
 | Tabla de últimas órdenes | Implementado |
+| Tablas/cards responsive | Implementado |
 | Catálogo de cócteles | Implementado |
 | Buscador de cócteles | Implementado |
+| Filtros por preparación | Implementado |
+| Paginación de cócteles | Implementado |
 | Productos | Implementado |
 | Filtro de productos | Implementado |
 | Crear orden modo evento | Implementado |
 | Crear orden modo cantidad de tragos | Implementado |
+| Wizard de creación de orden | Implementado |
+| Refactor de CreateOrderPage en hooks/componentes | Implementado |
 | Listas rápidas predefinidas | Implementado |
+| Prioridades visuales | Implementado |
 | Distribución por peso en presets | Implementado |
 | Feedback de orden creada | Implementado |
 | Toast de éxito | Implementado |
 | Historial de órdenes | Implementado |
+| Vista historial propia/general por rol | Implementado |
 | Detalle de orden guardada | Implementado |
 | Descarga de PDF por ID | Implementado |
 | Descarga de PDF preview invitado | Implementado |
 | Nota sobre cálculo conservador | Implementado |
-| Deploy frontend | Pendiente |
+| Estados visuales de error | Implementado |
+| Deploy frontend | Implementado |
 | Testing frontend automatizado | Pendiente |
 | Funcionalidades CRUD admin | Pendiente |
 | Persistencia temporal de payload preview | Pendiente |
 | Confirmación de correo | Pendiente backend/frontend |
 | Recuperación de contraseña | Pendiente backend/frontend |
-| Límites de uso / rate limiting | Pendiente principalmente backend |
-| Refactor SOLID de CreateOrderPage | Pendiente |
+| UI específica de límites de uso | Pendiente / dependiente de backend |
+| Links de compra por producto | Futuro |
+| Integración con tiendas/proveedores | Futuro |
 
 ---
 
@@ -1187,37 +1482,35 @@ Esta aclaración también debería mantenerse alineada con la nota incluida en e
 
 ### Próximas mejoras razonables
 
-- Preparar variables de entorno para deploy
-- Deploy frontend en Vercel u otra plataforma
-- Conectar frontend deployado con backend productivo
-- Mejorar persistencia temporal del payload preview en `sessionStorage`
-- Agregar tests frontend básicos
-- Mejorar manejo de errores específicos en creación de órdenes
-- Refactorizar `CreateOrderPage` en hooks y subcomponentes más pequeños
-- Agregar páginas administrativas para productos/cócteles/categorías
-- Documentar casos QA manuales del flujo principal
-- Preparar capturas para portfolio/LinkedIn
+- Ejecutar QA manual completo del flujo principal.
+- Retestear deploy en Vercel con usuario invitado, USER y ADMIN.
+- Documentar casos QA manuales del flujo principal.
+- Agregar tests frontend básicos.
+- Mejorar persistencia temporal del payload preview en `sessionStorage`.
+- Agregar páginas administrativas para productos/cócteles/categorías.
+- Preparar capturas para portfolio/LinkedIn.
+- Revisar accesibilidad básica de formularios, selects y navegación mobile.
 
 ---
 
 ### Roadmap futuro de producto
 
-- Confirmación de correo en registro
-- Recuperación de contraseña
-- Límites de uso para previews, PDFs, login y registro
-- Links de compra por producto
-- Lista de compra compartible
-- Opciones de compra desde una orden
-- Registro de tiendas/proveedores
-- Catálogo de productos por tienda
-- Integración futura con tiendas externas o marketplaces
-- Modo compra optimizada considerando stock disponible
+- Confirmación de correo en registro.
+- Recuperación de contraseña.
+- Límites de uso visibles para previews, PDFs, login y registro.
+- Links de compra por producto.
+- Lista de compra compartible.
+- Opciones de compra desde una orden.
+- Registro de tiendas/proveedores.
+- Catálogo de productos por tienda.
+- Integración futura con tiendas externas o marketplaces.
+- Modo compra optimizada considerando stock disponible.
 
 ---
 
 ## Autor
 
-Proyecto desarrollado por Franco Aguirre como parte de su formación y portfolio profesional en desarrollo backend/full stack.
+Proyecto desarrollado por **Franco Aguirre** como parte de su formación y portfolio profesional en desarrollo backend/full stack.
 
 Stack principal de estudio:
 

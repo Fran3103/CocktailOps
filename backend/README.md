@@ -1,8 +1,8 @@
 # CocktailOps Backend
 
-Backend REST API de **CocktailOps**, desarrollado con **Java 17**, **Spring Boot**, **PostgreSQL** y **Flyway**.
+Backend REST API de **CocktailOps**, desarrollado con **Java 17**, **Spring Boot 4.0.2**, **PostgreSQL** y **Flyway**.
 
-Este módulo contiene la lógica principal del sistema: autenticación JWT, autorización por roles, catálogo de productos/cócteles, cálculo de órdenes, generación de PDF, historial de usuario, ownership de recursos y endpoints públicos de preview para visitantes.
+Este módulo contiene la lógica principal del sistema: autenticación JWT, autorización por roles, catálogo de productos/cócteles, cálculo de órdenes, prioridades de consumo, productos preparados, generación de PDF, historial de usuario, ownership de recursos y endpoints públicos de preview para visitantes.
 
 ---
 
@@ -59,10 +59,12 @@ El proyecto está pensado como una aplicación full stack de portfolio, mostrand
 | API Spring Boot | Implementado |
 | PostgreSQL + Flyway | Implementado |
 | Seed demo de catálogo | Implementado |
-| Catálogo ampliado de cócteles | Implementado |
+| Catálogo ampliado de productos y cócteles | Implementado |
+| Descripción de productos | Implementado |
+| Tipo de preparación de cócteles | Implementado |
 | Normalización de unidades | Implementado |
 | Autenticación JWT | Implementado |
-| Roles USER / ADMIN | Implementado |
+| Roles `USER` / `ADMIN` | Implementado |
 | Endpoints públicos de catálogo | Implementado |
 | Preview público de órdenes | Implementado |
 | Creación persistente de órdenes autenticadas | Implementado |
@@ -70,19 +72,26 @@ El proyecto está pensado como una aplicación full stack de portfolio, mostrand
 | Ownership sobre detalle y PDF | Implementado |
 | PDF protegido por ID | Implementado |
 | PDF preview desde body | Implementado |
-| Dashboard frontend por rol soportado por API | Implementado |
+| Prioridades `1..4` en modo `TIME` | Implementado |
+| Distribución exacta por pesos | Implementado |
+| Productos preparados / subrecetas | Implementado |
+| Almíbar simple convertido a azúcar | Implementado |
+| Hielo global por cantidad de tragos | Implementado |
 | Límite de órdenes persistidas por usuario | Implementado |
-| Tests unitarios backend | Implementado |
+| Tests unitarios backend | **40 tests en verde** |
 | GitHub Actions CI/CD | Implementado |
 | PostgreSQL en Neon | Implementado |
 | Deploy backend en Oracle Cloud | Implementado |
-| Servicio systemd | Implementado |
+| Servicio `systemd` | Implementado |
 | Health check de deploy | Implementado |
 | Backup y rollback automático de JAR | Implementado |
-| Deploy frontend en Vercel | Pendiente |
-| Proxy/HTTPS público para frontend | Pendiente |
+| Frontend en Vercel | Implementado |
+| Proxy `/api` Vercel → Oracle | Implementado |
+| CRUD backend de `Shop` | Implementado, fuera del flujo principal |
+| Integración Order → Shop / carrito | No implementado |
+| Panel visual completo de administración de catálogo | No implementado |
 
----
+El backend se considera **funcionalmente cerrado para la versión portfolio**. Las funcionalidades no implementadas se mantienen como evolución futura y no forman parte del flujo principal presentado al usuario.
 
 ## Reglas principales del producto
 
@@ -125,10 +134,10 @@ Un usuario con rol `USER` puede:
 - ver detalle de sus órdenes
 - descargar PDF por ID de sus propias órdenes
 
-Para proteger la demo pública y limitar el crecimiento innecesario de la base, cada usuario autenticado puede guardar como máximo **20 órdenes dentro de una ventana móvil de 24 horas**.
+Para proteger la demo pública y limitar el crecimiento innecesario de la base, cada usuario autenticado puede guardar como máximo **25 órdenes dentro de una ventana móvil de 24 horas**.
 
 ```txt
-Máximo: 20 órdenes persistidas por usuario / 24 h
+Máximo: 25 órdenes persistidas por usuario / 24 h
 Al alcanzar el límite: HTTP 429 Too Many Requests
 ```
 
@@ -143,6 +152,8 @@ Un usuario con rol `ADMIN` puede:
 - acceder al detalle de órdenes de cualquier usuario
 - descargar PDFs de cualquier orden
 - administrar catálogo mediante endpoints protegidos
+
+> El backend ya protege operaciones de catálogo para `ADMIN`, pero la versión actual del frontend no implementa un panel completo de alta/edición de productos y cócteles. En la interfaz actual la diferencia principal del administrador es el acceso al historial global de órdenes.
 
 ---
 
@@ -237,7 +248,7 @@ GET /orders/{id}/pdf
 La API limita la cantidad de órdenes que puede persistir un usuario autenticado:
 
 ```txt
-20 órdenes guardadas como máximo dentro de las últimas 24 horas.
+25 órdenes guardadas como máximo dentro de las últimas 24 horas.
 ```
 
 La validación se realiza antes de persistir una nueva orden, consultando cuántas órdenes creó el usuario desde `Instant.now() - 24 h`.
@@ -292,7 +303,7 @@ Los servicios principales incluyen logs para seguir flujos importantes:
 ## Tecnologías utilizadas
 
 - Java 17
-- Spring Boot
+- Spring Boot 4.0.2
 - Maven
 - PostgreSQL
 - Spring Data JPA
@@ -371,7 +382,7 @@ Los endpoints que guardan órdenes requieren autenticación y respetan el límit
 POST /orders
 POST /orders/by-drinks
 
-→ máximo 20 órdenes persistidas por usuario dentro de 24 horas
+→ máximo 25 órdenes persistidas por usuario dentro de 24 horas
 → exceso de límite: 429 Too Many Requests
 ```
 
@@ -383,154 +394,144 @@ Los endpoints públicos de preview permanecen separados y no generan registros p
 
 ### Modo TIME
 
-El modo `TIME` calcula la cantidad total de tragos a partir de:
+El modo `TIME` calcula el total a partir de:
 
 ```txt
 invitados × duración × tragos por persona por hora
 ```
 
-Ejemplo base:
+La estimación base actual es `1 trago por persona por hora` y puede configurarse con:
 
-```txt
-60 invitados × 5 horas × 1 trago/persona/hora = 300 tragos
-```
-
-Además, el sistema aplica una estimación reforzada para eventos grandes con muchas opciones de cócteles:
-
-```txt
-Si invitados >= 60
-y cócteles seleccionados >= 8
-→ usa 2 tragos por persona por hora
+```properties
+order.drinksPerPersonPerHour=1
 ```
 
 Ejemplo:
 
 ```txt
-60 invitados × 5 horas × 2 tragos/persona/hora = 600 tragos
+290 invitados × 6 horas × 1 = 1740 tragos
 ```
 
-Para eventos más chicos, aunque haya muchos cócteles, se mantiene la estimación conservadora:
+La versión actual **no duplica automáticamente el consumo en eventos grandes**.
+
+### Prioridad / peso de cócteles
+
+En modo `TIME`, cada cóctel puede recibir una prioridad:
+
+| Prioridad visible | `weight` |
+|---|---:|
+| Baja | `1` |
+| Normal | `2` |
+| Media | `3` |
+| Alta | `4` |
+
+Reglas:
 
 ```txt
-40 invitados × 5 horas × 1 trago/persona/hora = 200 tragos
+mínimo = 1
+máximo = 4
+default = 2 (Normal)
 ```
 
-Esta regla evita inflar demasiado eventos pequeños y permite reforzar estimaciones para eventos grandes con mucha variedad.
+El peso es relativo: a mayor peso, mayor proporción del total de tragos.
 
-### Pesos por cóctel
+### Distribución exacta
 
-En modo `TIME`, cada cóctel puede recibir un `weight`.
+Cuando la distribución proporcional genera decimales, el backend utiliza un esquema de **largest remainder**: asigna la parte entera y reparte los tragos faltantes según los mayores restos decimales.
 
-El peso indica preferencia relativa:
-
-```txt
-Más peso → más tragos asignados a ese cóctel.
-Menos peso → menos tragos asignados.
-```
-
-Ejemplo:
+Esto garantiza:
 
 ```txt
-totalDrinks = 100
-
-Mojito weight = 1
-Daiquiri weight = 1
-Gin Tonic weight = 2
-
-Resultado:
-Mojito    = 25
-Daiquiri  = 25
-Gin Tonic = 50
+suma de tragos distribuidos == totalDrinks
 ```
 
 ### Modo DRINKS
 
-El modo `DRINKS` no estima por invitados ni duración.
-
-El usuario indica:
-
-- total exacto de tragos
-- cantidad de tragos por cóctel
-
-Regla:
+El modo `DRINKS` no estima por invitados ni duración. El usuario indica el total exacto de tragos y la cantidad exacta por cóctel.
 
 ```txt
-La suma de cantidades por cóctel debe ser igual a totalDrinks.
+sum(quantity) == totalDrinks
 ```
 
-Ejemplo:
-
-```json
-{
-  "totalDrinks": 100,
-  "cocktails": [
-    { "cocktailId": 1, "quantity": 25 },
-    { "cocktailId": 2, "quantity": 25 },
-    { "cocktailId": 3, "quantity": 25 },
-    { "cocktailId": 4, "quantity": 25 }
-  ]
-}
-```
+Los modos `TIME` y `DRINKS` comparten el mismo motor de recetas, unidades, productos preparados, packs e hielo.
 
 ### Acumulación de ingredientes
 
-El sistema no calcula botellas por cóctel de forma separada.
-
-Primero acumula los ingredientes por producto y luego calcula la compra sugerida.
-
-Ejemplo:
+CocktailOps no calcula botellas por cóctel de manera separada. Primero suma el total requerido de cada producto y después calcula el formato de compra.
 
 ```txt
 Mojito usa Ron
 Daiquiri usa Ron
 
-El sistema suma todo el ron requerido.
-Después calcula cuántas botellas comprar.
+→ sumar todo el Ron requerido
+→ dividir por el tamaño de botella
+→ redondear hacia arriba una sola vez
 ```
-
-Esto evita duplicar productos y genera una lista de compra más realista.
 
 ### Unidades soportadas
 
-El sistema soporta y normaliza unidades de producto:
+Unidades principales: `ML`, `GR`, `UNID`. Las recetas también pueden utilizar `OZ`.
 
 ```txt
-ML
-GR
-UNID
+OZ → ML  (1 oz = 29.5735 ml)
+OZ → GR  (1 oz = 28.3495 g)
 ```
 
-También acepta variantes en datos heredados/locales, como:
+No se realizan conversiones ambiguas como `UNID → ML` o `UNID → GR`.
+
+### Productos preparados
+
+El modelo de producto incluye `purchasable`.
+
+- `true`: el producto puede aparecer directamente en la lista de compra.
+- `false`: el backend busca una subreceta y reemplaza el producto por sus materias primas **antes de calcular packs**.
+
+Primer caso implementado:
 
 ```txt
-ml / ML
-g / G / gr / GR
-unid / UNID / unit / UNIT
+Almíbar simple
+1000 g de azúcar + agua ≈ 1600 ml de almíbar terminado
 ```
 
-Las recetas pueden usar onzas (`OZ`) y el backend convierte a la unidad del producto cuando corresponde:
+El agua no se incluye como producto de compra. El almíbar se convierte en azúcar, esa azúcar se acumula con cualquier azúcar directa y recién después se redondean los packs.
+
+La expansión es recursiva y valida producto preparado sin receta, `outputAmount`, unidades y ciclos entre subrecetas.
+
+### Cálculo de packs
 
 ```txt
-OZ → ML
-OZ → GR
+packsToBuy = ceil(requiredAmount / unitSize)
 ```
 
-No se hacen conversiones ambiguas como:
+Ejemplo:
 
 ```txt
-UNID → GR
-UNID → ML
+Ron requerido: 1600 ML
+Botella: 750 ML
+1600 / 750 = 2.13
+→ comprar 3 botellas
 ```
 
-Cuando un producto se compra en gramos, la receta también debe estar expresada en gramos.
+### Hielo global
 
----
+El hielo fue removido de las recetas individuales y se agrega una sola vez por orden.
+
+```txt
+1 bolsa de 15 kg cada 55 tragos
+iceBags = ceil(totalDrinks / 55)
+```
+
+Ejemplo de calibración:
+
+```txt
+1740 tragos → 32 bolsas de 15 kg
+```
+
+Esto evita duplicar hielo por receta y hace que el cálculo escale con el volumen total del evento.
 
 ## PDF y lista de compra
 
 El backend genera PDFs con **Thymeleaf + OpenHTMLToPDF**.
-
-Tipos de PDF:
 
 | Caso | Endpoint |
 |---|---|
@@ -540,13 +541,6 @@ Tipos de PDF:
 
 ### PDF protegido por ID
 
-```http
-GET /orders/{id}/pdf
-Authorization: Bearer <token>
-```
-
-Reglas:
-
 ```txt
 USER  → solo PDF de órdenes propias
 ADMIN → cualquier PDF
@@ -554,117 +548,57 @@ ADMIN → cualquier PDF
 
 ### PDF preview público
 
-```http
-POST /orders/preview/pdf
-POST /orders/by-drinks/preview/pdf
-```
+Los endpoints de preview reciben el body y generan el PDF sin persistir registros.
 
-Estos endpoints reciben el body de la orden y devuelven un PDF sin acceder a una orden persistida.
+### Contenido del PDF
 
-Esto permite que un visitante descargue una lista de compra sin registrarse.
+Incluye identificación de la orden, fecha, modo de cálculo, invitados/duración cuando corresponde, total de tragos, distribución y total de cócteles, lista de compra, formato de presentación, unidad, total disponible por producto, total de unidades de compra y una aclaración sobre el redondeo.
 
 ### Interpretación de la compra sugerida
 
-La lista de compra no representa una compra “exacta” sin sobrantes.
+La lista representa la cantidad mínima de botellas, packs o unidades necesarias para poder preparar hasta la cantidad calculada de tragos. El redondeo utiliza `CEILING`, por lo que puede sobrar producto.
 
-Representa la cantidad mínima de packs, botellas o unidades necesarias para poder preparar hasta la cantidad total de tragos estimada.
-
-Ejemplo:
-
-```txt
-Ron requerido: 1600 ML
-Botella: 750 ML
-
-1600 / 750 = 2.13
-Resultado: comprar 3 botellas
-```
-
-Por eso el PDF incluye una aclaración:
-
-```txt
-Las cantidades sugeridas están calculadas para poder preparar hasta la cantidad total de tragos estimada.
-Los productos se redondean hacia arriba según su formato de compra, por ejemplo botellas, packs o unidades, por lo que puede sobrar producto al finalizar el evento.
-```
-
-### Fecha del PDF
-
-Para órdenes temporales y guardadas, el backend asigna fecha de creación y el PDF la muestra en formato:
-
-```txt
-dd/MM/yyyy
-```
-
-Ejemplo:
-
-```txt
-21/08/2026
-```
-
----
+La fecha se presenta como `dd/MM/yyyy`.
 
 ## Catálogo demo y migraciones
 
-El catálogo demo se carga mediante Flyway.
+El catálogo demo se carga y evoluciona mediante Flyway e incluye categorías, productos, descripciones, formatos de compra, `purchasable`, cócteles, ingredientes, tipos de preparación y productos preparados.
 
-Incluye:
+### Tipos de preparación
 
-- categorías
-- productos base
-- productos adicionales
-- cócteles clásicos
-- cócteles modernos
-- ingredientes por cóctel
-- normalización de unidades
+```txt
+DIRECT
+SHAKEN
+STIRRED
+FROZEN
+```
 
-Migraciones destacadas:
+### Migraciones destacadas
 
 | Migración | Descripción |
 |---|---|
 | `V1__initial_schema.sql` | Esquema inicial |
 | `V6__add_user_id_to_orders.sql` | Asociación Order → User |
 | `V7__seed_demo_catalog_data.sql` | Catálogo demo inicial |
-| `V8__add_more_demo_cocktails.sql` | Ampliación del catálogo de cócteles |
-| `V9__fix_sugar_ingredient_units.sql` | Corrección de azúcar en recetas |
-| `V10__normalize_demo_catalog_units.sql` | Normalización de unidades y catálogo demo |
+| `V8__add_more_demo_cocktails.sql` | Ampliación del catálogo |
+| `V9__fix_sugar_ingredient_units.sql` | Corrección de azúcar |
+| `V10__normalize_demo_catalog_units.sql` | Normalización de unidades |
+| `V11__add_product_description.sql` | Descripciones de producto |
+| `V12__add_more_products_and_cocktails.sql` | Ampliación de productos y cócteles |
+| `V13__add_cocktail_preparation_type.sql` | Tipo de preparación |
+| `V14__remove_ice_from_cocktail_recipes.sql` | Hielo fuera de recetas individuales |
+| `V15__adjust_cocktail_recipes.sql` | Recalibración de recetas para eventos |
+| `V16__add_prepared_product_recipes.sql` | Productos preparados y subrecetas |
 
-### Cócteles demo
+V16 agrega:
 
-El catálogo demo incluye aproximadamente 30 cócteles, entre ellos:
+```txt
+products.purchasable
+prepared_product_recipes
+prepared_product_recipe_ingredients
+```
 
-- Mojito
-- Daiquiri
-- Gin Tonic
-- Margarita
-- Fernet Cola
-- Aperol Spritz
-- Cuba Libre
-- Negroni
-- Old Fashioned
-- Whisky Sour
-- Tom Collins
-- Dry Martini
-- Cosmopolitan
-- Moscow Mule
-- Paloma
-- Caipirinha
-- Caipiroska
-- Piña Colada
-- Sex on the Beach
-- Espresso Martini
-- Tequila Sunrise
-- Americano
-- Garibaldi
-- French 75
-- Bellini
-- Vodka Tonic
-- Campari Tonic
-- Gin Fizz
-- Vodka Collins
-- Caipirissima
-
-Este catálogo permite que el frontend ofrezca búsqueda manual y listas rápidas predefinidas.
-
----
+El primer producto preparado versionado es `Almíbar simple`, cuya necesidad se traduce a azúcar antes de generar la compra final.
 
 ## Instalación y uso local
 
@@ -737,7 +671,7 @@ spring.jackson.time-zone=UTC
 
 order.drinksPerPersonPerHour=1
 
-security.jwt.secret=local-dev-secret-key-32-characters-minimum-change-me-123456
+security.jwt.secret=<BASE64_SECRET_LOCAL>
 
 springdoc.swagger-ui.path=/swagger-ui.html
 springdoc.api-docs.path=/v3/api-docs
@@ -886,6 +820,15 @@ GET /categories
 
 Las operaciones de escritura del catálogo requieren rol `ADMIN`.
 
+### Prioridades usadas por `TIME`
+
+```txt
+1 = Baja
+2 = Normal (default)
+3 = Media
+4 = Alta
+```
+
 ### Preview de orden TIME
 
 ```http
@@ -944,7 +887,7 @@ Guarda en base.
 Asocia la orden al usuario.
 Aparece en historial.
 Permite detalle y PDF por ID.
-Respeta el límite de 20 órdenes persistidas por usuario dentro de 24 horas.
+Respeta el límite de 25 órdenes persistidas por usuario dentro de 24 horas.
 ```
 
 ### Preview de orden DRINKS
@@ -1074,107 +1017,87 @@ filename: order-preview.pdf
 
 ## Integración con frontend
 
-El frontend consume este backend mediante Axios y una variable de entorno:
-
-```env
-VITE_API_BASE_URL=http://localhost:8081
-```
-
-Ese valor corresponde al entorno local. El frontend productivo todavía está pendiente de despliegue en Vercel. La integración pública final se configurará mediante una URL HTTPS del frontend y un proxy/rewrite hacia el backend desplegado en Oracle.
-
-Funcionalidades actualmente soportadas desde frontend:
-
-- login
-- registro
-- persistencia de sesión en `localStorage`
-- catálogo de productos
-- catálogo de cócteles
-- creación de orden temporal para invitado
-- creación de orden guardada para usuario autenticado
-- preview JSON para invitado
-- preview PDF para invitado
-- PDF por ID para orden guardada
-- historial de usuario
-- detalle de orden protegida
-- dashboard por tipo de usuario
-- dashboard administrativo con órdenes del sistema
-- listas rápidas de cócteles
-
-### Listas rápidas del frontend
-
-El frontend incluye presets de cócteles por caso de uso:
-
-- Clásicos simples
-- Clásicos completos
-- Boda / evento elegante
-- Modernos y fiesta
-- Verano / tropical
-- Aperitivos
-- Premium clásico
-- Popular y rápido
-
-Los presets seleccionan cócteles por nombre y asignan pesos iniciales.
-
-Después el usuario puede ajustar manualmente:
+El frontend está desarrollado con React + TypeScript + Vite y está desplegado en:
 
 ```txt
-Modo TIME   → pesos/preferencias
-Modo DRINKS → cantidades por cóctel
+https://cocktailops.vercel.app
 ```
 
-### Explicación visual de cálculo
+En producción utiliza:
 
-El frontend muestra aclaraciones para que el usuario entienda:
+```env
+VITE_API_BASE_URL=/api
+```
 
-- cuándo una orden es temporal
-- cuándo se guarda en historial
-- qué significa el peso de un cóctel
-- qué significa la estimación de tragos
-- que la lista de compra se redondea por botella, pack o unidad
+Vercel aplica el rewrite `/api/:path*` hacia el backend de Oracle Cloud y mantiene fallback SPA hacia `/index.html`.
 
----
+Funcionalidades soportadas desde frontend:
+
+- catálogo de productos y cócteles;
+- búsqueda, selección y presets;
+- prioridad Baja / Normal / Media / Alta;
+- preview temporal para invitados;
+- PDF de invitado;
+- registro y login;
+- persistencia de sesión;
+- órdenes guardadas;
+- historial propio;
+- detalle protegido;
+- PDF por ID;
+- rutas privadas;
+- historial global para `ADMIN`.
+
+La administración visual completa del catálogo no forma parte de la versión actual.
 
 ## Testing
 
-El backend incorpora tests con **JUnit 5**, **Mockito** y un perfil de test separado.
+El backend utiliza **JUnit 5**, **Mockito** y un perfil de test separado.
 
-La suite actual ejecutada tanto localmente como en GitHub Actions contiene **31 tests**:
+La suite actual contiene **40 tests en verde**.
 
-| Área | Estado actual |
-|---|---|
-| Contexto Spring Boot | Implementado |
-| ProductServiceImpl | 17 tests |
-| OrderServiceImpl | 13 tests |
-| Límite de órdenes por usuario | Cubierto |
-| Auth/Security | Pendiente de ampliar |
-| PDF preview | Pendiente de ampliar |
-| Ownership | Pendiente de ampliar |
-| Controller tests | Pendiente |
+Áreas cubiertas:
 
-La protección de uso incorpora un test específico que verifica que, cuando un usuario alcanza el límite permitido:
+- contexto de Spring Boot;
+- `ProductServiceImpl`;
+- `CocktailServiceImpl`;
+- `OrderServiceImpl`;
+- validaciones y recursos inexistentes;
+- duplicados;
+- cálculo de órdenes;
+- prioridades `1..4`;
+- distribución de tragos;
+- cálculo de packs;
+- productos preparados;
+- almíbar → azúcar;
+- hielo global;
+- límite de órdenes persistidas.
+
+Casos relevantes:
 
 ```txt
-se lanza RateLimitExceededException
-no se ejecuta orderRepository.save(...)
+prioridad default = 2
+pesos válidos entre 1 y 4
+suma distribuida == totalDrinks
+producto preparado no aparece como compra directa
+1740 tragos → 32 bolsas de hielo
+límite de 25 órdenes / 24 h
 ```
 
-El pipeline de CI ejecuta:
+Windows:
+
+```powershell
+cd backend
+.\mvnw.cmd test
+```
+
+Linux/macOS:
 
 ```bash
-mvn -B clean install
+cd backend
+./mvnw test
 ```
 
-y el deploy no continúa si el build o cualquier test falla.
-
-Mejoras de testing que siguen siendo opcionales para futuras iteraciones:
-
-- ampliar tests de autenticación y autorización
-- probar ownership de detalle y PDF en más escenarios
-- agregar tests de generación de PDF
-- agregar tests de controller/HTTP para endpoints principales
-
-
----
+El pipeline ejecuta `mvn -B clean install` y no despliega si falla el build o cualquier test.
 
 ## Deploy e infraestructura
 
@@ -1284,7 +1207,7 @@ checkout
 En un push a `master`, después de superar CI, también se ejecuta CD:
 
 ```txt
-build + 31 tests
+build + 40 tests
 → generar JAR
 → conectar por SSH a Oracle
 → copiar JAR nuevo
@@ -1330,10 +1253,13 @@ No se versionan:
 
 ### Estado de acceso público
 
-El backend ya está desplegado y operativo en Oracle. La capa pública definitiva para el frontend todavía está pendiente de cierre.
+El backend está desplegado y operativo en Oracle Cloud. El frontend está desplegado en Vercel y consume la API mediante `/api`, que funciona como proxy hacia Oracle.
 
-El siguiente paso será desplegar el frontend en Vercel y configurar la comunicación HTTPS/proxy hacia Oracle. Después se podrá endurecer el acceso directo al backend y aplicar rate limiting por IP en la capa de entrada.
+Aplicación pública:
 
+```txt
+https://cocktailops.vercel.app
+```
 
 ---
 
@@ -1343,13 +1269,13 @@ El siguiente paso será desplegar el frontend en Vercel y configurar la comunica
 
 ```mermaid
 flowchart LR
-    FE[Frontend React + TypeScript]
+    FE[Frontend React + TypeScript / Vercel]
     BE[Backend Spring Boot]
     DB[(Neon PostgreSQL)]
     PDF[Thymeleaf + OpenHTMLToPDF]
     FLY[Flyway]
 
-    FE -->|REST / JSON| BE
+    FE -->|/api proxy + REST / JSON| BE
     BE --> DB
     BE --> PDF
     FLY --> DB
@@ -1416,44 +1342,48 @@ sequenceDiagram
 
 ## Próximos pasos
 
-### Cierre de despliegue full stack
+### Cierre de documentación
 
-- Desplegar frontend React/Vite en Vercel
-- Configurar la URL productiva del frontend
-- Configurar proxy/rewrite HTTPS desde Vercel hacia el backend de Oracle
-- Ajustar CORS según la URL definitiva
-- Verificar flujo completo desplegado:
-  - invitado
-  - registro y login
-  - USER
-  - ADMIN
-  - orden TIME
-  - orden DRINKS
-  - historial
-  - ownership
-  - PDF preview
-  - PDF por ID
-  - límite de 25 órdenes / 24 h
-- Revisar y restringir el acceso directo a `:8080` cuando la capa pública final esté definida
-- Incorporar rate limiting por IP para endpoints públicos sensibles en la capa de entrada
-- Actualizar README raíz con la arquitectura y URLs definitivas
-- Preparar capturas y documentación final para portfolio
+La aplicación full stack ya está desplegada y funcional. Para cerrar la presentación como proyecto portfolio quedan principalmente tareas de documentación:
+
+- completar Swagger/OpenAPI con descripciones, ejemplos y respuestas HTTP;
+- actualizar README del frontend;
+- actualizar README general del repositorio;
+- realizar un smoke final de la versión desplegada;
+- preparar capturas y publicación del proyecto.
+
+No se consideran necesarias nuevas funcionalidades de negocio para cerrar la versión portfolio, salvo que el QA final detecte un bug real.
+
+### Módulo `Shop`
+
+El backend contiene entidad, repository, service, DTOs y controller para `Shop`, y `/shop/**` está protegido para `ADMIN`.
+
+Sin embargo, `Shop` **no forma parte del flujo funcional actual**.
+
+La idea futura es conectar la lista calculada con proveedores o tiendas:
+
+```txt
+OrderItems
+   ↓
+catálogo de Shop
+   ↓
+matching de productos
+   ↓
+enlace de compra / carrito
+```
+
+Esta integración quedó fuera de la versión portfolio para mantener un alcance razonable y no se presenta como funcionalidad terminada.
 
 ### Mejoras futuras no bloqueantes
 
-Estas mejoras pueden aportar valor, pero no son necesarias para considerar el backend listo como proyecto de portfolio:
-
-- ampliar tests de seguridad, ownership y PDF
-- verificación de email
-- reset de contraseña
-- panel administrativo más completo para catálogo
-- auditoría de órdenes
-- mejoras adicionales de Swagger/OpenAPI
-- colección Postman del flujo completo
-- Dockerfile del backend si se quiere ofrecer una alternativa de ejecución empaquetada
-
-
----
+- panel administrativo completo para productos/cócteles;
+- integración Order → Shop / carrito;
+- verificación de email;
+- reset de contraseña;
+- rate limiting por IP;
+- auditoría avanzada;
+- factores opcionales de clima;
+- ampliar cobertura de tests HTTP/security/PDF.
 
 ## Autor
 
