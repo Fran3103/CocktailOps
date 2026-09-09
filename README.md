@@ -123,7 +123,7 @@ https://cocktailops.vercel.app
 | Rollback automático | Implementado |
 | Tests backend | 40 tests en verde |
 | Swagger/OpenAPI final | En actualización |
-| README backend/frontend/general | En actualización |
+| README backend/frontend/general | Implementado |
 | Integración de tiendas/carrito | Futuro |
 | CRUD administrativo visual | Futuro |
 
