@@ -14,10 +14,6 @@ type OrderPresetSelectorProps = {
   footer?: ReactNode;
 };
 
-function getDrinksRuleLabel(cocktailsCount: number) {
-  return cocktailsCount >= 8 ? "2 pax/hora" : "1 pax/hora";
-}
-
 export function OrderPresetSelector({
   presets,
   selectedPresetId,
@@ -57,7 +53,8 @@ export function OrderPresetSelector({
       <div className="rounded-card border border-border-soft bg-background/30">
         <div className="flex flex-col gap-1 border-b border-border-soft px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
           <p className="text-text-muted">
-            Mostrando {presets.length} {presets.length === 1 ? "lista" : "listas"}
+            Mostrando {presets.length}{" "}
+            {presets.length === 1 ? "lista" : "listas"}
           </p>
 
           <p className="text-primary">
@@ -95,10 +92,6 @@ export function OrderPresetSelector({
                           {preset.title}
                         </h4>
 
-                        <span className="rounded-full border border-border-soft bg-background/60 px-2 py-0.5 text-[11px] uppercase tracking-wide text-primary">
-                          {getDrinksRuleLabel(cocktailsCount)}
-                        </span>
-
                         {isSelected && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
                             <CheckCircle2 size={13} />
@@ -133,9 +126,7 @@ export function OrderPresetSelector({
         )}
 
         {footer && (
-          <div className="border-t border-border-soft px-4 py-3">
-            {footer}
-          </div>
+          <div className="border-t border-border-soft px-4 py-3">{footer}</div>
         )}
       </div>
     </div>

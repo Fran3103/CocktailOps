@@ -1,6 +1,12 @@
 import { Martini, Trash2 } from "lucide-react";
 
 import { Button } from "../../../shared/components/ui/Button";
+import {
+  cocktailPriorityOptions,
+  getPriorityByWeight,
+  getWeightByPriority,
+  type CocktailPriority,
+} from "../orderPriority";
 import type { OrderMode, SelectedOrderCocktail } from "../order.types";
 
 type SelectedCocktailsListProps = {
@@ -11,21 +17,27 @@ type SelectedCocktailsListProps = {
   onRemoveCocktail: (cocktailId: number) => void;
 };
 
-function getInputLabel(orderMode: OrderMode) {
-  return orderMode === "TIME" ? "Peso" : "Tragos";
-}
-
-function getInputValue(
-  orderMode: OrderMode,
-  cocktail: SelectedOrderCocktail,
-) {
-  return orderMode === "TIME" ? cocktail.weight : cocktail.quantity;
-}
-
 function getDescription(orderMode: OrderMode) {
   return orderMode === "TIME"
-    ? "Participación relativa en el evento"
+    ? "Elegí qué tan protagonista será este cóctel en el evento"
     : "Cantidad asignada para esta orden";
+}
+
+function getQuantityValue(cocktail: SelectedOrderCocktail) {
+  return cocktail.quantity;
+}
+
+function getSelectedPriority(cocktail: SelectedOrderCocktail) {
+  return getPriorityByWeight(cocktail.weight);
+}
+
+function getPriorityDescription(cocktail: SelectedOrderCocktail) {
+  const selectedPriority = getSelectedPriority(cocktail);
+
+  return (
+    cocktailPriorityOptions.find((option) => option.id === selectedPriority)
+      ?.description ?? "Participación estándar dentro de la barra."
+  );
 }
 
 export function SelectedCocktailsList({
@@ -35,16 +47,12 @@ export function SelectedCocktailsList({
   onQuantityChange,
   onRemoveCocktail,
 }: SelectedCocktailsListProps) {
-  const inputLabel = getInputLabel(orderMode);
+  function handlePriorityChange(cocktailId: number, priority: CocktailPriority) {
+    onWeightChange(cocktailId, getWeightByPriority(priority));
+  }
 
-  function handleValueChange(cocktailId: number, value: string) {
+  function handleQuantityChange(cocktailId: number, value: string) {
     const numericValue = Number(value);
-
-    if (orderMode === "TIME") {
-      onWeightChange(cocktailId, numericValue);
-      return;
-    }
-
     onQuantityChange(cocktailId, numericValue);
   }
 
@@ -99,27 +107,71 @@ export function SelectedCocktailsList({
               </button>
             </div>
 
-            <label className="mt-4 block text-sm text-text-muted">
-              {inputLabel}
-            </label>
+            {orderMode === "TIME" ? (
+              <div className="mt-4 space-y-2">
+                <label
+                  htmlFor={`priority-${cocktail.cocktailId}`}
+                  className="block text-sm font-medium text-text-muted"
+                >
+                  Prioridad
+                </label>
 
-            <input
-              type="number"
-              min={1}
-              value={getInputValue(orderMode, cocktail)}
-              onChange={(event) =>
-                handleValueChange(cocktail.cocktailId, event.target.value)
-              }
-              className="mt-2 w-full rounded-control border border-border bg-background px-3 py-2 text-sm font-semibold text-text-main outline-none focus:border-primary"
-            />
+                <select
+                  id={`priority-${cocktail.cocktailId}`}
+                  value={getSelectedPriority(cocktail)}
+                  onChange={(event) =>
+                    handlePriorityChange(
+                      cocktail.cocktailId,
+                      event.target.value as CocktailPriority,
+                    )
+                  }
+                  className="w-full rounded-control border border-border bg-background px-3 py-2 text-sm font-semibold text-text-main outline-none focus:border-primary"
+                >
+                  {cocktailPriorityOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+
+                <p className="text-xs leading-5 text-text-muted">
+                  {getPriorityDescription(cocktail)}
+                </p>
+              </div>
+            ) : (
+              <>
+                <label className="mt-4 block text-sm text-text-muted">
+                  Tragos
+                </label>
+
+                <input
+                  type="number"
+                  min={1}
+                  value={getQuantityValue(cocktail)}
+                  onChange={(event) =>
+                    handleQuantityChange(
+                      cocktail.cocktailId,
+                      event.target.value,
+                    )
+                  }
+                  className="mt-2 w-full rounded-control border border-border bg-background px-3 py-2 text-sm font-semibold text-text-main outline-none focus:border-primary"
+                />
+              </>
+            )}
           </article>
         ))}
       </div>
 
       <div className="hidden overflow-hidden rounded-card border border-border-soft bg-background/30 md:block">
-        <div className="grid grid-cols-[minmax(0,1fr)_170px_52px] gap-3 border-b border-border-soft px-4 py-3 text-xs font-semibold uppercase tracking-wide text-text-muted">
+        <div
+          className={`grid gap-3 border-b border-border-soft px-4 py-3 text-xs font-semibold uppercase tracking-wide text-text-muted ${
+            orderMode === "TIME"
+              ? "grid-cols-[minmax(0,1fr)_260px_52px]"
+              : "grid-cols-[minmax(0,1fr)_170px_52px]"
+          }`}
+        >
           <span>Cóctel</span>
-          <span>{inputLabel}</span>
+          <span>{orderMode === "TIME" ? "Prioridad" : "Tragos"}</span>
           <span />
         </div>
 
@@ -127,7 +179,11 @@ export function SelectedCocktailsList({
           {selectedCocktails.map((cocktail) => (
             <article
               key={cocktail.cocktailId}
-              className="grid grid-cols-[minmax(0,1fr)_170px_52px] items-center gap-3 px-4 py-3"
+              className={`grid items-center gap-3 px-4 py-3 ${
+                orderMode === "TIME"
+                  ? "grid-cols-[minmax(0,1fr)_260px_52px]"
+                  : "grid-cols-[minmax(0,1fr)_170px_52px]"
+              }`}
             >
               <div className="flex min-w-0 items-center gap-3">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-border-soft bg-surface text-primary">
@@ -145,15 +201,43 @@ export function SelectedCocktailsList({
                 </div>
               </div>
 
-              <input
-                type="number"
-                min={1}
-                value={getInputValue(orderMode, cocktail)}
-                onChange={(event) =>
-                  handleValueChange(cocktail.cocktailId, event.target.value)
-                }
-                className="w-full rounded-control border border-border bg-background px-3 py-2 text-sm font-semibold text-text-main outline-none focus:border-primary"
-              />
+              {orderMode === "TIME" ? (
+                <div className="space-y-1">
+                  <select
+                    value={getSelectedPriority(cocktail)}
+                    onChange={(event) =>
+                      handlePriorityChange(
+                        cocktail.cocktailId,
+                        event.target.value as CocktailPriority,
+                      )
+                    }
+                    className="w-full rounded-control border border-border bg-background px-3 py-2 text-sm font-semibold text-text-main outline-none focus:border-primary"
+                  >
+                    {cocktailPriorityOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  <p className="text-xs text-text-muted">
+                    {getPriorityDescription(cocktail)}
+                  </p>
+                </div>
+              ) : (
+                <input
+                  type="number"
+                  min={1}
+                  value={getQuantityValue(cocktail)}
+                  onChange={(event) =>
+                    handleQuantityChange(
+                      cocktail.cocktailId,
+                      event.target.value,
+                    )
+                  }
+                  className="w-full rounded-control border border-border bg-background px-3 py-2 text-sm font-semibold text-text-main outline-none focus:border-primary"
+                />
+              )}
 
               <Button
                 type="button"

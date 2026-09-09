@@ -33,7 +33,7 @@ export function OrderSummaryPanel({
   const numericDurationHours = Number(durationHours);
   const numericTotalDrinks = Number(totalDrinks);
 
-  const drinksPerPersonPerHour = selectedCocktails.length >= 8 ? 2 : 1;
+  const drinksPerPersonPerHour = 1;
 
   const estimatedDrinks =
     orderMode === "TIME" && numericGuests > 0 && numericDurationHours > 0
@@ -113,9 +113,7 @@ export function OrderSummaryPanel({
               </p>
 
               <p className="mt-2 text-xs leading-5 text-text-muted">
-                Regla aplicada: {drinksPerPersonPerHour} trago
-                {drinksPerPersonPerHour > 1 ? "s" : ""} por persona/hora según
-                la cantidad de cócteles seleccionados.
+                Estimación basada en invitados y duración del evento.
               </p>
             </div>
           </div>
