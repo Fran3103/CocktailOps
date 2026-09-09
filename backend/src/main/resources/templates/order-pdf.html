@@ -86,6 +86,16 @@
         .right {
             text-align: right;
         }
+
+        .total-row td {
+            font-weight: bold;
+            background-color: #f0f0f0;
+            border-top: 2px solid #999;
+        }
+
+        .total-label {
+            text-align: right;
+        }
     </style>
 </head>
 <body>
@@ -107,7 +117,6 @@
     <div th:if="${order.mode == 'TIME'}">
         <div><b>Modo:</b> Por tiempo</div>
         <div><b>Invitados:</b> <span th:text="${order.guests}">0</span></div>
-        <div><b>Tragos por hora/persona:</b> <span th:text="${order.drinksPerPerson}">0</span></div>
         <div><b>Duración (hs):</b> <span th:text="${order.durationHours}">0</span></div>
         <div><b>Total tragos:</b> <span th:text="${order.totalDrinks}">0</span></div>
     </div>
@@ -137,27 +146,34 @@
 
 <h2>Cócteles</h2>
 <table>
-    <thead>
-    <tr>
-        <th>ID</th>
-        <th>Nombre</th>
-        <th class="right">Cantidad de Tragos</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr th:each="c : ${order.cocktails}">
-        <td th:text="${c.cocktailId}"></td>
-        <td th:text="${c.cocktailName}"></td>
-        <td class="right" th:text="${c.drinks}"></td>
-    </tr>
-    </tbody>
+
+        <thead>
+        <tr>
+            <th>Nombre</th>
+            <th class="right">Cantidad de Tragos</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr th:each="c : ${order.cocktails}">
+            <td th:text="${c.cocktailName}"></td>
+            <td class="right" th:text="${c.drinks}"></td>
+        </tr>
+        </tbody>
+
+        <tfoot>
+        <tr class="total-row">
+            <td>Total de cócteles</td>
+            <td class="right" th:text="${order.totalDrinks}">0</td>
+        </tr>
+        </tfoot>
+
 </table>
 
 <h2>Lista de compra</h2>
 <table>
     <thead>
     <tr>
-        <th>ID</th>
         <th>Producto</th>
         <th class="right">A comprar</th>
         <th class="right">Presentación</th>
@@ -167,7 +183,6 @@
     </thead>
     <tbody>
     <tr th:each="i : ${order.items}">
-        <td th:text="${i.productId}"></td>
         <td th:text="${i.productName}"></td>
         <td class="right" th:text="${i.packsToBuy}"></td>
         <td class="right" th:text="${i.packSize}"></td>
@@ -175,6 +190,19 @@
         <td class="right" th:text="${i.totalToBuy}"></td>
     </tr>
     </tbody>
+
+    <tfoot>
+    <tr class="total-row">
+        <td>Total unidades de compra</td>
+
+        <td class="right"
+            th:text="${#aggregates.sum(order.items.![packsToBuy])}">
+            0
+        </td>
+
+        <td colspan="3"></td>
+    </tr>
+    </tfoot>
 </table>
 
 </body>
