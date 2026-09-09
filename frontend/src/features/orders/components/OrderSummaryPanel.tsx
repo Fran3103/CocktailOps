@@ -7,6 +7,7 @@ import type {
   OrderMode,
   SelectedOrderCocktail,
 } from "../order.types";
+import { getPriorityLabelByWeight } from "../orderPriority";
 
 type OrderSummaryPanelProps = {
   orderMode: OrderMode;
@@ -18,7 +19,9 @@ type OrderSummaryPanelProps = {
   payload: CreateTimeOrderRequest | CreateDrinksOrderRequest | null;
   onEditSelection?: () => void;
 };
-
+function getPriorityText(weight: number) {
+  return `Prioridad ${getPriorityLabelByWeight(weight).toLowerCase()}`;
+}
 export function OrderSummaryPanel({
   orderMode,
   guests,
@@ -200,7 +203,7 @@ export function OrderSummaryPanel({
 
                     <span className="shrink-0 text-primary">
                       {orderMode === "TIME"
-                        ? `Peso ${cocktail.weight}`
+                        ? getPriorityText(cocktail.weight)
                         : `${cocktail.quantity} tragos`}
                     </span>
                   </div>
