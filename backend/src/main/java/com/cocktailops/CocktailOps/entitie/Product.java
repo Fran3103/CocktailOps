@@ -35,6 +35,9 @@ public class Product {
     @Column(nullable = false)
     private Boolean active;
 
+    @Column(nullable = false)
+    private Boolean purchasable = true;
+
     @Column(name = "image_url")
     private String imageUrl;
 

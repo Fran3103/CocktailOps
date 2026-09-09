@@ -22,6 +22,11 @@ public record ProductRequestDto(
         BigDecimal unitSize,
         @Schema(description = "indica si el producto está activo", example = "true")
         Boolean active,
+        @Schema(
+                description = "indica si el producto se compra directamente o se prepara internamente",
+                example = "true"
+        )
+        Boolean purchasable,
         @Schema(description = "URL de la imagen del producto", example = "https://example.com/image.jpg")
         String imageUrl,
         @Schema(description = "texto alternativo de la imagen del producto", example = "Imagen del producto Mojito")

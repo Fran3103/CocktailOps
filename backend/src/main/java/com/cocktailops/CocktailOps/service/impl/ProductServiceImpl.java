@@ -38,6 +38,7 @@ public class ProductServiceImpl implements IProductService {
                 product.getCategory().getId(),
                 product.getCategory().getName(),
                 product.getUnit(),
+                product.getPurchasable(),
                 product.getImageUrl(),
                 product.getImageAlt(),
                 product.getActive(),
@@ -71,6 +72,8 @@ public class ProductServiceImpl implements IProductService {
         product.setDescription(productDto.description());
         product.setCategory(category.get());
         product.setUnit(productDto.unit());
+        product.setPurchasable(productDto.purchasable());
+        product.setDescription(productDto.description());
         product.setImageUrl(productDto.imageUrl());
         product.setImageAlt(productDto.imageAlt());
         product.setActive(productDto.active());
@@ -85,6 +88,7 @@ public class ProductServiceImpl implements IProductService {
                 savedProduct.getCategory().getId(),
                 savedProduct.getCategory().getName(),
                 savedProduct.getUnit(),
+                savedProduct.getPurchasable(),
                 savedProduct.getImageUrl(),
                 savedProduct.getImageAlt(),
                 savedProduct.getActive(),
@@ -116,6 +120,9 @@ public class ProductServiceImpl implements IProductService {
             product.setDescription(productDto.description());
         };
         if (productDto.unit() != null) product.setUnit(productDto.unit());
+        if (productDto.purchasable() != null) {
+            product.setPurchasable(productDto.purchasable());
+        }
         if (productDto.imageUrl() != null) product.setImageUrl(productDto.imageUrl());
         if (productDto.imageAlt() != null) product.setImageAlt(productDto.imageAlt());
         if (productDto.active() != null) product.setActive(productDto.active());
@@ -130,6 +137,7 @@ public class ProductServiceImpl implements IProductService {
                 updatedProduct.getCategory().getId(),
                 updatedProduct.getCategory().getName(),
                 updatedProduct.getUnit(),
+                updatedProduct.getPurchasable(),
                 updatedProduct.getImageUrl(),
                 updatedProduct.getImageAlt(),
                 updatedProduct.getActive(),
@@ -160,6 +168,7 @@ public class ProductServiceImpl implements IProductService {
                         product.getCategory().getId(),
                         product.getCategory().getName(),
                         product.getUnit(),
+                        product.getPurchasable(),
                         product.getImageUrl(),
                         product.getImageAlt(),
                         product.getActive(),
@@ -180,6 +189,7 @@ public class ProductServiceImpl implements IProductService {
                         product.getCategory().getId(),
                         product.getCategory().getName(),
                         product.getUnit(),
+                        product.getPurchasable(),
                         product.getImageUrl(),
                         product.getImageAlt(),
                         product.getActive(),
@@ -198,6 +208,7 @@ public class ProductServiceImpl implements IProductService {
                 category.getId(),
                 category.getName(),
                 product.getUnit(),
+                product.getPurchasable(),
                 product.getImageUrl(),
                 product.getImageAlt(),
                 product.getActive(),

@@ -50,6 +50,7 @@ public class CocktailServiceImpl implements ICocktailService {
         Cocktail cocktail = new Cocktail();
         cocktail.setName(dto.name());
         cocktail.setDescription(dto.description());
+        cocktail.setPreparationType(dto.preparationType());
         cocktail.setImageAlt(dto.imageAlt());
         cocktail.setImageUrl(dto.imageUrl());
 

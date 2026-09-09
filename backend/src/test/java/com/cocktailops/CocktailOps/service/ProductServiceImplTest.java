@@ -139,6 +139,7 @@ public class ProductServiceImplTest {
                 "ml",
                 new BigDecimal("750"),
                 true,
+                true,
                 "https://res.cloudinary.com/dzj8q4q",
                 "Vodka Sernova"
         );
@@ -179,6 +180,8 @@ public class ProductServiceImplTest {
                 "ml",
                 new BigDecimal("750"),
                 true,
+                true,
+
                 "https://res.cloudinary.com/dzj8q4q",
                 "Vodka Sernova"
         );
@@ -205,6 +208,7 @@ public class ProductServiceImplTest {
                 10L,
                 "ml",
                 new BigDecimal("750"),
+                true,
                 true,
                 "https://res.cloudinary.com/dzj8q4q",
                 "Vodka Sernova"
@@ -253,6 +257,7 @@ public class ProductServiceImplTest {
                 10L,
                 "ml",
                 new BigDecimal("750"),
+                true,
                 true,
                 "https://res.cloudinary.com/dzj8q4qeu/image/upload/v1700000000/products/vodka_sernova_updated.png",
                 "Vodka Sernova"
@@ -310,6 +315,7 @@ public class ProductServiceImplTest {
                 "ml",
                 new BigDecimal("750"),
                 true,
+                true,
                 "https://res.cloudinary.com/dzj8q4q",
                 "Vodka Sernova actualizado"
         );
@@ -345,6 +351,7 @@ public class ProductServiceImplTest {
                 10L,
                 "ml",
                 new BigDecimal("750"),
+                true,
                 true,
                 "https://res.cloudinary.com/dzj8q4q",
                 "Vodka Sernova actualizado"

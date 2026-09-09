@@ -17,6 +17,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.cocktailops.CocktailOps.exception.RateLimitExceededException;
+import com.cocktailops.CocktailOps.repository.IPreparedProductRecipeRepository;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -56,18 +57,19 @@ public class OrderServiceImpl implements IOrderService {
     private final IProductRepository productRepository;
     private final ICocktailRepository cocktailRepository;
     private final CurrentUserService currentUserService;
+    private final IPreparedProductRecipeRepository preparedProductRecipeRepository;
 
     // Factores de conversión usados cuando la receta está cargada en onzas.
     private static final BigDecimal OZ_TO_ML = new BigDecimal("29.5735");
     private static final BigDecimal OZ_TO_G = new BigDecimal("28.3495");
 
-    private static final int LARGE_EVENT_GUEST_THRESHOLD = 60;
-    private static final int LARGE_COCKTAIL_SELECTION_THRESHOLD = 8;
-    private static final int LARGE_SELECTION_DRINKS_PER_PERSON_PER_HOUR = 2;
+    private static final int MIN_COCKTAIL_WEIGHT = 1;
+    private static final int MAX_COCKTAIL_WEIGHT = 4;
+    private static final int DEFAULT_COCKTAIL_WEIGHT = 2;
 
     private static final int MAX_ORDERS_PER_24_HOURS = 25;
     private static final String ICE_PRODUCT_NAME = "Hielo";
-    private static final int DRINKS_PER_ICE_BAG = 100;
+    private static final int DRINKS_PER_ICE_BAG = 55;
     /**
      * Cantidad estimada de tragos por persona por hora.
 
@@ -275,12 +277,7 @@ public class OrderServiceImpl implements IOrderService {
     private Order buildTimeOrder(OrderRequestDto dto, boolean associateCurrentUser) {
         validateTimeOrderRequest(dto);
 
-        int selectedCocktailCount = dto.cocktails().size();
-
-        int drinksPerPerson = calculateDrinksPerPersonPerHour(
-                dto.guests(),
-                selectedCocktailCount
-        );
+        int drinksPerPerson = defaultDrinksPerPersonPerHour;
 
         int totalDrinks = dto.guests() * drinksPerPerson * dto.durationHours();
 
@@ -331,18 +328,7 @@ public class OrderServiceImpl implements IOrderService {
     }
 
 
-    private int calculateDrinksPerPersonPerHour(int guests, int selectedCocktailCount) {
-        boolean isLargeEvent = guests >= LARGE_EVENT_GUEST_THRESHOLD;
-        boolean hasLargeCocktailSelection = selectedCocktailCount >= LARGE_COCKTAIL_SELECTION_THRESHOLD;
 
-        // Solo usamos una estimación reforzada cuando el evento es grande
-        // y además el usuario seleccionó muchas opciones de cócteles.
-        if (isLargeEvent && hasLargeCocktailSelection) {
-            return LARGE_SELECTION_DRINKS_PER_PERSON_PER_HOUR;
-        }
-
-        return defaultDrinksPerPersonPerHour;
-    }
     /**
      * Válida los datos mínimos para una orden por tiempo/personas.
      */
@@ -363,9 +349,13 @@ public class OrderServiceImpl implements IOrderService {
             if (cocktail.cocktailId() == null) {
                 throw new BadRequestException("cocktailId is required and weight must be > 0");
             }
+            if (cocktail.weight() != null
+                    && (cocktail.weight() < MIN_COCKTAIL_WEIGHT
+                    || cocktail.weight() > MAX_COCKTAIL_WEIGHT)) {
 
-            if (cocktail.weight() != null && cocktail.weight() <= 0) {
-                throw new BadRequestException("cocktailId is required and weight must be > 0");
+                throw new BadRequestException(
+                        "weight must be between 1 and 4"
+                );
             }
         }
     }
@@ -381,7 +371,9 @@ public class OrderServiceImpl implements IOrderService {
 
         for (OrderCocktailsWeightDto cocktail : cocktails) {
             Long cocktailId = cocktail.cocktailId();
-            int weight = cocktail.weight() == null ? 1 : cocktail.weight();
+            int weight = cocktail.weight() == null
+                    ? DEFAULT_COCKTAIL_WEIGHT
+                    : cocktail.weight();
 
             // Si el mismo cóctel aparece más de una vez,
             // acumulamos su peso en lugar de reemplazarlo.
@@ -601,6 +593,8 @@ public class OrderServiceImpl implements IOrderService {
             Map<Long, BigDecimal> requiredByProductId,
             Map<Long, Product> productCache
     ) {
+        expandPreparedProducts(requiredByProductId, productCache);
+
         for (Map.Entry<Long, BigDecimal> entry : requiredByProductId.entrySet()) {
             Long productId = entry.getKey();
             BigDecimal requiredAmountInProductUnit = entry.getValue();
@@ -625,6 +619,149 @@ public class OrderServiceImpl implements IOrderService {
             order.getOrderItems().add(orderItem);
         }
     }
+
+    /**
+     * Reemplaza los productos preparados por los productos necesarios
+     * para fabricarlos antes de calcular la lista final de compras.
+     *
+     * Ejemplo:
+     * Almíbar simple -> Azúcar
+     */
+    private void expandPreparedProducts(
+            Map<Long, BigDecimal> requiredByProductId,
+            Map<Long, Product> productCache
+    ) {
+        Map<Long, BigDecimal> expandedRequirements = new HashMap<>();
+
+        for (Map.Entry<Long, BigDecimal> entry : requiredByProductId.entrySet()) {
+            expandProductRequirement(
+                    entry.getKey(),
+                    entry.getValue(),
+                    expandedRequirements,
+                    productCache,
+                    new ArrayList<>()
+            );
+        }
+
+        requiredByProductId.clear();
+        requiredByProductId.putAll(expandedRequirements);
+    }
+
+
+    /**
+     * Expande recursivamente una necesidad de producto.
+     *
+     * - Si el producto se compra, lo agrega al resultado final.
+     * - Si el producto se prepara, busca su receta y agrega sus ingredientes.
+     *
+     * La lista processingPath evita ciclos del tipo:
+     * Producto A -> Producto B -> Producto A.
+     */
+    private void expandProductRequirement(
+            Long productId,
+            BigDecimal requiredAmount,
+            Map<Long, BigDecimal> expandedRequirements,
+            Map<Long, Product> productCache,
+            List<Long> processingPath
+    ) {
+        Product product = productCache.get(productId);
+
+        if (product == null) {
+            product = productRepository.findById(productId)
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Product with id " + productId + " not found"
+                    ));
+
+            productCache.put(productId, product);
+        }
+
+        /*
+         * null se considera comprable para no romper productos creados
+         * anteriormente o fixtures de tests que todavía no setean el campo.
+         */
+        if (!Boolean.FALSE.equals(product.getPurchasable())) {
+            expandedRequirements.merge(
+                    productId,
+                    requiredAmount,
+                    BigDecimal::add
+            );
+            return;
+        }
+
+        if (processingPath.contains(productId)) {
+            throw new BusinessRuleException(
+                    "Circular prepared product recipe detected for product: " + productId
+            );
+        }
+        String productName = product.getName();
+        PreparedProductRecipe recipe = preparedProductRecipeRepository
+                .findByProductIdWithIngredients(productId)
+                .orElseThrow(() -> new BusinessRuleException(
+                        "Prepared product has no recipe: " + productName
+                ));
+
+        MeasureUnit productUnit = convertProductUnit(product.getUnit());
+
+        if (recipe.getOutputUnit() != productUnit) {
+            throw new BusinessRuleException(
+                    "Prepared recipe output unit does not match product unit: "
+                            + productName
+            );
+        }
+
+        if (recipe.getOutputAmount() == null
+                || recipe.getOutputAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessRuleException(
+                    "Prepared recipe output amount must be greater than 0: "
+                            + productName
+            );
+        }
+
+        /*
+         * Ejemplo:
+         *
+         * necesitamos 9000 ml de almíbar
+         * receta produce 1600 ml
+         *
+         * factor = 9000 / 1600 = 5.625 recetas
+         */
+        BigDecimal recipeFactor = requiredAmount.divide(
+                recipe.getOutputAmount(),
+                12,
+                RoundingMode.HALF_UP
+        );
+
+        List<Long> nextPath = new ArrayList<>(processingPath);
+        nextPath.add(productId);
+
+        for (PreparedProductRecipeIngredient ingredient : recipe.getIngredients()) {
+            Product ingredientProduct = ingredient.getIngredientProduct();
+
+            productCache.putIfAbsent(
+                    ingredientProduct.getId(),
+                    ingredientProduct
+            );
+
+            BigDecimal ingredientAmount = ingredient.getAmount()
+                    .multiply(recipeFactor);
+
+            BigDecimal ingredientAmountInProductUnit = toProductUnit(
+                    ingredientAmount,
+                    ingredient.getUnit(),
+                    ingredientProduct.getUnit()
+            );
+
+            expandProductRequirement(
+                    ingredientProduct.getId(),
+                    ingredientAmountInProductUnit,
+                    expandedRequirements,
+                    productCache,
+                    nextPath
+            );
+        }
+    }
+
+
     private void addGlobalIceToOrder(Order order) {
 
         int totalDrinks = order.getTotalDrinks();
