@@ -134,7 +134,7 @@ export function Sidebar({ onNavigate, isMobile = false }: SidebarProps) {
         </h1>
 
         <p className="mt-1 text-sm text-text-muted">
-          Cálculo de bebidas e insumos
+          Cálculo de bebidas e insumos para eventos
         </p>
       </div>
 
