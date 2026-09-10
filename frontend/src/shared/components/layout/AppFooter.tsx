@@ -13,7 +13,7 @@ const footerLinks = [
   },
   {
     label: "Portfolio",
-    href: "https://francoaguirre.vercel.app/",
+    href: "https://franaguirredev.com/",
   },
   {
     label: "Email",
