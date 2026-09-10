@@ -283,6 +283,9 @@ export function CreateOrderPage() {
               presets={orderPresets}
               isLoadingCocktails={isLoadingCocktails}
               cocktailsError={cocktailsError}
+              totalDrinks={totalDrinks}
+              assignedDrinks={assignedDrinks}
+               onDistributeEqually={handleDistributeEqually}
               onSelectPreset={handleApplyPreset}
               onAddCocktail={handleAddCocktail}
               onWeightChange={handleWeightChange}

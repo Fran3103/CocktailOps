@@ -36,7 +36,7 @@ const guestNavItems = [
   },
 ];
 
-const authenticatedNavItems = [
+const authenticatedAdmin = [
   {
     label: "Dashboard",
     path: ROUTES.dashboard,
@@ -69,12 +69,44 @@ const authenticatedNavItems = [
   },
 ];
 
+const authenticatedUser = [
+  {
+    label: "Dashboard",
+    path: ROUTES.dashboard,
+    icon: LayoutDashboard,
+  },
+  {
+    label: "Cócteles",
+    path: ROUTES.cocktails,
+    icon: Martini,
+  },
+  {
+    label: "Nueva orden",
+    path: ROUTES.createOrder,
+    icon: ClipboardList,
+  },
+  {
+    label: "Historial",
+    path: ROUTES.orders,
+    icon: History,
+  },
+  {
+    label: "Perfil",
+    path: ROUTES.profile,
+    icon: User,
+  },
+];
+
 export function Sidebar({ onNavigate, isMobile = false }: SidebarProps) {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
 
-  const visibleNavItems = isAuthenticated
-    ? authenticatedNavItems
+
+
+    const visibleNavItems = isAuthenticated
+    ? user?.role === "ADMIN"
+      ? authenticatedAdmin
+      : authenticatedUser
     : guestNavItems;
 
   function handleLogout() {
@@ -102,7 +134,7 @@ export function Sidebar({ onNavigate, isMobile = false }: SidebarProps) {
         </h1>
 
         <p className="mt-1 text-sm text-text-muted">
-          Event planning dashboard
+          Cálculo de bebidas e insumos
         </p>
       </div>
 

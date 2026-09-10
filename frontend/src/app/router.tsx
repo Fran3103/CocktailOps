@@ -2,7 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import { AppLayout } from "../layouts/AppLayout";
 import { AuthLayout } from "../layouts/AuthLayout";
-
+import { AdminRoute } from "../features/auth/AdminRoute";
 import { LoginPage } from "../features/auth/LoginPage";
 import { RegisterPage } from "../features/auth/RegisterPage";
 import { DashboardPage } from "../features/dashboard/DashboardPage";
@@ -29,7 +29,6 @@ export function AppRouter() {
         <Route element={<AppLayout />}>
           <Route path={ROUTES.dashboard} element={<DashboardPage />} />
           <Route path={ROUTES.cocktails} element={<CocktailsPage />} />
-          <Route path={ROUTES.products} element={<ProductsPage />} />
           <Route path={ROUTES.createOrder} element={<CreateOrderPage />} />
           <Route path={ROUTES.unauthorized} element={<UnauthorizedPage />} />
 
@@ -37,6 +36,9 @@ export function AppRouter() {
             <Route path={ROUTES.orders} element={<OrderHistoryPage />} />
             <Route path={ROUTES.profile} element={<ProfilePage />} />
             <Route path={ROUTES.orderDetails} element={<OrderDetailPage />} />
+          </Route>
+          <Route element={<AdminRoute />}>
+            <Route path={ROUTES.products} element={<ProductsPage />} />
           </Route>
         </Route>
 

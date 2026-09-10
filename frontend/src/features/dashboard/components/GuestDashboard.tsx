@@ -7,35 +7,35 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-import { ROUTES } from "../../../shared/constants/routes";    
 import { Button } from "../../../shared/components/ui/Button";
 import { Card } from "../../../shared/components/ui/Card";
 import { PageHeader } from "../../../shared/components/ui/PageHeader";
+import { ROUTES } from "../../../shared/constants/routes";
 import { CocktailsPreview } from "./CocktailsPreview";
 
 const guestFeatures = [
   {
-    title: "Cálculo de tragos",
+    title: "Estimación de bebidas",
     description:
-      "Estimá la cantidad de bebidas necesarias según invitados, duración o cantidad total de tragos.",
+      "Calculá una cantidad orientativa según invitados, duración o total de tragos.",
     icon: Calculator,
   },
   {
-    title: "Cálculo de insumos",
+    title: "Productos necesarios",
     description:
-      "Convertí la selección de cócteles en una lista clara de productos y packs necesarios.",
+      "Convertí la selección de cócteles en una lista clara de insumos y packs.",
     icon: PackageCheck,
   },
   {
-    title: "PDF descargable",
+    title: "PDF de la orden",
     description:
-      "Generá un resumen en PDF para guardar o compartir la orden calculada.",
+      "Descargá un resumen con la orden calculada para guardar o compartir.",
     icon: FileText,
   },
   {
-    title: "Historial registrado",
+    title: "Guardado con cuenta",
     description:
-      "Los usuarios registrados pueden guardar órdenes y consultarlas más adelante.",
+      "Registrándote podés guardar órdenes y consultarlas más adelante.",
     icon: History,
   },
 ];
@@ -92,10 +92,12 @@ export function GuestDashboard() {
             </p>
 
             <div className="mt-4 space-y-3 text-sm text-text-muted">
-              <p>1. Elegís cócteles.</p>
-              <p>2. Indicás invitados, duración o total de tragos.</p>
-              <p>3. CocktailOps calcula insumos y packs.</p>
-              <p>4. Descargás el PDF de la orden temporal.</p>
+              <p>1. Elegís el modo de cálculo.</p>
+              <p>2. Indicás invitados y duración, o total de tragos.</p>
+              <p>3. Elegís una lista rápida o selección manual.</p>
+              <p>4. Ajustás prioridades o cantidades.</p>
+              <p>5. CocktailOps calcula insumos y packs.</p>
+              <p>6. Descargás el PDF de la orden temporal.</p>
             </div>
           </div>
         </div>
