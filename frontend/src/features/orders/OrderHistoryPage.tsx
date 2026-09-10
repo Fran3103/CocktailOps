@@ -23,8 +23,8 @@ function getHistoryErrorMessage(error: unknown, scope: HistoryScope) {
 
   return getApiErrorMessage(error, {
     defaultMessage: isAllOrdersScope
-      ? "No se pudieron cargar todas las órdenes."
-      : "No se pudieron cargar tus órdenes.",
+      ? "No se pudo cargar el historial general."
+      : "No se pudocargar tu historial.",
     networkMessage:
       "No se pudo conectar con el servidor para cargar el historial.",
     unauthorizedMessage:
@@ -128,22 +128,19 @@ export function OrderHistoryPage() {
 
   const isShowingAllOrders = effectiveHistoryScope === "ALL";
 
-  const pageTitle = isShowingAllOrders
-    ? "Todas las órdenes"
-    : "Historial de órdenes";
+  const pageTitle = isShowingAllOrders ? "Historial general" : "Mi historial";
 
   const pageDescription = isShowingAllOrders
-    ? "Consultá las órdenes generadas por todos los usuarios."
-    : "Consultá las órdenes generadas y asociadas a tu cuenta.";
+    ? "Consultá el historial completo generado por los usuarios."
+    : "Consultá el historial asociado a tu cuenta.";
 
   const emptyTitle = isShowingAllOrders
-    ? "Todavía no hay órdenes guardadas"
-    : "Todavía no tenés órdenes guardadas";
+    ? "Todavía no hay registros guardados"
+    : "Todavía no tenés registros guardados";
 
   const emptyDescription = isShowingAllOrders
-    ? "Cuando los usuarios generen órdenes autenticadas, aparecerán en este historial general."
-    : "Cuando generes una orden estando logueado, aparecerá en este historial para que puedas consultarla más adelante.";
-
+    ? "Cuando un usuario genere una orden estando logueado, aparecerá en este historial general."
+    : "Cuando generes una orden estando logueado, aparecerá en este historial para consultarla más adelante.";
   return (
     <section className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -162,8 +159,7 @@ export function OrderHistoryPage() {
             </h2>
 
             <p className="mt-1 text-sm text-text-muted">
-              Como administrador podés revisar tus órdenes o el historial
-              completo del sistema.
+            Como administrador podés revisar tu historial personal o el historial completo del sistema.
             </p>
           </div>
 
@@ -173,7 +169,7 @@ export function OrderHistoryPage() {
               variant={isShowingAllOrders ? "primary" : "secondary"}
               onClick={() => setHistoryScope("ALL")}
             >
-              Todas las órdenes
+              Todo el historial
             </Button>
 
             <Button
@@ -181,7 +177,7 @@ export function OrderHistoryPage() {
               variant={!isShowingAllOrders ? "primary" : "secondary"}
               onClick={() => setHistoryScope("MINE")}
             >
-              Mis órdenes
+              Mi historial
             </Button>
           </div>
         </Card>
@@ -234,7 +230,7 @@ export function OrderHistoryPage() {
           <Card className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="rounded-control bg-background p-4">
               <p className="text-sm text-text-muted">
-                {isShowingAllOrders ? "Órdenes totales" : "Órdenes guardadas"}
+                {isShowingAllOrders ? "Registros totales" : "Registros guardados"}
               </p>
 
               <p className="mt-1 text-2xl font-semibold text-text-main">
@@ -243,7 +239,7 @@ export function OrderHistoryPage() {
             </div>
 
             <div className="rounded-control bg-background p-4">
-              <p className="text-sm text-text-muted">Última orden</p>
+              <p className="text-sm text-text-muted">Último registro</p>
 
               <p className="mt-1 text-2xl font-semibold text-primary">
                 #{sortedOrders[0].id}

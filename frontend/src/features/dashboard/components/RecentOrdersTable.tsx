@@ -46,10 +46,10 @@ function getOrderKey(order: OrderResponse, index: number) {
 
 export function RecentOrdersTable({
   orders,
-  title = "Últimas órdenes",
-  description = "Órdenes calculadas recientemente.",
+  title = "Últimos registros",
+  description = "Registros calculados recientemente.",
   showUserColumn = false,
-  emptyMessage = "Todavía no hay órdenes para mostrar.",
+  emptyMessage = "Todavía no hay registros para mostrar.",
 }: RecentOrdersTableProps) {
   const navigate = useNavigate();
 

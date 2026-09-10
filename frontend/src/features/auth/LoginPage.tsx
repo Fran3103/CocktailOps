@@ -59,7 +59,7 @@ export function LoginPage() {
       </h1>
 
       <p className="mt-2 text-text-muted">
-        Iniciá sesión para guardar tus órdenes e historial.
+        Iniciá sesión para guardar tu historial.
       </p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">

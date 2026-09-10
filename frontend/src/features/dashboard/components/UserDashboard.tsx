@@ -33,13 +33,13 @@ function getOrdersTotalDrinks(orders: OrderResponse[]) {
 
 function getOrdersErrorMessage(error: unknown) {
   return getApiErrorMessage(error, {
-    defaultMessage: "No se pudieron cargar tus órdenes.",
+    defaultMessage: "No se pudieron cargar tus registros.",
     networkMessage:
       "No se pudo conectar con el servidor para cargar tu dashboard.",
     unauthorizedMessage:
       "Tu sesión no está activa o venció. Iniciá sesión nuevamente.",
-    forbiddenMessage: "No tenés permisos para ver estas órdenes.",
-    notFoundMessage: "No se encontró el historial de tus órdenes.",
+    forbiddenMessage: "No tenés permisos para ver estos registros.",
+    notFoundMessage: "No se encontró el historial de tus registros.",
     serverMessage:
       "Ocurrió un error en el servidor al cargar tu dashboard. Intentá nuevamente más tarde.",
   });
@@ -117,11 +117,11 @@ export function UserDashboard() {
       <section className="space-y-6">
         <PageHeader
           title="Dashboard"
-          description="Cargando el resumen de tus órdenes."
+          description="Cargando el resumen de tus registros."
         />
 
         <Card className="border-border-soft bg-surface-soft/80">
-          <p className="text-text-muted">Cargando órdenes...</p>
+          <p className="text-text-muted">Cargando registros...</p>
         </Card>
       </section>
     );
@@ -132,7 +132,7 @@ export function UserDashboard() {
       <section className="space-y-6">
         <PageHeader
           title="Dashboard"
-          description="No pudimos cargar el resumen de tus órdenes."
+          description="No pudimos cargar el resumen de tus registros."
         />
 
         <ErrorState title="No pudimos cargar tu dashboard" description={error}>
@@ -159,7 +159,7 @@ export function UserDashboard() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <PageHeader
           title="Dashboard"
-          description="Resumen de tus órdenes guardadas y accesos rápidos para seguir calculando eventos."
+          description="Resumen de tus registros guardados y accesos rápidos para seguir calculando eventos."
         />
 
         <div className="flex flex-col gap-3 sm:flex-row">
@@ -179,32 +179,32 @@ export function UserDashboard() {
 
       <div className="grid gap-4 md:grid-cols-3">
         <DashboardMetricCard
-          title="Órdenes propias"
+          title="Mi historial"
           value={orders.length}
-          description="Órdenes guardadas en tu historial."
+          description="Registros guardados en tu historial."
           icon={<ClipboardList size={20} />}
         />
 
         <DashboardMetricCard
           title="Tragos calculados"
           value={totalDrinks}
-          description="Total estimado entre tus órdenes guardadas."
+          description="Total estimado entre tus registros guardados."
           icon={<GlassWater size={20} />}
         />
 
         <DashboardMetricCard
-          title="Últimas órdenes"
+          title="Últimos registros"
           value={recentOrders.length}
-          description="Órdenes recientes disponibles para consultar o descargar."
+          description="Registros recientes disponibles para consultar o descargar."
           icon={<History size={20} />}
         />
       </div>
 
       <RecentOrdersTable
         orders={recentOrders}
-        title="Tus últimas órdenes"
-        description="Accedé al detalle o descargá el PDF de tus órdenes recientes."
-        emptyMessage="Todavía no tenés órdenes guardadas. Creá tu primera orden para verla en el historial."
+        title="Tus últimos registros"
+        description="Accedé al detalle o descargá el PDF de tus registros recientes."
+       emptyMessage="Todavía no tenés registros guardados. Creá tu primera orden para verla en el historial."
       />
 
       <CocktailsPreview />

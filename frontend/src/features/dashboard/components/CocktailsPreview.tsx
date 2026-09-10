@@ -160,7 +160,7 @@ export function CocktailsPreview() {
           </h2>
 
           <p className="mt-1 text-sm text-text-muted">
-            Todavía no hay cócteles cargados para calcular órdenes.
+            Todavía no hay cócteles cargados para calcular.
           </p>
         </div>
       </Card>
@@ -208,7 +208,7 @@ export function CocktailsPreview() {
 
                 <p className="mt-1 line-clamp-2 text-sm leading-6 text-text-muted">
                   {cocktail.description ||
-                    "Cóctel disponible para calcular órdenes."}
+                   "Cóctel disponible para el cálculo de bebidas e insumos."}
                 </p>
               </div>
             </div>

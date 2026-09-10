@@ -100,7 +100,7 @@ export function ProductsPage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <PageHeader
           title="Productos"
-          description="Consultá los productos e insumos disponibles para el cálculo de órdenes."
+          description="Consultá los productos e insumos disponibles para el cálculo de bebidas."
         />
       </div>
 

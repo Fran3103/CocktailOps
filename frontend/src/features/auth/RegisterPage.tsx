@@ -57,7 +57,7 @@ export function RegisterPage() {
       </h1>
 
       <p className="mt-2 text-text-muted">
-        Registrate para guardar tu historial de órdenes.
+        Registrate para guardar y consultar tu historial.
       </p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -96,7 +96,7 @@ export function RegisterPage() {
           name="password"
           value={formData.password}
           onChange={handleChange}
-          autoComplete="current-password"
+          autoComplete="new-password"
           required
         />
 

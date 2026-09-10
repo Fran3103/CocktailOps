@@ -35,7 +35,7 @@ const guestFeatures = [
   {
     title: "Guardado con cuenta",
     description:
-      "Registrándote podés guardar órdenes y consultarlas más adelante.",
+      "Registrándote podés guardar tu historial y consultarlo más adelante.",
     icon: History,
   },
 ];
@@ -47,7 +47,7 @@ export function GuestDashboard() {
     <section className="space-y-8">
       <PageHeader
         title="Planificá bebidas para eventos"
-        description="CocktailOps calcula tragos, insumos y packs necesarios para preparar órdenes de cócteles de forma rápida."
+        description="CocktailOps calcula tragos, insumos y packs necesarios para preparar una barra de cócteles de forma rápida."
       />
 
       <Card className="border-border-soft bg-surface-soft/80">
@@ -63,9 +63,9 @@ export function GuestDashboard() {
             </h2>
 
             <p className="mt-3 max-w-2xl leading-7 text-text-muted">
-              Como invitado podés generar una orden temporal, ver el resumen en
-              pantalla y descargar el PDF en el momento. La orden no se guarda
-              en historial y no se puede recuperar después.
+              Como invitado podés generar una orden temporal, ver el resumen
+              en pantalla y descargar el PDF en el momento. La orden no se
+              guarda en historial y no se puede recuperar después.
             </p>
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
@@ -116,9 +116,7 @@ export function GuestDashboard() {
                 <Icon size={18} />
               </div>
 
-              <h3 className="font-semibold text-text-main">
-                {feature.title}
-              </h3>
+              <h3 className="font-semibold text-text-main">{feature.title}</h3>
 
               <p className="mt-2 text-sm leading-6 text-text-muted">
                 {feature.description}

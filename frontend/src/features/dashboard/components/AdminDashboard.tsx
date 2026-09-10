@@ -37,14 +37,14 @@ function getOrdersByMode(orders: OrderResponse[], mode: OrderResponse["mode"]) {
 
 function getOrdersErrorMessage(error: unknown) {
   return getApiErrorMessage(error, {
-    defaultMessage: "No se pudieron cargar las órdenes del sistema.",
+    defaultMessage: "No se pudo cargar el historial del sistema.",
     networkMessage:
       "No se pudo conectar con el servidor para cargar el dashboard de administración.",
     unauthorizedMessage:
       "Tu sesión no está activa o venció. Iniciá sesión nuevamente.",
     forbiddenMessage:
       "No tenés permisos para ver el dashboard de administración.",
-    notFoundMessage: "No se encontró el historial general de órdenes.",
+    notFoundMessage: "No se encontró el historial general.",
     serverMessage:
       "Ocurrió un error en el servidor al cargar el dashboard de administración. Intentá nuevamente más tarde.",
   });
@@ -132,11 +132,11 @@ export function AdminDashboard() {
       <section className="space-y-6">
         <PageHeader
           title="Dashboard admin"
-          description="Cargando el resumen general de órdenes."
+          description="Cargando el resumen general del historial."
         />
 
         <Card className="border-border-soft bg-surface-soft/80">
-          <p className="text-text-muted">Cargando órdenes del sistema...</p>
+          <p className="text-text-muted">Cargando registros del sistema...</p>
         </Card>
       </section>
     );
@@ -147,7 +147,7 @@ export function AdminDashboard() {
       <section className="space-y-6">
         <PageHeader
           title="Dashboard admin"
-          description="No pudimos cargar el resumen general de órdenes."
+          description="No pudimos cargar el resumen general del historial."
         />
 
         <ErrorState
@@ -177,7 +177,7 @@ export function AdminDashboard() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <PageHeader
           title="Dashboard admin"
-          description="Resumen general de órdenes calculadas en CocktailOps."
+          description="Resumen general del historial calculado en CocktailOps."
         />
 
         <div className="flex flex-col gap-3 sm:flex-row">
@@ -190,47 +190,47 @@ export function AdminDashboard() {
             variant="secondary"
             onClick={() => navigate(ROUTES.orders)}
           >
-            Ver mis órdenes
+            Ver historial completo
           </Button>
         </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <DashboardMetricCard
-          title="Órdenes del sistema"
+          title="Total generado"
           value={orders.length}
-          description="Total de órdenes guardadas en la aplicación."
+          description="Total de registros guardados en la aplicación."
           icon={<ClipboardList size={20} />}
         />
 
         <DashboardMetricCard
           title="Tragos calculados"
           value={totalDrinks}
-          description="Total estimado entre todas las órdenes guardadas."
+          description="Total estimado entre todos los registros guardados."
           icon={<GlassWater size={20} />}
         />
 
         <DashboardMetricCard
-          title="Órdenes por evento"
+          title="Calculos por evento"
           value={timeOrdersCount}
-          description="Órdenes calculadas por invitados y duración."
+          description="Cálculos realizados por invitados y duración."
           icon={<Clock size={20} />}
         />
 
         <DashboardMetricCard
-          title="Órdenes por tragos"
+          title="Calculos por tragos"
           value={drinksOrdersCount}
-          description="Órdenes calculadas por cantidad total de tragos."
+          description="Cálculos realizados por cantidad total de tragos."
           icon={<Martini size={20} />}
         />
       </div>
 
       <RecentOrdersTable
         orders={recentOrders}
-        title="Últimas órdenes del sistema"
-        description="Órdenes recientes creadas por usuarios registrados."
+        title="Últimos registros del sistema"
+        description="Registros recientes creados por usuarios registrados."
         showUserColumn
-        emptyMessage="Todavía no hay órdenes guardadas en el sistema."
+        emptyMessage="Todavía no hay registros guardados en el sistema."
       />
 
       <CocktailsPreview />
