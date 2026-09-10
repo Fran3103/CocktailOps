@@ -57,7 +57,7 @@ export function OrderDetailsSection({
 
           <p className="mt-1 text-sm text-text-muted">
             {orderMode === "TIME"
-              ? "Calculá la orden según invitados, duración y peso relativo de cada cóctel."
+             ? "Calculá la orden según invitados, duración y prioridad de cada cóctel."
               : "Calculá la orden según una cantidad final de tragos y la distribución por cóctel."}
           </p>
         </div>

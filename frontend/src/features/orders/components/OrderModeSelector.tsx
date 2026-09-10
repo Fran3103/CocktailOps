@@ -19,7 +19,7 @@ export function OrderModeSelector({ value, onChange }: OrderModeSelectorProps) {
       >
         <p className="font-heading text-lg font-semibold">Por evento</p>
         <p className="mt-1 text-sm">
-          Calcula tragos según invitados, duración y peso de cada cóctel.
+          Calcula tragos según invitados, duración y prioridad de cada cóctel.
         </p>
       </button>
 
