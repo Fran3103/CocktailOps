@@ -2,17 +2,79 @@ import { Martini, RefreshCcw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { ROUTES } from "../../../shared/constants/routes";
 import { Button } from "../../../shared/components/ui/Button";
 import { Card } from "../../../shared/components/ui/Card";
-import { cocktailService } from "../../cocktails/cocktailService";
+import { ROUTES } from "../../../shared/constants/routes";
 import type { Cocktail } from "../../cocktails/cocktail.types";
+import { cocktailService } from "../../cocktails/cocktailService";
 
 const COCKTAILS_LIMIT = 6;
 
+const popularEventCocktailNames = [
+  "Fernet Cola",
+  "Gin Tonic",
+  "Aperol Spritz",
+  "Negroni",
+  "Mojito",
+  "Caipiroska",
+  "Daiquiri",
+  "Caipirinha",
+  "Cuba Libre",
+];
+
+function normalizeCocktailName(name: string) {
+  return name.trim().toLowerCase();
+}
+
+function removeDuplicatedCocktails(cocktails: Cocktail[]) {
+  const seenNames = new Set<string>();
+
+  return cocktails.filter((cocktail) => {
+    const normalizedName = normalizeCocktailName(cocktail.name);
+
+    if (seenNames.has(normalizedName)) {
+      return false;
+    }
+
+    seenNames.add(normalizedName);
+    return true;
+  });
+}
+
+function sortPopularCocktailsFirst(cocktails: Cocktail[]) {
+  const priorityByName = new Map(
+    popularEventCocktailNames.map((name, index) => [
+      normalizeCocktailName(name),
+      index,
+    ]),
+  );
+
+  return [...cocktails].sort((a, b) => {
+    const priorityA = priorityByName.get(normalizeCocktailName(a.name));
+    const priorityB = priorityByName.get(normalizeCocktailName(b.name));
+
+    if (priorityA != null && priorityB != null) {
+      return priorityA - priorityB;
+    }
+
+    if (priorityA != null) {
+      return -1;
+    }
+
+    if (priorityB != null) {
+      return 1;
+    }
+
+    return a.name.localeCompare(b.name, "es", { sensitivity: "base" });
+  });
+}
+
 async function getCocktailsPreview(): Promise<Cocktail[]> {
   const data = await cocktailService.getAll();
-  return data.slice(0, COCKTAILS_LIMIT);
+  const uniqueCocktails = removeDuplicatedCocktails(data);
+  const orderedCocktails = sortPopularCocktailsFirst(uniqueCocktails);
+
+  return orderedCocktails.slice(0, COCKTAILS_LIMIT);
 }
 
 export function CocktailsPreview() {
@@ -30,11 +92,12 @@ export function CocktailsPreview() {
       const data = await getCocktailsPreview();
       setCocktails(data);
     } catch {
-      setError("No se pudieron cargar los cócteles disponibles.");
+      setError("No se pudieron cargar los cócteles sugeridos.");
     } finally {
       setIsLoading(false);
     }
   }
+
   useEffect(() => {
     let isMounted = true;
 
@@ -48,7 +111,7 @@ export function CocktailsPreview() {
       } catch {
         if (!isMounted) return;
 
-        setError("No se pudieron cargar los cócteles disponibles.");
+        setError("No se pudieron cargar los cócteles sugeridos.");
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -68,7 +131,7 @@ export function CocktailsPreview() {
       <Card className="border-border-soft bg-surface-soft/80">
         <div className="flex items-center gap-3 text-text-muted">
           <RefreshCcw size={18} className="animate-spin" />
-          <p>Cargando cócteles disponibles...</p>
+          <p>Cargando cócteles sugeridos...</p>
         </div>
       </Card>
     );
@@ -91,15 +154,14 @@ export function CocktailsPreview() {
   if (cocktails.length === 0) {
     return (
       <Card className="border-border-soft bg-surface-soft/80">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-text-main">
-              Cócteles disponibles
-            </h2>
-            <p className="mt-1 text-sm text-text-muted">
-              Todavía no hay cócteles cargados para calcular órdenes.
-            </p>
-          </div>
+        <div>
+          <h2 className="text-lg font-semibold text-text-main">
+            Cócteles sugeridos
+          </h2>
+
+          <p className="mt-1 text-sm text-text-muted">
+            Todavía no hay cócteles cargados para calcular órdenes.
+          </p>
         </div>
       </Card>
     );
@@ -110,10 +172,12 @@ export function CocktailsPreview() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-xl font-semibold text-text-main">
-            Cócteles disponibles
+            Cócteles populares para eventos
           </h2>
+
           <p className="mt-1 text-sm text-text-muted">
-            Usá estos cócteles como base para calcular tragos e insumos.
+            Selección orientativa de tragos frecuentes para usar como punto de
+            partida.
           </p>
         </div>
 

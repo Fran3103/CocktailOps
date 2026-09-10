@@ -40,7 +40,7 @@ export function AppLayout() {
             </p>
 
             <p className="text-xs text-text-muted">
-              Event planning dashboard
+              Cálculo de bebidas e insumos
             </p>
           </div>
 

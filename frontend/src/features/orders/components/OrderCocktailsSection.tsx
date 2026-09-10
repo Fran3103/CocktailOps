@@ -6,6 +6,7 @@ import type { Cocktail } from "../../cocktails/cocktail.types";
 import { CocktailSelector } from "./CocktailSelector";
 import { OrderPresetSelector } from "./OrderPresetSelector";
 import { SelectedCocktailsList } from "./SelectedCocktailsList";
+import { DrinksAssignmentCounter } from "./DrinksAssignmentCounter";
 import { StepHeader } from "./StepHeader";
 import type { OrderPreset } from "../orderPresets";
 import type { OrderMode, SelectedOrderCocktail } from "../order.types";
@@ -54,6 +55,9 @@ type OrderCocktailsSectionProps = {
   isLoadingCocktails: boolean;
   cocktailsError: string | null;
   error: string | null;
+  totalDrinks: string;
+  assignedDrinks: number;
+  onDistributeEqually: () => void;
   onSelectPreset: (preset: OrderPreset) => void;
   onAddCocktail: (cocktail: Cocktail) => void;
   onWeightChange: (cocktailId: number, weight: number) => void;
@@ -92,6 +96,9 @@ export function OrderCocktailsSection({
   isLoadingCocktails,
   cocktailsError,
   error,
+  totalDrinks,
+  assignedDrinks,
+  onDistributeEqually,
   onSelectPreset,
   onAddCocktail,
   onWeightChange,
@@ -156,7 +163,7 @@ export function OrderCocktailsSection({
         cocktail.description ?? "",
         cocktail.preparationType ?? "",
         cocktail.preparationType
-          ? preparationSearchLabels[cocktail.preparationType] ?? ""
+          ? (preparationSearchLabels[cocktail.preparationType] ?? "")
           : "",
         ...(cocktail.ingredients?.map(
           (ingredient) => ingredient.productName ?? "",
@@ -419,10 +426,18 @@ export function OrderCocktailsSection({
 
           <p className="mt-1 text-sm text-text-muted">
             {orderMode === "TIME"
-              ? "El peso define qué cócteles tienen más presencia dentro del evento."
+              ? "La prioridad define qué cócteles tendrán más presencia dentro del evento."
               : "La cantidad define cuántos tragos se calcularán por cada cóctel."}
           </p>
         </div>
+        {orderMode === "DRINKS" && (
+          <DrinksAssignmentCounter
+            totalDrinks={totalDrinks}
+            assignedDrinks={assignedDrinks}
+            selectedCocktailsCount={selectedCocktails.length}
+            onDistributeEqually={onDistributeEqually}
+          />
+        )}
 
         <SelectedCocktailsList
           orderMode={orderMode}
