@@ -124,6 +124,7 @@ public class CocktailServiceImpl implements ICocktailService {
     }
 
     @Override
+    @Transactional
     public CocktailResponseDto update(Long id, CocktailResponseDto Dto) {
 
         log.info("Updating cocktail with id: {}", id);

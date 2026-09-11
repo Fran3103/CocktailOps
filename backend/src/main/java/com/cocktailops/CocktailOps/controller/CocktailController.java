@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -21,7 +22,7 @@ public class CocktailController {
 
 
     @PostMapping()
-    public ResponseEntity<CocktailResponseDto> create(@RequestBody CocktailRequestDto dto) {
+    public ResponseEntity<CocktailResponseDto> create(@RequestBody @Valid CocktailRequestDto dto) {
         CocktailResponseDto response = cocktailService.create(dto);
         return ResponseEntity.ok(response);
     }
@@ -62,6 +63,7 @@ public class CocktailController {
     @PostMapping("/{cocktailId}/ingredients")
     public ResponseEntity<CocktailResponseDto>addIngredient(
             @PathVariable Long cocktailId,
+            @Valid
             @RequestBody List<CocktailIngredientRequestDto> ingredientDto
     ){
         return ResponseEntity.ok(cocktailService.addIngredientToCocktail(cocktailId, ingredientDto));
@@ -81,6 +83,7 @@ public class CocktailController {
     public ResponseEntity<CocktailResponseDto> updateIngredient(
             @PathVariable Long cocktailId,
             @PathVariable Long productId,
+            @Valid
             @RequestBody CocktailIngredientRequestDto ingredientDto){
 
         return ResponseEntity.ok(cocktailService.updateCocktailIngredient(cocktailId, productId, ingredientDto));

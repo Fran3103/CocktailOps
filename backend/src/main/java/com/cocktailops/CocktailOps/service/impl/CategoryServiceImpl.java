@@ -9,6 +9,7 @@ import com.cocktailops.CocktailOps.exception.ResourceNotFoundException;
 import com.cocktailops.CocktailOps.repository.ICategoryRepository;
 import com.cocktailops.CocktailOps.repository.IShopRepository;
 import com.cocktailops.CocktailOps.service.ICategoryService;
+import com.cocktailops.CocktailOps.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -34,6 +35,19 @@ public class CategoryServiceImpl implements ICategoryService {
     @Override
     public CategoryResponseDto createCategory(CategoryRequestDto categoryRequestDto) {
 
+        if (categoryRequestDto.name() == null || categoryRequestDto.name().isBlank()) {
+            throw new BadRequestException("Category name is required");
+        }
+
+        if (categoryRequestDto.shop() == null) {
+            throw new BadRequestException("Category shop is required");
+        }
+
+        if (categoryRequestDto.slug() == null || categoryRequestDto.slug().isBlank()) {
+            throw new BadRequestException("Category slug is required");
+        }
+
+
         if(categoryRepository.existsByName(categoryRequestDto.name())){
             throw new DuplicateResourceException("Category with name " + categoryRequestDto.name() + " already exists");}
 
@@ -46,7 +60,9 @@ public class CategoryServiceImpl implements ICategoryService {
             c.setName(categoryRequestDto.name());
             c.setShop(shop);
             c.setSlug(categoryRequestDto.slug());
-            c.setActive(categoryRequestDto.active());
+        c.setActive(
+                categoryRequestDto.active() == null || categoryRequestDto.active()
+        );
 
             Category savedCategory = categoryRepository.save(c);
 

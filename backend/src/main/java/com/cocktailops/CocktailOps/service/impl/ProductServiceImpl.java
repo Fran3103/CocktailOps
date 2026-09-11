@@ -4,6 +4,7 @@ import com.cocktailops.CocktailOps.dto.productDto.ProductRequestDto;
 import com.cocktailops.CocktailOps.dto.productDto.ProductResponseDto;
 import com.cocktailops.CocktailOps.entitie.Category;
 import com.cocktailops.CocktailOps.entitie.Product;
+import com.cocktailops.CocktailOps.exception.BadRequestException;
 import com.cocktailops.CocktailOps.exception.ResourceNotFoundException;
 import com.cocktailops.CocktailOps.repository.ICategoryRepository;
 import com.cocktailops.CocktailOps.repository.IProductRepository;
@@ -60,6 +61,20 @@ public class ProductServiceImpl implements IProductService {
 
     @Override
     public ProductResponseDto create(ProductRequestDto productDto) {
+
+        if (productDto.name() == null || productDto.name().isBlank()) {
+            throw new BadRequestException("Product name is required");
+        }
+
+        if (productDto.category() == null) {
+            throw new BadRequestException("Product category is required");
+        }
+
+        if (productDto.active() == null) {
+            throw new BadRequestException("Product active status is required");
+        }
+
+
         if (productRepository.existsByName(productDto.name())) {
             log.warn("Product with name {} already exists", productDto.name());
 
