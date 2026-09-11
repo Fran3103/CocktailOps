@@ -13,6 +13,7 @@ import type { OrderResponse } from "../../orders/order.types";
 import { CocktailsPreview } from "./CocktailsPreview";
 import { DashboardMetricCard } from "./DashboardMetricCard";
 import { RecentOrdersTable } from "./RecentOrdersTable";
+import { useAuth } from "../../auth/useAuth";
 
 const RECENT_ORDERS_LIMIT = 5;
 
@@ -67,7 +68,7 @@ export function AdminDashboard() {
   const [error, setError] = useState<string | null>(null);
 
   const sortedOrders = useMemo(() => sortOrdersByDateDesc(orders), [orders]);
-
+  const { logout } = useAuth();
   const recentOrders = useMemo(
     () => sortedOrders.slice(0, RECENT_ORDERS_LIMIT),
     [sortedOrders],
@@ -84,6 +85,11 @@ export function AdminDashboard() {
     () => getOrdersByMode(orders, "DRINKS"),
     [orders],
   );
+
+  function handleGoToLogin() {
+    logout();
+    navigate(ROUTES.login, { replace: true });
+  }
 
   async function loadOrders() {
     setIsLoading(true);
@@ -158,11 +164,7 @@ export function AdminDashboard() {
             Reintentar
           </Button>
 
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => navigate(ROUTES.login)}
-          >
+          <Button type="button" variant="secondary" onClick={handleGoToLogin}>
             Ir al login
           </Button>
         </ErrorState>

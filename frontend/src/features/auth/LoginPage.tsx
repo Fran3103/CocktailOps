@@ -17,7 +17,7 @@ export function LoginPage() {
   const from =
     (location.state as { from?: { pathname: string } } | null)?.from
       ?.pathname ?? ROUTES.dashboard;
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
 
   const [formData, setFormData] = useState<LoginRequest>({
     email: "",
@@ -34,6 +34,11 @@ export function LoginPage() {
       ...currentData,
       [name]: value,
     }));
+  }
+
+  function handleContinueAsGuest() {
+    logout();
+    navigate(ROUTES.createOrder, { replace: true });
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -95,12 +100,13 @@ export function LoginPage() {
         </Link>
       </p>
 
-      <Link
-        to={ROUTES.createOrder}
+      <button
+        type="button"
+        onClick={handleContinueAsGuest}
         className="mt-4 inline-block text-sm text-text-muted hover:text-text-main"
       >
         Continuar como invitado
-      </Link>
+      </button>
     </Card>
   );
 }
