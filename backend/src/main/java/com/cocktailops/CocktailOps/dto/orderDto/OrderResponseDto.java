@@ -18,6 +18,8 @@ public record OrderResponseDto(
         Integer drinksPerPerson,
         @Schema(description = "duración del evento en horas", example = "4")
         Integer durationHours,
+        @Schema(description = "total de bebidas calculadas para la orden", example = "400")
+        Integer totalDrinks,
         @Schema(description = "estado del pedido", example = "pending")
         String status,
         @Schema(description = "lista de items del pedido")

@@ -66,21 +66,8 @@ public class OrderPdfServiceImpl implements IOrderPdfService {
 
     private OrderPdfDto toPdfDto(OrderResponseDto o) {
 
-        // Determinar el modo de cálculo del pedido (por tiempo o por bebidas)
-        String mode = (o.guests() != null && o.durationHours() != null) ? "TIME" : "DRINKS";
-
-        // Calcular el total de bebidas necesarias según el modo del pedido
-        Integer totalDrinks;
-        if ("TIME".equals(mode)) {
-            if (o.guests() == null || o.drinksPerPerson() == null || o.durationHours() == null) {
-                throw new IllegalStateException("TIME order requires guests, drinksPerPerson and durationHours");
-            }
-            totalDrinks = o.guests() * o.drinksPerPerson() * o.durationHours();
-        } else {
-            totalDrinks = (o.cocktail() == null ? 0 : o.cocktail().stream()
-                    .mapToInt(c -> c.quantity() == null ? 0 : c.quantity())
-                    .sum());
-        }
+        String mode = o.mode();
+        Integer totalDrinks = o.totalDrinks();
 
         // Transformar la lista de cócteles del pedido a un formato adecuado para el PDF
         List<OrderCocktailPdfDto> cocktails = (o.cocktail() == null ? List.of() : o.cocktail().stream()

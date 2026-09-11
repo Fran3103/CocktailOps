@@ -904,10 +904,12 @@ public class OrderServiceImpl implements IOrderService {
                 order.getGuests(),
                 order.getDrinksPerPerson(),
                 order.getDurationHours(),
+                order.getTotalDrinks(),
                 order.getStatus(),
                 items,
                 cocktails,
                 userId
+
         );
     }
 
