@@ -8,6 +8,7 @@ import com.cocktailops.CocktailOps.exception.ResourceNotFoundException;
 import com.cocktailops.CocktailOps.repository.ICategoryRepository;
 import com.cocktailops.CocktailOps.repository.IProductRepository;
 import com.cocktailops.CocktailOps.service.IProductService;
+import com.cocktailops.CocktailOps.exception.DuplicateResourceException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -56,10 +57,13 @@ public class ProductServiceImpl implements IProductService {
 
     @Override
     public ProductResponseDto create(ProductRequestDto productDto) {
-        if (productRepository.existsByName(productDto.name()) ){
+        if (productRepository.existsByName(productDto.name())) {
             log.warn("Product with name {} already exists", productDto.name());
-            throw new ResourceNotFoundException("Product with name " + productDto.name() + " already exists");
-        };
+
+            throw new DuplicateResourceException(
+                    "Product with name " + productDto.name() + " already exists"
+            );
+        }
         Optional<Category> category = categoryRepository.findById(productDto.category());
         if (category.isEmpty()) {
             log.warn("Category with id {} not found", productDto.category());
@@ -72,7 +76,9 @@ public class ProductServiceImpl implements IProductService {
         product.setDescription(productDto.description());
         product.setCategory(category.get());
         product.setUnit(productDto.unit());
-        product.setPurchasable(productDto.purchasable());
+        product.setPurchasable(
+                productDto.purchasable() == null || productDto.purchasable()
+        );
         product.setDescription(productDto.description());
         product.setImageUrl(productDto.imageUrl());
         product.setImageAlt(productDto.imageAlt());
@@ -107,15 +113,22 @@ public class ProductServiceImpl implements IProductService {
                     log.warn("Product with id {} not found", id);
                     return new ResourceNotFoundException("Product not found with id: " + id);
                 });
-        Optional<Category> category = categoryRepository.findById(productDto.category());
-        if (category.isEmpty()) {
-            log.warn("Category with id {} not found for update", productDto.category());
-            throw new ResourceNotFoundException("Category with id " + productDto.category() + " not found");
+
+        if (productDto.category() != null) {
+            Category category = categoryRepository.findById(productDto.category())
+                    .orElseThrow(() -> {
+                        log.warn("Category with id {} not found for update", productDto.category());
+                        return new ResourceNotFoundException(
+                                "Category with id " + productDto.category() + " not found"
+                        );
+                    });
+
+            product.setCategory(category);
         }
 
 
         if (productDto.name() != null) product.setName(productDto.name());
-        product.setCategory(category.get());
+
         if (productDto.description() != null) {
             product.setDescription(productDto.description());
         };

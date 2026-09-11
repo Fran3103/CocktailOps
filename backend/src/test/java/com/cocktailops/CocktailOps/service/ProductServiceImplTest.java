@@ -4,6 +4,7 @@ import com.cocktailops.CocktailOps.dto.productDto.ProductRequestDto;
 import com.cocktailops.CocktailOps.dto.productDto.ProductResponseDto;
 import com.cocktailops.CocktailOps.entitie.Category;
 import com.cocktailops.CocktailOps.entitie.Product;
+import com.cocktailops.CocktailOps.exception.DuplicateResourceException;
 import com.cocktailops.CocktailOps.exception.ResourceNotFoundException;
 import com.cocktailops.CocktailOps.repository.ICategoryRepository;
 import com.cocktailops.CocktailOps.repository.IProductRepository;
@@ -171,7 +172,51 @@ public class ProductServiceImplTest {
     }
 
     @Test
-    void create_whenProductNameAlreadyExists_thenThrowResourceNotFoundException() {
+    void create_whenPurchasableIsNull_defaultsToTrue() {
+
+        Category category = new Category();
+        category.setId(10L);
+        category.setName("Alcohol");
+
+        ProductRequestDto requestDto = new ProductRequestDto(
+                null,
+                "Vodka",
+                "licor",
+                10L,
+                "ml",
+                new BigDecimal("750"),
+                true,
+                null, // purchasable no enviado
+                null,
+                null
+        );
+
+        when(productRepository.existsByName("Vodka"))
+                .thenReturn(false);
+
+        when(categoryRepository.findById(10L))
+                .thenReturn(Optional.of(category));
+
+        when(productRepository.save(any(Product.class)))
+                .thenAnswer(invocation -> {
+                    Product product = invocation.getArgument(0);
+                    product.setId(1L);
+                    return product;
+                });
+
+        ProductResponseDto result =
+                productServiceImpl.create(requestDto);
+
+        assertNotNull(result);
+        assertTrue(result.purchasable());
+
+        verify(productRepository).existsByName("Vodka");
+        verify(categoryRepository).findById(10L);
+        verify(productRepository).save(any(Product.class));
+    }
+
+    @Test
+    void create_whenProductNameAlreadyExists_thenThrowDuplicateResourceException() {
         ProductRequestDto requestDto = new ProductRequestDto(
                 1L,
                 "Vodka",
@@ -188,7 +233,7 @@ public class ProductServiceImplTest {
 
         when(productRepository.existsByName("Vodka")).thenReturn(true);
 
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> {
+        DuplicateResourceException exception = assertThrows(DuplicateResourceException.class, () -> {
             productServiceImpl.create(requestDto);
         });
 
@@ -639,6 +684,59 @@ public class ProductServiceImplTest {
 
         verify(productRepository).findAllWithCategory();
         verifyNoMoreInteractions(productRepository);
+        verifyNoInteractions(categoryRepository);
+    }
+
+
+    @Test
+    void update_whenCategoryIsNull_keepsExistingCategory() {
+
+        Long productId = 1L;
+
+        Category existingCategory = new Category();
+        existingCategory.setId(10L);
+        existingCategory.setName("Alcohol");
+
+        Product product = new Product();
+        product.setId(productId);
+        product.setName("Vodka");
+        product.setDescription("Descripción anterior");
+        product.setCategory(existingCategory);
+        product.setUnit("ml");
+        product.setUnitSize(new BigDecimal("750"));
+        product.setActive(true);
+        product.setPurchasable(true);
+
+        ProductRequestDto updateDto = new ProductRequestDto(
+                null,
+                null,
+                "Nueva descripción",
+                null,   // category NO enviada
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        when(productRepository.findById(productId))
+                .thenReturn(Optional.of(product));
+
+        when(productRepository.save(product))
+                .thenReturn(product);
+
+        ProductResponseDto result =
+                productServiceImpl.update(productId, updateDto);
+
+        assertEquals("Nueva descripción", result.description());
+        assertEquals(10L, result.categoryId());
+        assertEquals("Alcohol", result.categoryName());
+
+        verify(productRepository).findById(productId);
+        verify(productRepository).save(product);
+
+        // Lo importante del test:
         verifyNoInteractions(categoryRepository);
     }
 }
