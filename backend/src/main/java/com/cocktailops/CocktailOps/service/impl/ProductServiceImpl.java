@@ -9,6 +9,7 @@ import com.cocktailops.CocktailOps.repository.ICategoryRepository;
 import com.cocktailops.CocktailOps.repository.IProductRepository;
 import com.cocktailops.CocktailOps.service.IProductService;
 import com.cocktailops.CocktailOps.exception.DuplicateResourceException;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ public class ProductServiceImpl implements IProductService {
     private final ICategoryRepository categoryRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public ProductResponseDto findById(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
@@ -48,6 +50,7 @@ public class ProductServiceImpl implements IProductService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ProductResponseDto findByName(String name) {
         Product product = productRepository.findByName(name)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found by name: " + name));
