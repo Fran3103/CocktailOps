@@ -19,10 +19,12 @@ import org.springframework.transaction.annotation.Transactional;
 import com.cocktailops.CocktailOps.exception.RateLimitExceededException;
 import com.cocktailops.CocktailOps.repository.IPreparedProductRecipeRepository;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -344,10 +346,15 @@ public class OrderServiceImpl implements IOrderService {
         if (dto.cocktails() == null || dto.cocktails().isEmpty()) {
             throw new BadRequestException("At least one cocktail must be included in the order");
         }
-
+        Set<Long> cocktailIds = new HashSet<>();
         for (OrderCocktailsWeightDto cocktail : dto.cocktails()) {
             if (cocktail.cocktailId() == null) {
                 throw new BadRequestException("cocktailId is required and weight must be > 0");
+            }
+            if (!cocktailIds.add(cocktail.cocktailId())) {
+                throw new BadRequestException(
+                        "Duplicate cocktailId: " + cocktail.cocktailId()
+                );
             }
             if (cocktail.weight() != null
                     && (cocktail.weight() < MIN_COCKTAIL_WEIGHT
@@ -362,9 +369,9 @@ public class OrderServiceImpl implements IOrderService {
 
     /**
      * Construye un mapa cocktailId -> weight.
-
-     * Si el usuario no manda weight, se usa 1.
-     * Si el mismo cocktailId aparece más de una vez, se suman los pesos.
+     *
+     * Si el usuario no manda weight, se usa el peso por defecto.
+     * Los cocktailId duplicados se rechazan previamente en la validación.
      */
     private Map<Long, Integer> buildWeightsByCocktailId(List<OrderCocktailsWeightDto> cocktails) {
         Map<Long, Integer> weightsByCocktailId = new LinkedHashMap<>();
@@ -377,7 +384,7 @@ public class OrderServiceImpl implements IOrderService {
 
             // Si el mismo cóctel aparece más de una vez,
             // acumulamos su peso en lugar de reemplazarlo.
-            weightsByCocktailId.merge(cocktailId, weight, Integer::sum);
+            weightsByCocktailId.put(cocktailId, weight);
         }
 
         return weightsByCocktailId;
@@ -502,6 +509,8 @@ public class OrderServiceImpl implements IOrderService {
             throw new BadRequestException("cocktails must be greater than 0");
         }
 
+        Set<Long> cocktailIds = new HashSet<>();
+
         int sum = 0;
 
         for (OrderCocktailQuantityDto cocktail : dto.cocktails()) {
@@ -509,6 +518,11 @@ public class OrderServiceImpl implements IOrderService {
                 throw new BadRequestException("cocktails must be greater than 0");
             }
 
+            if (!cocktailIds.add(cocktail.cocktailId())) {
+                throw new BadRequestException(
+                        "Duplicate cocktailId: " + cocktail.cocktailId()
+                );
+            }
             sum += cocktail.quantity();
         }
 

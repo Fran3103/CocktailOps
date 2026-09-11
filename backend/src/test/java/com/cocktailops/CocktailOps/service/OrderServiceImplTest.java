@@ -709,4 +709,60 @@ public class OrderServiceImplTest {
         assertEquals(new BigDecimal("15000"), iceItem.packSize());
         assertEquals("GR", iceItem.measureUnit());
     }
+
+
+    @Test
+    void createOrder_whenCocktailIdIsDuplicated_throwsBadRequestException() {
+
+        List<OrderCocktailsWeightDto> cocktails = List.of(
+                new OrderCocktailsWeightDto(1L, 2),
+                new OrderCocktailsWeightDto(1L, 3)
+        );
+
+        OrderRequestDto dto = createOrderRequestDto(
+                50,
+                5,
+                cocktails
+        );
+
+        BadRequestException exception = assertThrows(
+                BadRequestException.class,
+                () -> orderServiceImpl.createOrder(dto)
+        );
+
+        assertEquals(
+                "Duplicate cocktailId: 1",
+                exception.getMessage()
+        );
+
+        verifyNoInteractions(orderRepository);
+        verifyNoInteractions(productRepository);
+        verifyNoInteractions(cocktailRepository);
+    }
+
+    @Test
+    void createOrderByDrinks_whenCocktailIdIsDuplicated_throwsBadRequestException() {
+
+        OrderByDrinksRequestDto dto = new OrderByDrinksRequestDto(
+                100,
+                List.of(
+                        new OrderCocktailQuantityDto(1L, 50),
+                        new OrderCocktailQuantityDto(1L, 50)
+                )
+        );
+
+        BadRequestException exception = assertThrows(
+                BadRequestException.class,
+                () -> orderServiceImpl.createOrderByDrinks(dto)
+        );
+
+        assertEquals(
+                "Duplicate cocktailId: 1",
+                exception.getMessage()
+        );
+
+        verifyNoInteractions(orderRepository);
+        verifyNoInteractions(productRepository);
+        verifyNoInteractions(cocktailRepository);
+    }
 }
