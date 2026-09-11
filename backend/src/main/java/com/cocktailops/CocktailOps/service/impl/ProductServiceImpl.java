@@ -97,7 +97,6 @@ public class ProductServiceImpl implements IProductService {
         product.setPurchasable(
                 productDto.purchasable() == null || productDto.purchasable()
         );
-        product.setDescription(productDto.description());
         product.setImageUrl(productDto.imageUrl());
         product.setImageAlt(productDto.imageAlt());
         product.setActive(productDto.active());
