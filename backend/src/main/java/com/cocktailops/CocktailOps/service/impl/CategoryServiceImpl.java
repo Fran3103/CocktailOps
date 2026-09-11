@@ -10,6 +10,7 @@ import com.cocktailops.CocktailOps.repository.ICategoryRepository;
 import com.cocktailops.CocktailOps.repository.IShopRepository;
 import com.cocktailops.CocktailOps.service.ICategoryService;
 import com.cocktailops.CocktailOps.exception.BadRequestException;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -24,9 +25,10 @@ public class CategoryServiceImpl implements ICategoryService {
     private final IShopRepository shopRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public CategoryResponseDto getCategoryById(long id) {
        Category category = categoryRepository.findById(id)
-               .orElseThrow(()-> new ResourceNotFoundException("User with id " + id + " not found"));
+               .orElseThrow(()-> new ResourceNotFoundException("Category with id " + id + " not found"));
 
        return new CategoryResponseDto(category.getId(), category.getName(), category.getShop().getId(),category.getSlug(),category.getActive());
      }
@@ -76,10 +78,11 @@ public class CategoryServiceImpl implements ICategoryService {
     }
 
     @Override
+    @Transactional
     public CategoryResponseDto updateCategory(Long id, CategoryRequestDto Dto) {
 
         Category category = categoryRepository.findById(id)
-                .orElseThrow(()-> new ResourceNotFoundException("User with id " + id + " not found"));
+                .orElseThrow(()-> new ResourceNotFoundException("Category with id " + id + " not found"));
 
 
         if (Dto.name() != null ) category.setName(Dto.name());
@@ -106,12 +109,13 @@ public class CategoryServiceImpl implements ICategoryService {
     public void deleteCategory(Long id) {
 
         Category category = categoryRepository.findById(id)
-                .orElseThrow(()-> new ResourceNotFoundException("User with id " + id + " not found"));
+                .orElseThrow(()-> new ResourceNotFoundException("Category with id " + id + " not found"));
 
         categoryRepository.delete(category);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<CategoryResponseDto> getAllCategories() {
         List<Category> categories = categoryRepository.findAll();
 
@@ -121,6 +125,7 @@ public class CategoryServiceImpl implements ICategoryService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public CategoryResponseDto getCategoryByName(String categoryName) {
         Category category = categoryRepository.findByName(categoryName);
         if (category == null) {
