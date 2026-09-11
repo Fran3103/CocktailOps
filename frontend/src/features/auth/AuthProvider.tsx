@@ -1,9 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
 import { AuthContext } from "./AuthContext";
 import { authService } from "./authService";
-import { clearAuthData, getStoredUser, saveAuthData } from "./authStorage";
+import {
+  AUTH_STORAGE_EVENT,
+  clearAuthData,
+  getStoredUser,
+  saveAuthData,
+} from "./authStorage";
 import type {
   AuthResponse,
   LoginRequest,
@@ -27,6 +32,20 @@ function mapAuthResponseToUser(authData: AuthResponse): StoredUser {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<StoredUser | null>(() => getStoredUser());
+
+  useEffect(() => {
+    function syncUserFromStorage() {
+      setUser(getStoredUser());
+    }
+
+    window.addEventListener(AUTH_STORAGE_EVENT, syncUserFromStorage);
+    window.addEventListener("storage", syncUserFromStorage);
+
+    return () => {
+      window.removeEventListener(AUTH_STORAGE_EVENT, syncUserFromStorage);
+      window.removeEventListener("storage", syncUserFromStorage);
+    };
+  }, []);
 
   async function login(data: LoginRequest) {
     const authData = await authService.login(data);

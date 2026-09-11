@@ -13,7 +13,7 @@ import { useAuth } from "./useAuth";
 
 export function RegisterPage() {
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { register, logout } = useAuth();
 
   const [formData, setFormData] = useState<RegisterRequest>({
     firstName: "",
@@ -32,6 +32,11 @@ export function RegisterPage() {
       ...currentData,
       [name]: value,
     }));
+  }
+
+  function handleContinueAsGuest() {
+    logout();
+    navigate(ROUTES.createOrder, { replace: true });
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -113,12 +118,13 @@ export function RegisterPage() {
           Iniciar sesión
         </Link>
       </p>
-      <Link
-        to={ROUTES.createOrder}
-        className="mt-4 block text-center text-sm font-medium text-text-muted transition hover:text-text-main"
+      <button
+        type="button"
+        onClick={handleContinueAsGuest}
+        className="mt-4 block w-full text-center text-sm font-medium text-text-muted transition hover:text-text-main"
       >
         Continuar como invitado
-      </Link>
+      </button>
     </Card>
   );
 }
