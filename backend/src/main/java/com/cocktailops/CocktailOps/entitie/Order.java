@@ -25,13 +25,13 @@ public class Order {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @Column(nullable = false)
+    @Column
     private  Integer guests;
 
-    @Column(nullable = false)
+    @Column
     private  Integer drinksPerPerson;
 
-    @Column(nullable = false)
+    @Column
     private  Integer durationHours;
 
     @Enumerated(EnumType.STRING)
