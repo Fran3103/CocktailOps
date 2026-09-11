@@ -5,12 +5,12 @@ import com.cocktailops.CocktailOps.dto.authDto.LoginRequestDto;
 import com.cocktailops.CocktailOps.dto.authDto.RegisterRequestDto;
 import com.cocktailops.CocktailOps.entitie.Role;
 import com.cocktailops.CocktailOps.entitie.User;
-import com.cocktailops.CocktailOps.exception.BadRequestException;
+import com.cocktailops.CocktailOps.exception.InvalidCredentialsException;
 import com.cocktailops.CocktailOps.exception.DuplicateResourceException;
 import com.cocktailops.CocktailOps.repository.IUserRepository;
 import com.cocktailops.CocktailOps.security.JwtService;
 import com.cocktailops.CocktailOps.service.IAuthService;
-import com.cocktailops.CocktailOps.service.IUserService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -54,12 +54,12 @@ public class IAuthServiceImpl implements IAuthService {
     public AuthResponseDto login(LoginRequestDto dto) {
 
         User user = userRepository.findByEmail(dto.email())
-                .orElseThrow(() -> new BadRequestException("Invalid email or password"));
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
 
         boolean passwordMatches = passwordEncoder.matches(dto.password(), user.getPassword());
 
         if (!passwordMatches) {
-            throw new BadRequestException("Invalid email or password");
+            throw new InvalidCredentialsException("Invalid email or password");
         }
 
         String token = jwtService.generateToken(user);
