@@ -11,7 +11,6 @@ public interface IUserService {
 
     UserResponseDto findByEmail(String email);
 
-    UserResponseDto findByShop(Long shop);
 
     UserResponseDto findById(long id);
 

@@ -32,10 +32,6 @@ public class UserServiceImpl implements IUserService {
         return toResponse(user);
     }
 
-    @Override
-    public UserResponseDto findByShop(Long shop) {
-        throw new UnsupportedOperationException("findByShop is not implemented yet");
-    }
 
     @Override
     public UserResponseDto findById(long id) {
