@@ -5,6 +5,14 @@
       "destination": "http://163.176.63.2:8080/:path*"
     },
     {
+      "source": "/swagger-ui/:path*",
+      "destination": "http://163.176.63.2:8080/swagger-ui/:path*"
+    },
+    {
+      "source": "/v3/api-docs/:path*",
+      "destination": "http://163.176.63.2:8080/v3/api-docs/:path*"
+    },
+    {
       "source": "/:path*",
       "destination": "/index.html"
     }

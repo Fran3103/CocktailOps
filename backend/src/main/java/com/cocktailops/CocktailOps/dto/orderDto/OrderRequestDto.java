@@ -5,11 +5,28 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 
 public record OrderRequestDto(
-        @Schema(description = "cantidad de invitados para el evento", example = "100")
+
+        @Schema(
+                description = "Cantidad de invitados al evento.",
+                example = "100",
+                requiredMode = Schema.RequiredMode.REQUIRED
+        )
         Integer guests,
-        @Schema(description = "duración del evento en horas", example = "4")
+
+        @Schema(
+                description = "Duración del evento expresada en horas.",
+                example = "4",
+                requiredMode = Schema.RequiredMode.REQUIRED
+        )
         Integer durationHours,
-        @Schema(description = "lista de cócteles del pedido")
+
+        @Schema(
+                description = """
+                        Cócteles seleccionados para el evento junto con la prioridad
+                        utilizada para distribuir el total de bebidas.
+                        """,
+                requiredMode = Schema.RequiredMode.REQUIRED
+        )
         List<OrderCocktailsWeightDto> cocktails
 
 ) {

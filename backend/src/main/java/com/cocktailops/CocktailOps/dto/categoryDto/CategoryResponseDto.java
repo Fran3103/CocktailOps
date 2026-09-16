@@ -3,15 +3,30 @@ package com.cocktailops.CocktailOps.dto.categoryDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record CategoryResponseDto(
-        @Schema(description = "id de la categoria", example = "1")
+
+        @Schema(description = "ID de la categoría.", example = "1")
         Long id,
-        @Schema(description = "nombre visible de la categoria", example = "alcohol")
+
+        @Schema(description = "Nombre visible de la categoría.", example = "Destilados")
         String name,
-        @Schema(description = "id de la tienda a la que pertenece", example = "1")
+
+        @Schema(
+                description = "ID de la tienda asociada a la categoría.",
+                example = "1"
+        )
         Long shop,
-        @Schema(description = "codigo de la categoria", example = "xw11")
+
+        @Schema(
+                description = "Slug de la categoría.",
+                example = "destilados"
+        )
         String slug,
-        @Schema(description = "indica si esta activa o no la categoria", example = "true")
+
+        @Schema(
+                description = "Indica si la categoría está activa.",
+                example = "true"
+        )
         Boolean active
+
 ) {
 }

@@ -9,11 +9,23 @@ import jakarta.validation.constraints.Positive;
 import java.util.List;
 
 public record OrderByDrinksRequestDto(
-        @Schema(description = "indica la cantidad de cocktails que el cliente quiere para su evento.", example = "200")
+
+        @Schema(
+                description = "Cantidad total de cócteles que se desea preparar para el evento.",
+                example = "200",
+                requiredMode = Schema.RequiredMode.REQUIRED
+        )
         @NotNull(message = "La cantidad total de cocktails es requerida")
         @Positive(message = "La cantidad total de cocktails debe ser un número positivo")
         Integer totalDrinks,
-        @Schema(description = "lista de cocktails que quiere para su evento, y las cantidades de cada.", example= "cocktailId:1, quantity: 50, cocktailId:2, 150")
+
+        @Schema(
+                description = """
+                        Lista de cócteles seleccionados y cantidad exacta
+                        que se desea preparar de cada uno.
+                        """,
+                requiredMode = Schema.RequiredMode.REQUIRED
+        )
         @NotEmpty(message = "La lista de cocktails no puede estar vacía")
         @Valid
         List<OrderCocktailQuantityDto> cocktails

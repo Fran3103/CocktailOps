@@ -5,14 +5,32 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
 
-public record CocktailIngredientResponseDto (
-        @Schema(description = "id del producto, que sera asignado como ingrediente", example = "1")
+public record CocktailIngredientResponseDto(
+
+        @Schema(
+                description = "ID del producto utilizado como ingrediente.",
+                example = "1"
+        )
         Long productId,
-        @Schema(description = "nombre del ingrediente", example = "vodka")
+
+        @Schema(
+                description = "Nombre del producto utilizado como ingrediente.",
+                example = "Ron blanco"
+        )
         String productName,
-        @Schema(description = "cantidad de onza asignada al cocktail", example = "1.5, equivale a 45ml")
+
+        @Schema(
+                description = "Cantidad del ingrediente utilizada en una preparación.",
+                example = "45"
+        )
         BigDecimal amount,
-        @Schema(description = "unidad de medida, dependiendo del producto", example = "ml, gr o unid")
+
+        @Schema(
+                description = "Unidad de medida del ingrediente.",
+                example = "ML",
+                allowableValues = {"OZ", "ML", "GR", "UNID"}
+        )
         MeasureUnit unit
-){
+
+) {
 }
