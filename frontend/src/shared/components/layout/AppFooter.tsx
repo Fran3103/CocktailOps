@@ -12,6 +12,10 @@ const footerLinks = [
     href: "https://github.com/Fran3103/CocktailOps",
   },
   {
+    label: "API / Swagger",
+    href: "/swagger-ui/index.html",
+  },
+  {
     label: "Portfolio",
     href: "https://franaguirredev.com/",
   },
@@ -34,13 +38,11 @@ export function AppFooter() {
 
           <p className="mt-1 text-xs">
             Java / Spring Boot / React · CocktailOps es un proyecto portfolio no
-            comercial, creado para demostrar desarrollo full stack aplicado al cálculo de 
-            bebidas e insumos para eventos.
+            comercial, creado para demostrar desarrollo full stack aplicado al
+            cálculo de bebidas e insumos para eventos.
           </p>
 
-          <p className="mt-1 text-xs">
-            © {currentYear} CocktailOps
-          </p>
+          <p className="mt-1 text-xs">© {currentYear} CocktailOps</p>
         </div>
 
         <nav
