@@ -7,8 +7,9 @@
 La aplicación funciona tanto para visitantes como para usuarios registrados y cuenta con autenticación JWT, roles, historial, ownership de órdenes, catálogo real, generación de PDF, testing, CI/CD y despliegue cloud.
 
 > **Demo:** https://cocktailops.vercel.app  
+> **API / Swagger:** https://cocktailops.vercel.app/swagger-ui/index.html  
 > **Repositorio:** https://github.com/Fran3103/CocktailOps  
-> **Estado:** versión portfolio funcional y desplegada.
+> **Estado:** versión portfolio funcional, documentada y desplegada.
 
 ---
 
@@ -119,11 +120,12 @@ https://cocktailops.vercel.app
 | Base Neon PostgreSQL | Implementado |
 | Frontend Vercel | Implementado |
 | Proxy Vercel → backend | Implementado |
+| Swagger público vía Vercel | Implementado |
 | GitHub Actions CI/CD | Implementado |
 | Rollback automático | Implementado |
-| Tests backend | 40 tests en verde |
-| Swagger/OpenAPI final | En actualización |
-| README backend/frontend/general | Implementado |
+| Tests backend | 46 tests en verde |
+| Swagger / OpenAPI | Implementado y publicado |
+| README backend/frontend/general | Actualizados |
 | Integración de tiendas/carrito | Futuro |
 | CRUD administrativo visual | Futuro |
 
@@ -137,7 +139,7 @@ Un visitante puede usar la funcionalidad principal sin crear una cuenta:
 
 ```txt
 Entrar a CocktailOps
-→ consultar cócteles y productos
+→ consultar cócteles
 → crear una orden
 → elegir un preset o seleccionar cócteles
 → definir prioridades o cantidades
@@ -205,6 +207,7 @@ flowchart LR
     U --> FE
     FE --> VX
     VX -->|/api| BE
+    VX -->|Swagger / OpenAPI| BE
     BE --> DB
     BE --> PDF
 ```
@@ -334,10 +337,11 @@ Incluye:
 - login;
 - registro;
 - sesión JWT;
+- limpieza de sesión inválida o vencida;
 - catálogo de cócteles;
 - buscador;
 - filtros por preparación;
-- catálogo de productos;
+- catálogo interno de productos para ADMIN;
 - filtros;
 - creación de orden en pasos;
 - presets;
@@ -350,7 +354,8 @@ Incluye:
 - estados de carga;
 - estados vacíos;
 - errores específicos;
-- diseño responsive.
+- diseño responsive;
+- acceso público a Swagger / OpenAPI desde el footer.
 
 Documentación específica:
 
@@ -761,7 +766,7 @@ Después de aplicar un preset, el usuario puede modificar libremente la selecci�
 El backend cuenta actualmente con:
 
 ```txt
-40 tests en verde
+46 tests en verde
 ```
 
 La suite utiliza:
@@ -811,7 +816,7 @@ cd backend
 .\mvnw.cmd test
 ```
 
-El frontend tiene build y lint funcionales. Los tests automatizados de UI quedan como mejora futura no bloqueante para esta versión portfolio.
+El frontend tiene build y lint funcionales. Los tests automatizados de UI quedan como una mejora futura no bloqueante para esta versión portfolio.
 
 ---
 
@@ -872,7 +877,16 @@ En producción:
 VITE_API_BASE_URL=/api
 ```
 
-Vercel utiliza un rewrite para enviar las requests `/api/*` al backend.
+Vercel utiliza rewrites para enviar al backend las requests de la aplicación y de la documentación técnica:
+
+```txt
+/api/*
+/swagger-ui/*
+/v3/api-docs
+/v3/api-docs/*
+```
+
+El resto de las rutas mantiene fallback hacia `/index.html` para React Router.
 
 ---
 
@@ -1102,6 +1116,7 @@ Catálogo
 + backend
 + base de datos
 + testing
++ Swagger / OpenAPI
 + deploy
 + CI/CD
 ```
@@ -1139,7 +1154,7 @@ ShopRepository
 DTOs
 ```
 
-Actualmente este módulo no está integrado al flujo principal del frontend.
+Actualmente este módulo existe a nivel backend, pero no está integrado al flujo funcional principal ni al frontend.
 
 La visión futura es:
 
@@ -1192,7 +1207,7 @@ Incluye arquitectura de UI, rutas, flujos, presets, prioridades, integración co
 
 ## Swagger / OpenAPI
 
-La documentación interactiva de endpoints se encuentra en Swagger.
+La documentación interactiva de la API está finalizada y disponible en español.
 
 En local:
 
@@ -1200,25 +1215,39 @@ En local:
 http://localhost:8081/swagger-ui/index.html
 ```
 
-La revisión final de ejemplos, códigos HTTP y descripciones forma parte del cierre documental del proyecto.
+En la demo desplegada:
+
+```txt
+https://cocktailops.vercel.app/swagger-ui/index.html
+```
+
+La documentación incluye endpoints públicos y protegidos, autenticación Bearer JWT, parámetros, schemas, ejemplos y códigos HTTP. Las operaciones administrativas que existen únicamente a nivel backend están identificadas como tales.
 
 ---
 
-# Próximo cierre
+# Estado final de la versión portfolio
 
-Antes de publicar formalmente el proyecto como pieza de portfolio quedan principalmente tareas de presentación:
+CocktailOps se considera **funcionalmente cerrado para su presentación como proyecto portfolio**.
+
+La versión actual reúne:
 
 ```txt
-Swagger/OpenAPI final
-→ revisar README backend
-→ revisar README frontend
-→ README general
-→ smoke final
-→ capturas del proyecto
-→ publicación
+Frontend React + TypeScript
+→ API REST Spring Boot
+→ autenticación JWT y roles
+→ cálculo TIME / DRINKS
+→ productos preparados
+→ generación de PDF
+→ PostgreSQL + Flyway
+→ testing automatizado
+→ Swagger / OpenAPI
+→ CI/CD
+→ deploy en Vercel + Oracle Cloud + Neon
 ```
 
-No se planean nuevas funcionalidades grandes antes de su presentación, salvo que aparezca un bug real durante la validación final.
+El flujo principal puede utilizarse de punta a punta tanto como invitado como con una cuenta registrada.
+
+No se planean nuevas funcionalidades grandes antes de su publicación. Las próximas tareas corresponden a presentación del proyecto —video, portfolio y LinkedIn— o a evoluciones futuras opcionales.
 
 ---
 

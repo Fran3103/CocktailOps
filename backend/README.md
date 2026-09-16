@@ -4,6 +4,11 @@ Backend REST API de **CocktailOps**, desarrollado con **Java 17**, **Spring Boot
 
 Este módulo contiene la lógica principal del sistema: autenticación JWT, autorización por roles, catálogo de productos/cócteles, cálculo de órdenes, prioridades de consumo, productos preparados, generación de PDF, historial de usuario, ownership de recursos y endpoints públicos de preview para visitantes.
 
+> **Aplicación:** https://cocktailops.vercel.app  
+> **Swagger / OpenAPI:** https://cocktailops.vercel.app/swagger-ui/index.html  
+> **Repositorio:** https://github.com/Fran3103/CocktailOps  
+> **Estado:** versión portfolio funcional, documentada y desplegada.
+
 ---
 
 ## Índice
@@ -19,11 +24,13 @@ Este módulo contiene la lógica principal del sistema: autenticación JWT, auto
 - [Catálogo demo y migraciones](#catálogo-demo-y-migraciones)
 - [Instalación y uso local](#instalación-y-uso-local)
 - [API - Endpoints principales](#api---endpoints-principales)
+- [Swagger / OpenAPI](#swagger--openapi)
 - [Integración con frontend](#integración-con-frontend)
 - [Testing](#testing)
 - [Deploy e infraestructura](#deploy-e-infraestructura)
 - [Diagramas](#diagramas)
-- [Próximos pasos](#próximos-pasos)
+- [Alcance de la versión portfolio](#alcance-de-la-versión-portfolio)
+- [Evolución futura](#evolución-futura)
 - [Autor](#autor)
 
 ---
@@ -78,7 +85,8 @@ El proyecto está pensado como una aplicación full stack de portfolio, mostrand
 | Almíbar simple convertido a azúcar | Implementado |
 | Hielo global por cantidad de tragos | Implementado |
 | Límite de órdenes persistidas por usuario | Implementado |
-| Tests unitarios backend | **40 tests en verde** |
+| Suite automatizada backend | **46 tests en verde** |
+| Swagger / OpenAPI | Implementado y publicado |
 | GitHub Actions CI/CD | Implementado |
 | PostgreSQL en Neon | Implementado |
 | Deploy backend en Oracle Cloud | Implementado |
@@ -87,6 +95,7 @@ El proyecto está pensado como una aplicación full stack de portfolio, mostrand
 | Backup y rollback automático de JAR | Implementado |
 | Frontend en Vercel | Implementado |
 | Proxy `/api` Vercel → Oracle | Implementado |
+| Proxy Swagger / OpenAPI vía Vercel | Implementado |
 | CRUD backend de `Shop` | Implementado, fuera del flujo principal |
 | Integración Order → Shop / carrito | No implementado |
 | Panel visual completo de administración de catálogo | No implementado |
@@ -1015,6 +1024,37 @@ filename: order-preview.pdf
 
 ---
 
+## Swagger / OpenAPI
+
+La API está documentada con **Swagger / OpenAPI** y la documentación interactiva se encuentra disponible tanto en local como en la demo desplegada.
+
+Incluye:
+
+- descripción general de la API;
+- tags, summaries y descripciones en español;
+- parámetros y schemas de DTOs;
+- ejemplos de request y response;
+- códigos HTTP documentados;
+- autenticación Bearer JWT;
+- diferenciación entre endpoints públicos y protegidos;
+- aclaraciones sobre operaciones administrativas disponibles solo a nivel API.
+
+### Local
+
+```txt
+http://localhost:8081/swagger-ui/index.html
+```
+
+### Demo desplegada
+
+```txt
+https://cocktailops.vercel.app/swagger-ui/index.html
+```
+
+La interfaz Swagger se publica mediante Vercel, que redirige `/swagger-ui/*` y `/v3/api-docs*` hacia el backend desplegado en Oracle Cloud.
+
+---
+
 ## Integración con frontend
 
 El frontend está desarrollado con React + TypeScript + Vite y está desplegado en:
@@ -1029,7 +1069,16 @@ En producción utiliza:
 VITE_API_BASE_URL=/api
 ```
 
-Vercel aplica el rewrite `/api/:path*` hacia el backend de Oracle Cloud y mantiene fallback SPA hacia `/index.html`.
+Vercel aplica rewrites hacia el backend de Oracle Cloud para:
+
+```txt
+/api/*
+/swagger-ui/*
+/v3/api-docs
+/v3/api-docs/*
+```
+
+y mantiene el fallback SPA hacia `/index.html`.
 
 Funcionalidades soportadas desde frontend:
 
@@ -1045,7 +1094,8 @@ Funcionalidades soportadas desde frontend:
 - detalle protegido;
 - PDF por ID;
 - rutas privadas;
-- historial global para `ADMIN`.
+- historial global para `ADMIN`;
+- acceso público a Swagger / OpenAPI desde el footer.
 
 La administración visual completa del catálogo no forma parte de la versión actual.
 
@@ -1053,7 +1103,7 @@ La administración visual completa del catálogo no forma parte de la versión a
 
 El backend utiliza **JUnit 5**, **Mockito** y un perfil de test separado.
 
-La suite actual contiene **40 tests en verde**.
+La suite actual contiene **46 tests en verde**.
 
 Áreas cubiertas:
 
@@ -1207,7 +1257,7 @@ checkout
 En un push a `master`, después de superar CI, también se ejecuta CD:
 
 ```txt
-build + 40 tests
+build + 46 tests
 → generar JAR
 → conectar por SSH a Oracle
 → copiar JAR nuevo
@@ -1340,19 +1390,37 @@ sequenceDiagram
 
 ---
 
-## Próximos pasos
+## Alcance de la versión portfolio
 
-### Cierre de documentación
+La versión portfolio se considera **funcionalmente cerrada**.
 
-La aplicación full stack ya está desplegada y funcional. Para cerrar la presentación como proyecto portfolio quedan principalmente tareas de documentación:
+El backend demuestra un flujo completo de desarrollo:
 
-- completar Swagger/OpenAPI con descripciones, ejemplos y respuestas HTTP;
-- actualizar README del frontend;
-- actualizar README general del repositorio;
-- realizar un smoke final de la versión desplegada;
-- preparar capturas y publicación del proyecto.
+```txt
+API REST
++ autenticación JWT
++ autorización por roles
++ ownership de órdenes
++ cálculo TIME / DRINKS
++ reglas de negocio
++ catálogo y recetas
++ productos preparados
++ generación de PDF
++ PostgreSQL
++ Flyway
++ manejo global de errores
++ testing automatizado
++ Swagger / OpenAPI
++ CI/CD
++ deploy cloud
++ rollback automático
+```
 
-No se consideran necesarias nuevas funcionalidades de negocio para cerrar la versión portfolio, salvo que el QA final detecte un bug real.
+No se consideran necesarias nuevas funcionalidades de negocio para presentar esta versión como proyecto portfolio.
+
+---
+
+## Evolución futura
 
 ### Módulo `Shop`
 
@@ -1376,14 +1444,15 @@ Esta integración quedó fuera de la versión portfolio para mantener un alcance
 
 ### Mejoras futuras no bloqueantes
 
-- panel administrativo completo para productos/cócteles;
+- panel administrativo completo para productos, cócteles y categorías;
 - integración Order → Shop / carrito;
 - verificación de email;
-- reset de contraseña;
+- recuperación de contraseña;
 - rate limiting por IP;
 - auditoría avanzada;
-- factores opcionales de clima;
-- ampliar cobertura de tests HTTP/security/PDF.
+- ampliar cobertura HTTP/security/PDF si el proyecto evoluciona.
+
+---
 
 ## Autor
 

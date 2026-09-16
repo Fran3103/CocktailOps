@@ -2,77 +2,32 @@
 
 Interfaz web de **CocktailOps**, una aplicación full stack para calcular bebidas, cócteles, insumos y packs necesarios para eventos.
 
-El frontend está desarrollado con **React**, **Vite**, **TypeScript** y **Tailwind CSS**, y consume una API REST construida con Java y Spring Boot.
-
-> CocktailOps es un proyecto portfolio no comercial, creado para demostrar desarrollo full stack aplicado a un caso real de cálculo de bebidas e insumos para eventos.
+El frontend está desarrollado con **React**, **Vite**, **TypeScript** y **Tailwind CSS**, consume una API REST construida con **Java + Spring Boot** y forma parte de un proyecto portfolio no comercial orientado a demostrar desarrollo full stack aplicado a un caso real.
 
 ---
 
 ## Índice
 
+- [Demo](#demo)
 - [Descripción](#descripción)
 - [Objetivo del frontend](#objetivo-del-frontend)
-- [Demo](#demo)
 - [Stack técnico](#stack-técnico)
-- [Arquitectura del frontend](#arquitectura-del-frontend)
+- [Arquitectura](#arquitectura)
 - [Reglas de acceso](#reglas-de-acceso)
 - [Funcionalidades principales](#funcionalidades-principales)
-- [Flujos principales](#flujos-principales)
-- [Rutas de la aplicación](#rutas-de-la-aplicación)
+- [Flujos de uso](#flujos-de-uso)
+- [Rutas](#rutas)
 - [Integración con backend](#integración-con-backend)
 - [Variables de entorno](#variables-de-entorno)
 - [Instalación y uso local](#instalación-y-uso-local)
 - [Deploy](#deploy)
-- [Estructura del proyecto](#estructura-del-proyecto)
-- [Decisiones de diseño y UX](#decisiones-de-diseño-y-ux)
+- [Manejo de sesión](#manejo-de-sesión)
 - [Manejo de errores](#manejo-de-errores)
+- [Diseño y experiencia de usuario](#diseño-y-experiencia-de-usuario)
+- [Estructura del proyecto](#estructura-del-proyecto)
 - [Estado actual](#estado-actual)
 - [Próximas mejoras](#próximas-mejoras)
 - [Autor](#autor)
-
----
-
-## Descripción
-
-CocktailOps Frontend permite utilizar visualmente el sistema CocktailOps desde el navegador.
-
-La aplicación permite:
-
-- consultar un catálogo de cócteles;
-- calcular una orden para un evento según invitados y duración;
-- calcular una orden por cantidad total de tragos;
-- seleccionar cócteles manualmente;
-- usar listas rápidas predefinidas según el tipo de evento;
-- ajustar prioridades de cócteles en modo evento;
-- asignar cantidades por cóctel en modo cantidad de tragos;
-- distribuir tragos equitativamente;
-- visualizar el resumen calculado;
-- ver productos e insumos necesarios;
-- descargar PDFs;
-- iniciar sesión y registrarse;
-- guardar historial para usuarios autenticados;
-- acceder a vistas diferenciadas según rol;
-- navegar correctamente desde desktop y mobile.
-
-El objetivo no es simular una tienda online ni un sistema comercial completo, sino presentar una aplicación funcional, clara y mantenible, con reglas de negocio reales y una integración full stack.
-
----
-
-## Objetivo del frontend
-
-El frontend transforma la API REST de CocktailOps en una experiencia usable para el usuario final.
-
-La app resuelve principalmente esta necesidad:
-
-```txt
-Tengo un evento
-→ necesito preparar cócteles
-→ quiero estimar tragos, ingredientes, productos y packs
-→ quiero obtener un resumen claro
-→ quiero descargar una orden en PDF
-```
-
-La autenticación no bloquea el uso principal de la aplicación. Un invitado puede generar una orden temporal y descargar el PDF. La cuenta de usuario agrega persistencia: historial, detalle de órdenes guardadas y acceso posterior.
 
 ---
 
@@ -84,13 +39,13 @@ Frontend desplegado:
 https://cocktailops.vercel.app
 ```
 
-Portfolio del desarrollador:
+Portfolio:
 
 ```txt
 https://franaguirredev.com
 ```
 
-Repositorio del proyecto:
+Repositorio:
 
 ```txt
 https://github.com/Fran3103/CocktailOps
@@ -98,11 +53,47 @@ https://github.com/Fran3103/CocktailOps
 
 ---
 
+## Descripción
+
+CocktailOps Frontend permite utilizar visualmente el sistema CocktailOps desde el navegador.
+
+La aplicación permite calcular una orden de cócteles para eventos, obtener los productos necesarios, visualizar el resultado y descargarlo en PDF.
+
+El sistema contempla tres formas de uso:
+
+```txt
+Invitado → calcula una orden temporal sin registrarse
+USER     → crea órdenes guardadas y consulta su historial
+ADMIN    → consulta métricas generales y accede a productos
+```
+
+El foco del frontend es presentar una interfaz clara, responsive y mantenible, conectada a un backend real.
+
+---
+
+## Objetivo del frontend
+
+El objetivo principal es convertir la API REST de CocktailOps en una experiencia usable para el usuario final.
+
+La necesidad que resuelve es:
+
+```txt
+Tengo un evento
+→ quiero preparar cócteles
+→ necesito estimar tragos, insumos y packs
+→ quiero revisar el cálculo
+→ quiero descargar una orden en PDF
+```
+
+La aplicación puede usarse sin iniciar sesión. La autenticación agrega funcionalidades persistentes como historial, perfil y acceso posterior a órdenes guardadas.
+
+---
+
 ## Stack técnico
 
 | Área | Tecnología |
 |---|---|
-| Framework UI | React |
+| UI | React |
 | Build tool | Vite |
 | Lenguaje | TypeScript |
 | Estilos | Tailwind CSS |
@@ -110,25 +101,29 @@ https://github.com/Fran3103/CocktailOps
 | HTTP client | Axios |
 | Iconos | Lucide React |
 | Estado de sesión | Context API + localStorage |
-| Deploy frontend | Vercel |
+| Deploy | Vercel |
 | Backend consumido | Java + Spring Boot |
 | Base de datos backend | PostgreSQL |
 
+Scripts principales:
+
+```bash
+npm run dev
+npm run build
+npm run lint
+npm run preview
+```
+
 ---
 
-## Arquitectura del frontend
+## Arquitectura
 
-El frontend está organizado por **features**, separando cada dominio funcional de la aplicación.
+El frontend está organizado por **features**. Cada feature agrupa componentes, servicios, tipos, hooks y lógica relacionada a un dominio funcional.
 
 ```txt
 src/
 ├── api/
-│   └── apiClient.ts
-│
 ├── app/
-│   ├── App.tsx
-│   └── router.tsx
-│
 ├── features/
 │   ├── auth/
 │   ├── cocktails/
@@ -136,114 +131,99 @@ src/
 │   ├── orders/
 │   ├── products/
 │   └── profiles/
-│
 ├── layouts/
-│   ├── AppLayout.tsx
-│   └── AuthLayout.tsx
-│
 ├── shared/
-│   ├── components/
-│   ├── constants/
-│   ├── hooks/
-│   ├── pages/
-│   ├── types/
-│   └── utils/
-│
-├── styles/
-├── index.css
-└── main.tsx
+└── styles/
 ```
 
-### Criterio de organización
+### Diagrama general
 
-```txt
-features/auth       → login, registro, sesión, rutas protegidas
-features/cocktails  → catálogo y filtros de cócteles
-features/dashboard  → dashboards según tipo de usuario
-features/orders     → creación, historial, detalle y PDF
-features/products   → catálogo interno de productos
-features/profiles   → perfil del usuario autenticado
-shared/             → componentes, helpers y constantes reutilizables
+```mermaid
+flowchart TD
+    User[Usuario] --> Router[React Router]
+    Router --> Layout[AppLayout / AuthLayout]
+    Layout --> Features[Features]
+    Features --> Services[Services]
+    Services --> ApiClient[Axios apiClient]
+    ApiClient --> Backend[Spring Boot API]
+    Backend --> Database[(PostgreSQL)]
 ```
 
-Esta separación evita que la aplicación dependa de componentes gigantes y facilita el mantenimiento del proyecto.
+### Criterio de separación
+
+| Carpeta | Responsabilidad |
+|---|---|
+| `api/` | Cliente HTTP centralizado |
+| `app/` | Configuración principal de rutas |
+| `features/auth/` | Login, registro, sesión y rutas protegidas |
+| `features/cocktails/` | Catálogo, filtros y búsqueda de cócteles |
+| `features/dashboard/` | Dashboards para invitado, USER y ADMIN |
+| `features/orders/` | Creación, historial, detalle y PDFs |
+| `features/products/` | Catálogo interno de productos |
+| `features/profiles/` | Perfil de usuario |
+| `layouts/` | Layout general y layout de autenticación |
+| `shared/` | Componentes, helpers, páginas y constantes reutilizables |
+| `styles/` | Configuración visual global |
 
 ---
 
 ## Reglas de acceso
-
-CocktailOps tiene tres tipos principales de uso:
-
-| Tipo de usuario | Descripción |
-|---|---|
-| Invitado | Puede usar el cálculo principal sin crear cuenta |
-| USER | Puede guardar órdenes y consultar su historial |
-| ADMIN | Puede consultar información general del sistema y acceder a productos |
-
----
 
 ### Invitado
 
 Un usuario invitado puede:
 
 - ver el dashboard público;
-- consultar el catálogo de cócteles;
+- consultar cócteles;
 - crear una orden temporal;
-- usar listas rápidas predefinidas;
-- descargar el PDF desde el resumen generado.
+- usar listas rápidas;
+- generar un cálculo;
+- descargar PDF desde el resumen inmediato.
 
 Un usuario invitado no puede:
 
 - acceder al historial;
 - acceder al perfil;
-- acceder al catálogo interno de productos;
-- guardar órdenes en la base de datos;
-- recuperar una orden temporal luego de abandonar el flujo.
+- acceder a productos;
+- guardar órdenes en base de datos;
+- recuperar una orden temporal al abandonar el flujo.
 
 Regla principal:
 
 ```txt
-Una orden invitada es temporal.
-No se guarda en base de datos.
-No tiene ID.
-No aparece en historial.
-El PDF se descarga desde el resumen inmediato.
-```
-
-En frontend, una orden se considera temporal cuando:
-
-```ts
-order.id == null
+Orden temporal:
+- no se guarda;
+- no tiene ID;
+- no aparece en historial;
+- permite descargar PDF desde el resumen generado.
 ```
 
 ---
 
-### Usuario autenticado
+### USER
 
 Un usuario autenticado con rol `USER` puede:
 
 - iniciar sesión;
 - crear órdenes guardadas;
 - ver dashboard personal;
-- consultar su historial;
-- entrar al detalle de una orden propia;
-- descargar PDF de órdenes guardadas;
+- consultar historial propio;
+- entrar al detalle de sus órdenes;
+- descargar PDFs;
 - acceder a su perfil.
 
 ---
 
-### Administrador
+### ADMIN
 
-Un usuario con rol `ADMIN` puede:
+Un usuario autenticado con rol `ADMIN` puede:
 
 - ver dashboard administrativo;
 - consultar métricas generales;
 - alternar entre historial propio e historial general;
-- acceder al detalle de órdenes según permisos del backend;
-- descargar PDFs según permisos del backend;
+- acceder al detalle de órdenes permitidas por backend;
+- descargar PDFs según permisos;
 - acceder al catálogo interno de productos.
-
-El dashboard administrativo se resuelve por rol dentro de `/dashboard`.
 
 ---
 
@@ -251,121 +231,163 @@ El dashboard administrativo se resuelve por rol dentro de `/dashboard`.
 
 ### Autenticación
 
-- Login de usuario.
-- Registro de usuario.
-- Mostrar/ocultar contraseña.
-- Persistencia de sesión en `localStorage`.
-- Envío automático de JWT en requests protegidas.
-- Redirección a login cuando una ruta requiere sesión.
-- Página de acceso no autorizado para rutas restringidas.
+El frontend permite:
+
+- registrar usuario;
+- iniciar sesión;
+- mostrar u ocultar contraseña;
+- guardar token y usuario en `localStorage`;
+- adjuntar JWT automáticamente en requests protegidas;
+- limpiar sesión inválida o vencida;
+- redirigir a login cuando una ruta requiere autenticación;
+- mostrar pantalla 403 cuando el usuario no tiene permisos.
 
 ---
 
-### Dashboard por tipo de usuario
+### Dashboard por rol
 
-La pantalla `/dashboard` muestra contenido distinto según el estado de sesión.
+La ruta `/dashboard` muestra una vista distinta según el estado de sesión.
 
-```txt
-Invitado → Dashboard público con explicación del flujo
-USER     → Dashboard personal con resumen propio
-ADMIN    → Dashboard administrativo con métricas generales
+```mermaid
+flowchart TD
+    A[/dashboard/] --> B{¿Hay usuario autenticado?}
+    B -->|No| C[Dashboard invitado]
+    B -->|Sí| D{Rol}
+    D -->|USER| E[Dashboard personal]
+    D -->|ADMIN| F[Dashboard admin]
 ```
+
+Dashboard invitado:
+
+- explica el objetivo de la app;
+- permite iniciar una orden temporal;
+- muestra cócteles populares;
+- comunica que el historial requiere cuenta.
+
+Dashboard USER:
+
+- muestra historial personal resumido;
+- muestra tragos calculados;
+- muestra últimos registros;
+- permite crear una nueva orden;
+- permite ir al historial.
+
+Dashboard ADMIN:
+
+- muestra resumen general;
+- muestra métricas del sistema;
+- muestra últimos registros;
+- permite ir al historial completo;
+- mantiene acceso a productos.
 
 ---
 
 ### Catálogo de cócteles
 
-El usuario puede consultar cócteles disponibles con:
+La aplicación incluye un catálogo público de cócteles conectado al backend.
 
-- cards visuales;
-- buscador;
-- filtros por tipo de preparación;
-- paginación;
-- diseño responsive.
+Permite:
 
-Los cócteles también se usan dentro del flujo de creación de orden.
+- listar cócteles;
+- buscar por texto;
+- filtrar por tipo de preparación;
+- paginar resultados;
+- consultar ingredientes asociados;
+- usar los cócteles dentro del flujo de creación de orden.
+
+Tipos de preparación manejados en UI:
+
+```txt
+Todos
+Directos
+Batidos
+Refrescados
+Frozen
+```
 
 ---
 
 ### Catálogo de productos
 
-La sección de productos está pensada como vista interna para administrador.
+La vista de productos es de uso administrativo.
 
 Permite consultar productos e insumos disponibles para el cálculo de bebidas.
 
 Acceso:
 
 ```txt
-ADMIN → puede acceder
-USER → no puede acceder
-Invitado → no puede acceder
+ADMIN    → permitido
+USER     → no permitido
+Invitado → no permitido
 ```
 
 ---
 
 ### Creación de orden
 
-La creación de orden funciona como un wizard dividido en pasos:
+La creación de orden se implementa como un flujo guiado en tres pasos.
 
 ```txt
-1. Datos del cálculo
-2. Selección de cócteles
-3. Resumen y generación
+Paso 1 → Datos del cálculo
+Paso 2 → Selección de cócteles
+Paso 3 → Revisión y generación
 ```
 
-El usuario puede calcular de dos maneras:
+Diagrama:
 
-```txt
-Modo evento
-→ invitados + duración + cócteles + prioridades
-
-Modo cantidad de tragos
-→ total de tragos + cócteles + cantidades
+```mermaid
+flowchart TD
+    Start[Nueva orden] --> Mode{Modo de cálculo}
+    Mode --> Time[Por evento]
+    Mode --> Drinks[Por cantidad]
+    Time --> TimeData[Invitados + duración]
+    Drinks --> DrinksData[Total de tragos]
+    TimeData --> Selection[Seleccionar cócteles]
+    DrinksData --> Selection
+    Selection --> Preset{Lista rápida o manual}
+    Preset --> Quick[Listas predefinidas]
+    Preset --> Manual[Selección manual]
+    Quick --> Review[Revisar cálculo]
+    Manual --> Review
+    Review --> Auth{¿Usuario autenticado?}
+    Auth -->|Sí| Saved[Crear orden guardada]
+    Auth -->|No| Preview[Crear orden temporal]
+    Saved --> Pdf[Descargar PDF]
+    Preview --> Pdf
 ```
 
 ---
 
-### Listas rápidas predefinidas
+### Modo por evento
 
-El frontend incluye listas rápidas para acelerar la selección de cócteles.
+En modo evento, el usuario define:
 
-Ejemplos:
+- cantidad de invitados;
+- duración del evento;
+- cócteles seleccionados;
+- prioridad de cada cóctel.
 
-- Clásicos simples
-- Clásicos completos
-- Boda / evento elegante
-- Modernos y fiesta
-- Verano / tropical
-- Aperitivos
-- Premium clásico
-- Popular y rápido
+La prioridad visible se transforma en `weight` para el backend.
 
-Los presets se definen por nombre de cóctel, no por ID fijo. El frontend busca cada cóctel dentro del catálogo real recibido desde el backend.
-
-Esto evita depender de IDs de base de datos.
-
----
-
-### Prioridades de cócteles
-
-En modo evento, el usuario no ve valores técnicos como `weight`. Ve prioridades en palabras.
-
-| Prioridad visible | Valor enviado al backend |
+| Prioridad visible | Valor enviado |
 |---|---:|
 | Baja | 1 |
 | Normal | 2 |
 | Media | 3 |
 | Alta | 5 |
 
-Ejemplo conceptual:
+Ejemplo:
 
 ```txt
-Fernet Cola      → Prioridad alta
-Gin Tonic        → Prioridad normal
-Aperol Spritz    → Prioridad baja
+Invitados: 80
+Duración: 5 horas
+
+Fernet Cola   → Prioridad alta
+Gin Tonic     → Prioridad normal
+Aperol Spritz → Prioridad baja
 ```
 
-Payload enviado al backend:
+Payload conceptual:
 
 ```json
 {
@@ -390,9 +412,15 @@ Payload enviado al backend:
 
 ---
 
-### Cantidad total de tragos
+### Modo por cantidad de tragos
 
-En modo cantidad de tragos, el usuario define un total y asigna cantidades por cóctel.
+En modo cantidad, el usuario define:
+
+- total de tragos;
+- cócteles seleccionados;
+- cantidad asignada a cada cóctel.
+
+El frontend muestra un contador de asignación para evitar inconsistencias.
 
 Ejemplo:
 
@@ -402,89 +430,159 @@ Total de tragos: 100
 Fernet Cola   → 40
 Gin Tonic     → 30
 Aperol Spritz → 30
-```
 
-El frontend muestra un contador de asignación:
-
-```txt
 Asignados: 100 / 100
 ```
 
-También permite repartir equitativamente entre los cócteles seleccionados.
+El usuario puede:
+
+- asignar cantidades manualmente;
+- usar una lista rápida;
+- repartir equitativamente entre cócteles seleccionados;
+- corregir excedentes o faltantes antes de avanzar.
+
+---
+
+### Listas rápidas predefinidas
+
+El frontend incluye presets para acelerar la selección de cócteles.
+
+Ejemplos:
+
+- Clásicos simples
+- Clásicos completos
+- Boda / evento elegante
+- Modernos y fiesta
+- Verano / tropical
+- Aperitivos
+- Premium clásico
+- Popular y rápido
+
+Los presets usan nombres de cócteles y no IDs fijos. El frontend busca cada nombre dentro del catálogo real recibido desde backend.
+
+Esto evita depender de IDs de base de datos.
+
+---
+
+### Resumen de orden creada
+
+Cuando el backend responde correctamente, el frontend muestra un resumen de orden generada.
+
+El resumen indica:
+
+- si la orden es temporal o guardada;
+- ID cuando existe;
+- estado;
+- cantidad total de tragos;
+- cantidad de productos calculados;
+- cantidad de cócteles incluidos;
+- botón para descargar PDF;
+- botón para crear una nueva orden.
+
+En órdenes guardadas, también permite ir al detalle.
+
+En órdenes temporales, el PDF debe descargarse desde el resumen inmediato.
 
 ---
 
 ### PDF
 
-CocktailOps permite descargar PDFs en dos escenarios:
+El frontend permite descargar PDFs desde distintas fuentes.
 
-| Caso | Endpoint | Resultado |
-|---|---|---|
-| Orden guardada | `GET /orders/{id}/pdf` | Descarga `order-{id}.pdf` |
-| Orden temporal por evento | `POST /orders/preview/pdf` | Descarga `order-preview.pdf` |
-| Orden temporal por tragos | `POST /orders/by-drinks/preview/pdf` | Descarga `order-preview.pdf` |
+| Caso | Endpoint |
+|---|---|
+| Orden guardada | `GET /orders/{id}/pdf` |
+| Orden temporal por evento | `POST /orders/preview/pdf` |
+| Orden temporal por cantidad | `POST /orders/by-drinks/preview/pdf` |
 
-El usuario invitado descarga el PDF desde el resumen inmediato.
+Nombres de archivo:
 
-El usuario autenticado puede descargarlo desde el detalle o historial.
+```txt
+Orden guardada  → order-{id}.pdf
+Orden temporal  → order-preview.pdf
+```
 
 ---
 
-## Flujos principales
+### Historial
+
+El historial está disponible para usuarios autenticados.
+
+USER:
+
+```txt
+GET /orders/my-orders
+```
+
+ADMIN:
+
+```txt
+GET /orders
+GET /orders/my-orders
+```
+
+La vista permite:
+
+- consultar registros;
+- ver detalle;
+- descargar PDF;
+- alternar entre historial propio e historial general cuando el usuario es ADMIN;
+- visualizar tabla en desktop y cards en mobile.
+
+---
+
+## Flujos de uso
 
 ### Flujo invitado
 
-```txt
-Entrar a la app
-→ Ver dashboard público
-→ Consultar cócteles
-→ Crear orden
-→ Elegir modo de cálculo
-→ Completar datos
-→ Seleccionar cócteles manualmente o usar lista rápida
-→ Ajustar prioridades o cantidades
-→ Ver resumen
-→ Generar orden temporal
-→ Descargar PDF preview
+```mermaid
+flowchart TD
+    A[Entrar a CocktailOps] --> B[Dashboard público]
+    B --> C[Crear orden]
+    C --> D[Elegir modo de cálculo]
+    D --> E[Completar datos]
+    E --> F[Elegir cócteles]
+    F --> G[Revisar cálculo]
+    G --> H[Generar orden temporal]
+    H --> I[Descargar PDF preview]
 ```
 
 ---
 
 ### Flujo usuario registrado
 
-```txt
-Login
-→ Dashboard personal
-→ Crear orden
-→ Elegir modo de cálculo
-→ Completar datos
-→ Seleccionar cócteles
-→ Generar orden guardada
-→ Ver resumen
-→ Entrar al detalle
-→ Descargar PDF
-→ Consultar historial
+```mermaid
+flowchart TD
+    A[Login] --> B[Dashboard personal]
+    B --> C[Crear orden]
+    C --> D[Completar flujo guiado]
+    D --> E[Generar orden guardada]
+    E --> F[Ver resumen]
+    F --> G[Ver detalle]
+    F --> H[Descargar PDF]
+    B --> I[Consultar historial]
 ```
 
 ---
 
 ### Flujo administrador
 
-```txt
-Login ADMIN
-→ Dashboard administrativo
-→ Consultar métricas generales
-→ Ver últimos registros
-→ Ir a historial
-→ Alternar entre historial propio e historial general
-→ Acceder al detalle
-→ Descargar PDF según permisos
-→ Consultar catálogo interno de productos
+```mermaid
+flowchart TD
+    A[Login ADMIN] --> B[Dashboard admin]
+    B --> C[Métricas generales]
+    B --> D[Últimos registros]
+    B --> E[Historial]
+    B --> F[Productos]
+    E --> G[Historial propio]
+    E --> H[Historial general]
+    D --> I[Detalle]
+    I --> J[PDF]
 ```
 
 ---
 
-## Rutas de la aplicación
+## Rutas
 
 ### Rutas públicas
 
@@ -495,7 +593,7 @@ Login ADMIN
 | `/dashboard` | Dashboard según estado de sesión |
 | `/cocktails` | Catálogo público de cócteles |
 | `/create-order` | Creación de orden temporal o guardada |
-| `/unauthorized` | Acceso no autorizado |
+| `/unauthorized` | Página de acceso no autorizado |
 | `/404` | Página no encontrada |
 
 ---
@@ -513,24 +611,24 @@ Login ADMIN
 
 ## Integración con backend
 
-El frontend consume una API REST de CocktailOps.
+El frontend consume la API REST del backend a través de un cliente Axios centralizado.
 
-La configuración base se centraliza en:
+Archivo:
 
 ```txt
 src/api/apiClient.ts
 ```
 
-Este cliente HTTP:
+Responsabilidades:
 
-- toma la URL base desde variables de entorno;
-- adjunta el JWT en requests protegidas;
-- permite centralizar la configuración de Axios;
-- separa la comunicación HTTP de los componentes visuales.
+- leer `VITE_API_BASE_URL`;
+- definir `baseURL`;
+- configurar headers JSON;
+- adjuntar `Authorization: Bearer <token>` cuando existe sesión activa.
 
 ---
 
-### Endpoints principales
+### Endpoints consumidos
 
 #### Autenticación
 
@@ -539,23 +637,17 @@ POST /auth/register
 POST /auth/login
 ```
 
----
-
 #### Cócteles
 
 ```http
 GET /cocktails
 ```
 
----
-
 #### Productos
 
 ```http
 GET /products
 ```
-
----
 
 #### Órdenes guardadas
 
@@ -567,8 +659,6 @@ GET /orders
 GET /orders/{id}
 GET /orders/{id}/pdf
 ```
-
----
 
 #### Órdenes temporales
 
@@ -583,7 +673,7 @@ POST /orders/by-drinks/preview/pdf
 
 ## Variables de entorno
 
-Crear un archivo `.env.local` dentro de la carpeta `frontend`.
+Crear un archivo `.env.local` dentro de `frontend`.
 
 ### Desarrollo local
 
@@ -597,7 +687,7 @@ VITE_API_BASE_URL=http://localhost:8080
 VITE_API_BASE_URL=/api
 ```
 
-Los archivos `.env` y `.env.local` no deben versionarse si contienen valores sensibles o configuraciones específicas del entorno local.
+No versionar archivos `.env` o `.env.local` con datos sensibles o configuraciones locales privadas.
 
 ---
 
@@ -622,7 +712,7 @@ cd frontend
 npm install
 ```
 
-### 4. Configurar variables de entorno
+### 4. Configurar entorno local
 
 Crear `.env.local`:
 
@@ -636,7 +726,7 @@ VITE_API_BASE_URL=http://localhost:8080
 npm run dev
 ```
 
-La aplicación queda disponible en:
+URL local:
 
 ```txt
 http://localhost:5173
@@ -666,9 +756,9 @@ npm run preview
 
 El frontend está desplegado en Vercel.
 
-En producción, el frontend utiliza `/api` como base URL y Vercel reescribe esas requests hacia el backend productivo.
+En producción, la app usa `/api` como base URL y Vercel reescribe las requests hacia el backend productivo.
 
-Ejemplo conceptual de `vercel.json`:
+Ejemplo conceptual:
 
 ```json
 {
@@ -688,48 +778,109 @@ Ejemplo conceptual de `vercel.json`:
 Esto permite:
 
 - consumir el backend mediante rutas relativas;
-- evitar exponer la URL base dentro del código del frontend;
+- reducir problemas de CORS desde el navegador;
 - mantener funcionando React Router al refrescar rutas internas.
 
 ---
 
-## Decisiones de diseño y UX
+## Manejo de sesión
 
-### Estética visual
+La sesión se maneja con:
+
+```txt
+AuthProvider
+AuthContext
+authStorage
+apiClient
+ProtectedRoute
+AdminRoute
+```
+
+El frontend guarda:
+
+```txt
+cocktailops_token
+cocktailops_user
+```
+
+en `localStorage`.
+
+También valida el token almacenado y limpia la sesión cuando detecta que no es usable.
+
+Esto evita estados inconsistentes como:
+
+```txt
+sidebar mostrando usuario autenticado
+pero requests protegidas fallando por token inválido o vencido
+```
+
+Cuando el usuario continúa como invitado, la sesión previa se limpia para asegurar que el menú y las rutas coincidan con el estado real.
+
+---
+
+## Manejo de errores
+
+El frontend usa estados visuales reutilizables para mostrar errores.
+
+Casos contemplados:
+
+| Caso | Mensaje esperado |
+|---|---|
+| 400 | Datos inválidos |
+| 401 | Sesión no activa o vencida |
+| 403 | Acceso denegado |
+| 404 | Recurso o página no encontrada |
+| 500 | Error del servidor |
+| Sin respuesta | Error de conexión o backend no disponible |
+
+Archivos principales:
+
+```txt
+src/shared/utils/getApiErrorMessage.ts
+src/shared/components/ui/ErrorState.tsx
+src/shared/pages/NotFoundPage.tsx
+src/features/auth/UnauthorizedPage.tsx
+```
+
+---
+
+## Diseño y experiencia de usuario
+
+### Estilo visual
 
 La interfaz usa una estética tipo dashboard SaaS:
 
 - fondo oscuro;
-- tarjetas limpias;
-- bordes sutiles;
+- sidebar lateral;
+- tarjetas con bordes sutiles;
 - acentos dorados;
 - tipografía clara;
-- layout centrado;
-- sidebar responsive;
-- tablas adaptadas a mobile.
+- botones consistentes;
+- feedback visual en acciones importantes.
 
 ---
 
 ### Responsive design
 
-La aplicación está pensada para desktop y mobile.
+La aplicación está adaptada para desktop y mobile.
 
-Se trabajó especialmente en:
+Incluye:
 
-- menú lateral desktop;
-- menú mobile con bloqueo de scroll de fondo;
-- cards en pantallas chicas;
-- tablas convertidas a cards en mobile;
+- sidebar desktop;
+- menú mobile;
+- bloqueo de scroll de fondo cuando el menú mobile está abierto;
+- cards responsive;
+- tablas convertidas en cards para pantallas chicas;
 - formularios legibles;
-- wizard de creación de orden en pasos.
+- layout con ancho máximo controlado.
 
 ---
 
-### Claridad del copy
+### Copy orientado al usuario
 
-El frontend usa lenguaje orientado al usuario.
+La UI evita exponer conceptos técnicos innecesarios.
 
-Ejemplos:
+Ejemplos de copy visible:
 
 ```txt
 Prioridad alta
@@ -737,10 +888,8 @@ Prioridad normal
 Asignados 100 / 100
 Orden temporal
 Historial
-Cálculo de bebidas e insumos
+Cálculo de bebidas e insumos para eventos
 ```
-
-Se evita mostrar al usuario conceptos técnicos internos cuando no aportan claridad.
 
 ---
 
@@ -752,34 +901,96 @@ La aplicación incluye un footer con:
 - rol profesional;
 - aclaración de proyecto portfolio no comercial;
 - links profesionales;
-- repositorio;
-- portfolio;
+- link al repositorio;
+- link al portfolio;
 - email de contacto.
 
 ---
 
-## Manejo de errores
-
-El frontend incluye estados visuales reutilizables para mostrar errores de forma clara.
-
-Casos contemplados:
-
-| Caso | Resultado esperado |
-|---|---|
-| 400 | Datos inválidos |
-| 401 | Sesión no activa o vencida |
-| 403 | Acceso denegado |
-| 404 | Recurso o página no encontrada |
-| 500 | Error del servidor |
-| Sin respuesta | Error de conexión o backend no disponible |
-
-Componentes y páginas relacionados:
+## Estructura del proyecto
 
 ```txt
-src/shared/utils/getApiErrorMessage.ts
-src/shared/components/ui/ErrorState.tsx
-src/shared/pages/NotFoundPage.tsx
-src/features/auth/UnauthorizedPage.tsx
+frontend/
+├── public/
+├── src/
+│   ├── api/
+│   │   └── apiClient.ts
+│   │
+│   ├── app/
+│   │   ├── App.tsx
+│   │   └── router.tsx
+│   │
+│   ├── features/
+│   │   ├── auth/
+│   │   │   ├── AdminRoute.tsx
+│   │   │   ├── AuthContext.ts
+│   │   │   ├── AuthProvider.tsx
+│   │   │   ├── LoginPage.tsx
+│   │   │   ├── ProtectedRoute.tsx
+│   │   │   ├── RegisterPage.tsx
+│   │   │   ├── UnauthorizedPage.tsx
+│   │   │   ├── auth.types.ts
+│   │   │   ├── authService.ts
+│   │   │   ├── authStorage.ts
+│   │   │   └── useAuth.ts
+│   │   │
+│   │   ├── cocktails/
+│   │   │   ├── CocktailsPage.tsx
+│   │   │   ├── cocktail.types.ts
+│   │   │   ├── cocktailService.ts
+│   │   │   └── components/
+│   │   │
+│   │   ├── dashboard/
+│   │   │   ├── DashboardPage.tsx
+│   │   │   └── components/
+│   │   │
+│   │   ├── orders/
+│   │   │   ├── CreateOrderPage.tsx
+│   │   │   ├── OrderDetailPage.tsx
+│   │   │   ├── OrderHistoryPage.tsx
+│   │   │   ├── components/
+│   │   │   ├── hooks/
+│   │   │   ├── order.types.ts
+│   │   │   ├── orderPresets.ts
+│   │   │   ├── orderPresetUtils.ts
+│   │   │   ├── orderPriority.ts
+│   │   │   └── orderService.ts
+│   │   │
+│   │   ├── products/
+│   │   │   ├── ProductsPage.tsx
+│   │   │   ├── product.types.ts
+│   │   │   ├── productService.ts
+│   │   │   └── components/
+│   │   │
+│   │   └── profiles/
+│   │       └── ProfilePage.tsx
+│   │
+│   ├── layouts/
+│   │   ├── AppLayout.tsx
+│   │   └── AuthLayout.tsx
+│   │
+│   ├── shared/
+│   │   ├── components/
+│   │   │   ├── feedback/
+│   │   │   ├── layout/
+│   │   │   ├── navigation/
+│   │   │   ├── placeholders/
+│   │   │   └── ui/
+│   │   ├── constants/
+│   │   ├── hooks/
+│   │   ├── pages/
+│   │   ├── types/
+│   │   └── utils/
+│   │
+│   ├── styles/
+│   ├── index.css
+│   ├── main.tsx
+│   └── vite-env.d.ts
+│
+├── package.json
+├── vite.config.ts
+├── vercel.json
+└── README.md
 ```
 
 ---
@@ -788,7 +999,7 @@ src/features/auth/UnauthorizedPage.tsx
 
 | Módulo | Estado |
 |---|---|
-| Proyecto React + Vite | Implementado |
+| React + Vite | Implementado |
 | TypeScript | Implementado |
 | Tailwind CSS | Implementado |
 | React Router | Implementado |
@@ -799,7 +1010,8 @@ src/features/auth/UnauthorizedPage.tsx
 | Login / Register | Implementado |
 | Mostrar/ocultar contraseña | Implementado |
 | JWT en frontend | Implementado |
-| AuthContext | Implementado |
+| Limpieza de sesión inválida | Implementado |
+| AuthContext / AuthProvider | Implementado |
 | ProtectedRoute | Implementado |
 | AdminRoute | Implementado |
 | Dashboard invitado | Implementado |
@@ -813,10 +1025,13 @@ src/features/auth/UnauthorizedPage.tsx
 | Crear orden por evento | Implementado |
 | Crear orden por cantidad de tragos | Implementado |
 | Wizard de creación de orden | Implementado |
+| Selección manual de cócteles | Implementado |
 | Listas rápidas predefinidas | Implementado |
 | Prioridades visuales | Implementado |
 | Contador de tragos asignados | Implementado |
-| Reparto equitativo de tragos | Implementado |
+| Reparto equitativo | Implementado |
+| Orden temporal invitado | Implementado |
+| Orden guardada autenticada | Implementado |
 | Historial | Implementado |
 | Historial propio/general por rol | Implementado |
 | Detalle de orden | Implementado |
@@ -827,25 +1042,18 @@ src/features/auth/UnauthorizedPage.tsx
 | 403 Unauthorized | Implementado |
 | 404 Not Found | Implementado |
 | Deploy Vercel | Implementado |
-| Testing frontend automatizado | Pendiente |
-| CRUD admin completo | Pendiente |
-| Persistencia temporal de preview | Pendiente |
-| Recuperación de contraseña | Pendiente |
-| Confirmación de correo | Pendiente |
-| Links de compra | Futuro |
-| Integración con tiendas/proveedores | Futuro |
 
 ---
 
 ## Próximas mejoras
 
-Mejoras razonables para una evolución futura:
+Mejoras razonables para evolución futura:
 
 - ejecutar QA manual completo del flujo principal;
 - documentar casos de prueba funcionales;
 - agregar tests frontend básicos;
-- persistir temporalmente el payload preview en `sessionStorage`;
 - mejorar accesibilidad de formularios, selects y navegación;
+- persistir temporalmente el payload preview en `sessionStorage`;
 - agregar CRUD administrativo para productos, cócteles y categorías;
 - mostrar límites de uso desde la UI;
 - preparar capturas para portfolio y LinkedIn;
