@@ -6,22 +6,48 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 
 public record CocktailResponseDto(
-        @Schema(description = "id del producto creado", example = "1")
-        Long id,
-        @Schema(description = "nombre del cocktail a crear", example = "mojito")
-        String name,
-        @Schema(description = "descripcion del cocktail ", example = "mojito, lleva menta y limas cocktail refrescante")
-        String description,
+
         @Schema(
-                description = "tipo de preparación del cóctel",
-                example = "SHAKEN"
+                description = "ID del cóctel.",
+                example = "1"
+        )
+        Long id,
+
+        @Schema(
+                description = "Nombre del cóctel.",
+                example = "Mojito"
+        )
+        String name,
+
+        @Schema(
+                description = "Descripción breve del cóctel.",
+                example = "Cóctel refrescante preparado con ron, lima y menta."
+        )
+        String description,
+
+        @Schema(
+                description = "Método de preparación del cóctel.",
+                example = "SHAKEN",
+                allowableValues = {"DIRECT", "SHAKEN", "STIRRED", "FROZEN"}
         )
         PreparationType preparationType,
-        @Schema(description = "url de la imagen del producto")
+
+        @Schema(
+                description = "URL de la imagen del cóctel.",
+                example = "https://example.com/mojito.jpg"
+        )
         String imageUrl,
-        @Schema(description = "nombre del alt de la imagen", example = "mojito")
+
+        @Schema(
+                description = "Texto alternativo de la imagen.",
+                example = "Cóctel Mojito"
+        )
         String imageAlt,
-        @Schema(description = "lista de ingredientes que incluyen el cocktail, con sus medidas y unidades", example = "productId: 1, amount: 1.5, unit:ml ")
+
+        @Schema(
+                description = "Ingredientes que forman parte de la receta del cóctel."
+        )
         List<CocktailIngredientResponseDto> ingredients
+
 ) {
 }

@@ -7,43 +7,71 @@ import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 
 public record ProductRequestDto(
-        @Schema(description = "id del producto", example = "1")
+
+        @Schema(hidden = true)
         Long id,
 
-        @Pattern(regexp=".*\\S.*", message = "Product name cannot be blank")
-        @Schema(description = "nombre del producto", example = "vodka")
+        @Pattern(regexp = ".*\\S.*", message = "Product name cannot be blank")
+        @Schema(
+                description = "Nombre del producto. Es obligatorio al crear un producto.",
+                example = "Vodka"
+        )
         String name,
 
         @Schema(
-                description = "descripción breve del producto",
-                example = "Bitter aromático especiado utilizado en coctelería clásica"
+                description = "Descripción breve del producto.",
+                example = "Destilado utilizado como base para diferentes cócteles."
         )
         String description,
 
         @Positive(message = "Category id must be a positive number")
-        @Schema(description = "id de la categoría del producto", example = "2")
+        @Schema(
+                description = "ID de la categoría asociada. Es obligatorio al crear un producto.",
+                example = "2"
+        )
         Long category,
 
-        @Schema(description = "unidad de medida del producto", example = "ml")
+        @Schema(
+                description = "Unidad de medida utilizada para el producto.",
+                example = "ML"
+        )
         String unit,
 
         @Positive(message = "Unit size must be greater than 0")
-        @Schema(description = "tamaño de la unidad del producto", example = "750")
+        @Schema(
+                description = "Contenido de cada envase o unidad de compra.",
+                example = "750"
+        )
         BigDecimal unitSize,
 
-        @Schema(description = "indica si el producto está activo", example = "true")
+        @Schema(
+                description = "Indica si el producto está activo. Es obligatorio al crear un producto.",
+                example = "true"
+        )
         Boolean active,
 
         @Schema(
-                description = "indica si el producto se compra directamente o se prepara internamente",
-                example = "true"
+                description = """
+                        Indica si el producto se compra directamente.
+                        Si es false, representa un producto preparado internamente.
+                        Al crear un producto, si no se especifica se utiliza true.
+                        """,
+                example = "true",
+                defaultValue = "true"
         )
         Boolean purchasable,
 
-        @Schema(description = "URL de la imagen del producto", example = "https://example.com/image.jpg")
+        @Schema(
+                description = "URL de la imagen del producto.",
+                example = "https://example.com/vodka.jpg"
+        )
         String imageUrl,
 
-        @Schema(description = "texto alternativo de la imagen del producto", example = "Imagen del producto Mojito")
+        @Schema(
+                description = "Texto alternativo utilizado para describir la imagen.",
+                example = "Botella de vodka"
+        )
         String imageAlt
+
 ) {
 }
